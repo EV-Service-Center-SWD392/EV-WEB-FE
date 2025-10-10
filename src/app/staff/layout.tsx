@@ -1,0 +1,51 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+import { useAuthStore } from "@/stores/auth";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import StaffNavbar from "@/components/staff/StaffNavbar";
+import StaffSidebar from "@/components/staff/StaffSidebar";
+
+export default function StaffLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { user, isLoading } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && (!user || user.role !== "staff")) {
+      router.push("/login");
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "staff") {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Staff Navbar */}
+      <StaffNavbar />
+
+      <div className="flex">
+        {/* Staff Sidebar */}
+        <StaffSidebar />
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 bg-gray-50">{children}</main>
+      </div>
+    </div>
+  );
+}
