@@ -14,24 +14,28 @@ const menuItems: MenuItem[] = [
     label: "Dashboard",
   },
   {
-    href: "/staff/technicians",
-    label: "Quản lý Technicians",
+    href: "/requests/new",
+    label: "Service Request Intake",
   },
   {
     href: "/staff/schedules",
-    label: "Quản lý Lịch hẹn",
+    label: "Schedules",
+  },
+  {
+    href: "/staff/technicians",
+    label: "Technicians",
   },
   {
     href: "/staff/customers",
-    label: "Khách hàng",
+    label: "Customers",
   },
   {
     href: "/staff/services",
-    label: "Dịch vụ",
+    label: "Services",
   },
   {
     href: "/staff/reports",
-    label: "Báo cáo",
+    label: "Reports",
   },
 ];
 
@@ -46,7 +50,7 @@ export default function StaffSidebar() {
           <h2 className="text-lg font-semibold text-gray-900 mb-1">
             Staff Panel
           </h2>
-          <p className="text-sm text-gray-500">Quản lý hoạt động dịch vụ</p>
+          <p className="text-sm text-gray-500">Service Operations Management</p>
         </div>
 
         {/* Navigation Menu */}
@@ -60,10 +64,9 @@ export default function StaffSidebar() {
                 href={item.href}
                 className={`
                   block px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  ${
-                    isActive
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  ${isActive
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }
                 `}
               >

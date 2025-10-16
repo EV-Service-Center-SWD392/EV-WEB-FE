@@ -1,5 +1,6 @@
 import {
   User,
+  UserRole,
   CreateUserRequest,
   UpdateUserRequest,
   UserFilters,
@@ -11,7 +12,7 @@ const mockUsers: User[] = [
     id: "1",
     name: "Admin User",
     email: "admin@evservice.com",
-    role: "admin",
+    role: UserRole.ADMIN,
     phone: "0123456789",
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -21,7 +22,7 @@ const mockUsers: User[] = [
     id: "2",
     name: "Staff Member",
     email: "staff@evservice.com",
-    role: "staff",
+    role: UserRole.STAFF,
     phone: "0123456790",
     createdAt: "2024-01-02T00:00:00Z",
     updatedAt: "2024-01-02T00:00:00Z",
@@ -31,7 +32,7 @@ const mockUsers: User[] = [
     id: "3",
     name: "Technician A",
     email: "tech1@evservice.com",
-    role: "technician",
+    role: UserRole.TECHNICIAN,
     phone: "0123456791",
     createdAt: "2024-01-03T00:00:00Z",
     updatedAt: "2024-01-03T00:00:00Z",
@@ -41,7 +42,7 @@ const mockUsers: User[] = [
     id: "4",
     name: "Customer John",
     email: "customer@gmail.com",
-    role: "member",
+    role: UserRole.MEMBER,
     phone: "0123456792",
     createdAt: "2024-01-04T00:00:00Z",
     updatedAt: "2024-01-04T00:00:00Z",
@@ -60,8 +61,8 @@ export const userService = {
       filtered = filtered.filter((user) => user.role === filters.role);
     }
 
-    if (filters?.search) {
-      const search = filters.search.toLowerCase();
+    if (filters?.name) {
+      const search = filters.name.toLowerCase();
       filtered = filtered.filter(
         (user) =>
           user.name.toLowerCase().includes(search) ||
