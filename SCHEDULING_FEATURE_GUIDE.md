@@ -57,7 +57,7 @@ src/
 │       ├── ScheduleContainer.tsx  # TODO: Orchestrate Schedule
 │       └── QueueContainer.tsx     # TODO: Orchestrate Queue
 │
-├── components/scheduling/         # UI COMPONENTS
+├── components/staff/scheduling/   # UI COMPONENTS (Staff-specific)
 │   ├── atoms/                     # ✅ COMPLETE (5 components)
 │   │   ├── ADayPicker.tsx         # Date picker
 │   │   ├── ACenterSelect.tsx      # Center dropdown
@@ -525,7 +525,7 @@ export function useAssignments(filters: AssignmentFilters) {
 
 ### 🧩 E. ATOMIC COMPONENTS (Reusable UI)
 
-#### 16-20. `src/components/scheduling/atoms/*.tsx`
+#### 16-20. `src/components/staff/scheduling/atoms/*.tsx`
 
 Đã complete 5 atoms:
 

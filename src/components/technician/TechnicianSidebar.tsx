@@ -14,6 +14,10 @@ const menuItems: MenuItem[] = [
     label: "Dashboard",
   },
   {
+    href: "/technician/workorders",
+    label: "Work Orders",
+  },
+  {
     href: "/technician/tasks",
     label: "Nhiệm vụ",
   },
@@ -60,10 +64,9 @@ export default function TechnicianSidebar() {
                 href={item.href}
                 className={`
                   block px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  ${
-                    isActive
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  ${isActive
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }
                 `}
               >
