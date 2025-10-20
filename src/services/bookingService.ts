@@ -154,6 +154,8 @@ class BookingService {
         const aVal = a[filters.sort! as keyof Booking];
         const bVal = b[filters.sort! as keyof Booking];
 
+        if (!aVal || !bVal) return 0;
+
         if (filters.sortOrder === "desc") {
           return bVal > aVal ? 1 : -1;
         }
