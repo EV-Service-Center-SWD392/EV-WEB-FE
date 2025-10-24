@@ -10,6 +10,7 @@ import { inventoryService } from "@/services/inventoryService";
 import type {
   InventoryItem,
   InventoryFilters as InventoryFiltersType,
+  InventoryStats,
   CreateInventoryRequest,
   UpdateInventoryRequest,
 } from "@/entities/inventory.types";
@@ -22,11 +23,13 @@ export default function ManagerInventoryPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isFormLoading, setIsFormLoading] = useState(false);
-  const [stats, setStats] = useState({
-    totalItems: 0,
+  const [stats, setStats] = useState<InventoryStats>({
+    totalInventories: 0,
+    totalQuantity: 0,
     totalValue: 0,
-    lowStockItems: 0,
-    outOfStockItems: 0,
+    lowStockCount: 0,
+    outOfStockCount: 0,
+    activeCenters: 0,
   });
 
   // Load inventory items on component mount
@@ -181,7 +184,7 @@ export default function ManagerInventoryPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-sm text-gray-600">Tổng linh kiện</div>
           <div className="text-2xl font-bold text-gray-900">
-            {stats.totalItems}
+            {stats.totalInventories}
           </div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -193,13 +196,13 @@ export default function ManagerInventoryPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-sm text-red-600">Tồn kho thấp</div>
           <div className="text-2xl font-bold text-red-600">
-            {stats.lowStockItems}
+            {stats.lowStockCount}
           </div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-sm text-red-600">Hết hàng</div>
           <div className="text-2xl font-bold text-red-600">
-            {stats.outOfStockItems}
+            {stats.outOfStockCount}
           </div>
         </div>
       </div>
@@ -226,9 +229,9 @@ export default function ManagerInventoryPage() {
             <div className="text-sm text-gray-600">
               Hiển thị {filteredItems.length} / {items.length} linh kiện
             </div>
-            {stats.lowStockItems > 0 && (
+            {stats.lowStockCount > 0 && (
               <div className="text-sm text-red-600 bg-red-50 px-3 py-1 rounded-md">
-                ⚠️ Có {stats.lowStockItems} linh kiện sắp hết hàng
+                ⚠️ Có {stats.lowStockCount} linh kiện sắp hết hàng
               </div>
             )}
           </div>

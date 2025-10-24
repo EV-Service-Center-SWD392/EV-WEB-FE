@@ -199,6 +199,51 @@ class InventoryService {
     return newItem;
   }
 
+  async updateInventoryItem(id: string, data: UpdateInventoryRequest): Promise<InventoryItem> {
+    await this.delay();
+
+    const itemIndex = mockInventory.findIndex((item) => item.id === id);
+    if (itemIndex === -1) {
+      throw new Error("Inventory item not found");
+    }
+
+    mockInventory[itemIndex] = {
+      ...mockInventory[itemIndex],
+      ...data,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    return mockInventory[itemIndex];
+  }
+
+  async deleteInventoryItem(id: string): Promise<void> {
+    await this.delay();
+
+    const itemIndex = mockInventory.findIndex((item) => item.id === id);
+    if (itemIndex === -1) {
+      throw new Error("Inventory item not found");
+    }
+
+    mockInventory.splice(itemIndex, 1);
+  }
+
+  async updateStock(id: string, quantity: number): Promise<InventoryItem> {
+    await this.delay();
+
+    const itemIndex = mockInventory.findIndex((item) => item.id === id);
+    if (itemIndex === -1) {
+      throw new Error("Inventory item not found");
+    }
+
+    mockInventory[itemIndex] = {
+      ...mockInventory[itemIndex],
+      quantity,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    return mockInventory[itemIndex];
+  }
+
   async getLowStockAlerts(): Promise<InventoryItem[]> {
     await this.delay();
     return mockInventory
