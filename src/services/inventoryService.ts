@@ -171,7 +171,7 @@ class InventoryService {
   }
 
   // Legacy methods for backward compatibility
-  async getInventoryItems(filters: Record<string, unknown> = {}): Promise<InventoryItem[]> {
+  async getInventoryItems(filters: InventoryFilters = {}): Promise<InventoryItem[]> {
     await this.delay();
     return mockInventory.filter(item => {
       if (filters.lowStock !== undefined) {

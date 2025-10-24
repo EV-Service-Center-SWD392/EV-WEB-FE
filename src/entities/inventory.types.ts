@@ -24,6 +24,10 @@ export interface UpdateInventoryDto {
 
 export interface InventoryFilters {
   centerId?: string;
+  partName?: string;
+  serviceCenter?: string;
+  vehicleBrand?: string;
+  vehicleType?: string;
   lowStock?: boolean;
   status?: string;
   isActive?: boolean;
