@@ -1,11 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Package, 
   TrendingUp, 
@@ -14,11 +9,14 @@ import {
   Brain,
   BarChart3,
   Settings,
-  Plus,
-  Search,
-  Filter,
-  Download
+  Search
 } from "lucide-react";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { SparepartOverview } from "@/components/admin/sparepart/SparepartOverview";
 import { SparepartList } from "@/components/admin/sparepart/SparepartList";

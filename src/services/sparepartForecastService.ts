@@ -83,9 +83,9 @@ class SparepartForecastService {
 
   // AI-based forecasting (mock implementation)
   async generateAIForecast(
-    sparepartId: string,
-    centerId: string,
-    historicalData?: any
+    _sparepartId: string,
+    _centerId: string,
+    _historicalData?: Record<string, unknown>
   ): Promise<{
     predictedUsage: number;
     safetyStock: number;
@@ -122,7 +122,7 @@ class SparepartForecastService {
   }
 
   // Forecast analytics
-  async getForecastAccuracy(centerId?: string): Promise<{
+  async getForecastAccuracy(_centerId?: string): Promise<{
     accuracy: number;
     totalForecasts: number;
     accurateForecasts: number;

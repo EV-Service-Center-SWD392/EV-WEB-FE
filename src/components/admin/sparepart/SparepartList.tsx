@@ -1,11 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Search, 
   Filter, 
@@ -16,6 +11,12 @@ import {
   AlertCircle,
   Zap
 } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import type { SparepartDto } from "@/entities/sparepart.types";
 
@@ -62,15 +63,21 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
   };
 
   const handleEdit = (sparepart: SparepartDto) => {
-    // Open edit dialog
-    console.log("Edit sparepart:", sparepart);
+    // TODO: Implement edit functionality
+    if (sparepart.sparepartId) {
+      // Edit logic here
+    }
   };
 
-  const handleDelete = (sparepart: SparepartDto) => {
-    if (confirm(`Bạn có chắc chắn muốn xóa phụ tùng "${sparepart.name}"?`)) {
-      // Delete sparepart
-      console.log("Delete sparepart:", sparepart);
-      onUpdate();
+  const handleDelete = async (sparepart: SparepartDto) => {
+    try {
+      // TODO: Implement delete functionality
+      if (sparepart.sparepartId) {
+        // Delete logic here
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Error deleting sparepart:", error);
     }
   };
 

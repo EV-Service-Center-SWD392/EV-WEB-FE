@@ -1,12 +1,8 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { 
   TrendingUp, 
-  TrendingDown, 
   AlertTriangle, 
   Package, 
   Brain,
@@ -15,6 +11,10 @@ import {
   PieChart,
   Activity
 } from "lucide-react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 import type { 
   SparepartStats,

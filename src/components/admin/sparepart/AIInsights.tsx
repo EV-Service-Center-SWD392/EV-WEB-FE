@@ -1,10 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { 
   Brain,
   TrendingUp,
@@ -12,7 +8,6 @@ import {
   AlertTriangle,
   Lightbulb,
   BarChart3,
-  PieChart,
   Activity,
   Zap,
   Target,
@@ -20,6 +15,11 @@ import {
   Clock,
   CheckCircle
 } from "lucide-react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 import { sparepartForecastService } from "@/services/sparepartForecastService";
 import { sparepartReplenishmentRequestService } from "@/services/sparepartReplenishmentRequestService";
@@ -31,6 +31,22 @@ import type {
   SparepartReplenishmentRequestDto 
 } from "@/entities/sparepart.types";
 
+interface ForecastAccuracyData {
+  accuracy: number;
+  totalForecasts: number;
+  accurateForecasts: number;
+  avgConfidence: number;
+}
+
+interface RequestStatsData {
+  totalRequests: number;
+  pendingRequests: number;
+  approvedRequests: number;
+  rejectedRequests: number;
+  avgProcessingTime: number;
+  totalRequestedValue: number;
+}
+
 interface AIInsightsProps {
   stats: SparepartStats;
   spareparts: SparepartDto[];
@@ -38,9 +54,9 @@ interface AIInsightsProps {
   requests: SparepartReplenishmentRequestDto[];
 }
 
-export function AIInsights({ stats, spareparts, forecasts, requests }: AIInsightsProps) {
-  const [forecastAccuracy, setForecastAccuracy] = useState<any>(null);
-  const [requestStats, setRequestStats] = useState<any>(null);
+export function AIInsights({ spareparts, forecasts, requests }: AIInsightsProps) {
+  const [forecastAccuracy, setForecastAccuracy] = useState<ForecastAccuracyData | null>(null);
+  const [requestStats, setRequestStats] = useState<RequestStatsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

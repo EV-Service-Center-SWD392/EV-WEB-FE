@@ -138,7 +138,7 @@ class SparepartReplenishmentRequestService {
   }
 
   // Request analytics
-  async getRequestStats(centerId?: string): Promise<{
+  async getRequestStats(_centerId?: string): Promise<{
     totalRequests: number;
     pendingRequests: number;
     approvedRequests: number;
