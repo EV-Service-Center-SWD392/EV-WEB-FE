@@ -1,91 +1,96 @@
-import {
+import type {
   SparepartForecastDto,
   CreateSparepartForecastDto,
   UpdateSparepartForecastDto,
 } from "@/entities/sparepart.types";
 
-class SparepartForecastService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { api } from "./api";
 
-  // Helper method for API requests
-  private async apiRequest<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}/api${endpoint}`;
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+const FORECAST_PATH = "/api/sparepartforecast";
 
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(errorData || `HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  // Forecast CRUD operations
+/**
+ * Sparepart Forecast Service
+ * Manages sparepart forecast operations
+ */
+export const sparepartForecastService = {
+  /**
+   * Get all forecasts
+   */
   async getAllForecasts(): Promise<SparepartForecastDto[]> {
-    return this.apiRequest<SparepartForecastDto[]>("/sparepartforecast");
-  }
+    const response = await api.get<SparepartForecastDto[]>(FORECAST_PATH);
+    return response.data;
+  },
 
+  /**
+   * Get a single forecast by ID
+   */
   async getForecastById(id: string): Promise<SparepartForecastDto> {
-    return this.apiRequest<SparepartForecastDto>(`/sparepartforecast/${id}`);
-  }
+    const response = await api.get<SparepartForecastDto>(`${FORECAST_PATH}/${id}`);
+    return response.data;
+  },
 
+  /**
+   * Create a new forecast
+   */
   async createForecast(data: CreateSparepartForecastDto): Promise<SparepartForecastDto> {
-    return this.apiRequest<SparepartForecastDto>("/sparepartforecast", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
+    const response = await api.post<SparepartForecastDto>(FORECAST_PATH, data);
+    return response.data;
+  },
 
+  /**
+   * Update an existing forecast
+   */
   async updateForecast(id: string, data: UpdateSparepartForecastDto): Promise<SparepartForecastDto> {
-    return this.apiRequest<SparepartForecastDto>(`/sparepartforecast/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  }
+    const response = await api.put<SparepartForecastDto>(`${FORECAST_PATH}/${id}`, data);
+    return response.data;
+  },
 
+  /**
+   * Delete a forecast
+   */
   async deleteForecast(id: string): Promise<void> {
-    await this.apiRequest<void>(`/sparepartforecast/${id}`, {
-      method: "DELETE",
-    });
-  }
+    await api.delete(`${FORECAST_PATH}/${id}`);
+  },
 
-  // Specialized forecast operations
+  /**
+   * Get forecasts by sparepart
+   */
   async getForecastsBySparepart(sparepartId: string): Promise<SparepartForecastDto[]> {
-    return this.apiRequest<SparepartForecastDto[]>(`/sparepartforecast/sparepart/${sparepartId}`);
-  }
+    const response = await api.get<SparepartForecastDto[]>(`${FORECAST_PATH}/sparepart/${sparepartId}`);
+    return response.data;
+  },
 
+  /**
+   * Get forecasts by center
+   */
   async getForecastsByCenter(centerId: string): Promise<SparepartForecastDto[]> {
-    return this.apiRequest<SparepartForecastDto[]>(`/sparepartforecast/center/${centerId}`);
-  }
+    const response = await api.get<SparepartForecastDto[]>(`${FORECAST_PATH}/center/${centerId}`);
+    return response.data;
+  },
 
+  /**
+   * Get low reorder point forecasts
+   */
   async getLowReorderPointForecasts(): Promise<SparepartForecastDto[]> {
-    return this.apiRequest<SparepartForecastDto[]>("/sparepartforecast/low-reorder");
-  }
+    const response = await api.get<SparepartForecastDto[]>(`${FORECAST_PATH}/low-reorder`);
+    return response.data;
+  },
 
+  /**
+   * Approve a forecast
+   */
   async approveForecast(id: string, approvedBy: string): Promise<SparepartForecastDto> {
-    return this.apiRequest<SparepartForecastDto>(`/sparepartforecast/${id}/approve`, {
-      method: "PUT",
-      body: JSON.stringify({ approvedBy }),
-    });
-  }
+    const response = await api.put<SparepartForecastDto>(`${FORECAST_PATH}/${id}/approve`, { approvedBy });
+    return response.data;
+  },
 
-  // AI-based forecasting (mock implementation)
+  /**
+   * Generate AI forecast
+   */
   async generateAIForecast(
-    _sparepartId: string,
-    _centerId: string,
-    _historicalData?: Record<string, unknown>
+    sparepartId: string,
+    centerId: string,
+    historicalData?: Record<string, unknown>
   ): Promise<{
     predictedUsage: number;
     safetyStock: number;
@@ -93,51 +98,28 @@ class SparepartForecastService {
     confidence: number;
     reasoning: string;
   }> {
-    // Mock AI forecast generation
-    // In real implementation, this would call an ML service
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing time
+    const response = await api.post(`${FORECAST_PATH}/ai-generate`, {
+      sparepartId,
+      centerId,
+      historicalData,
+    });
+    return response.data;
+  },
 
-    const baseUsage = Math.floor(Math.random() * 50) + 10;
-    const seasonalFactor = 1 + (Math.random() - 0.5) * 0.3;
-    const trendFactor = 1 + (Math.random() - 0.5) * 0.2;
-    
-    const predictedUsage = Math.floor(baseUsage * seasonalFactor * trendFactor);
-    const safetyStock = Math.ceil(predictedUsage * 0.2);
-    const reorderPoint = predictedUsage + safetyStock;
-    const confidence = Math.round((0.7 + Math.random() * 0.25) * 100) / 100;
-
-    let reasoning = `Dự báo dựa trên phân tích dữ liệu lịch sử và xu hướng thị trường:\n`;
-    reasoning += `• Mức sử dụng cơ bản: ${baseUsage} đơn vị/tháng\n`;
-    reasoning += `• Yếu tố theo mùa: ${(seasonalFactor * 100 - 100).toFixed(1)}%\n`;
-    reasoning += `• Xu hướng phát triển: ${(trendFactor * 100 - 100).toFixed(1)}%\n`;
-    reasoning += `• Độ tin cậy: ${(confidence * 100).toFixed(0)}%`;
-
-    return {
-      predictedUsage,
-      safetyStock,
-      reorderPoint,
-      confidence,
-      reasoning,
-    };
-  }
-
-  // Forecast analytics
-  async getForecastAccuracy(_centerId?: string): Promise<{
+  /**
+   * Get forecast accuracy
+   */
+  async getForecastAccuracy(centerId?: string): Promise<{
     accuracy: number;
     totalForecasts: number;
     accurateForecasts: number;
     avgConfidence: number;
   }> {
-    // Mock implementation
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const response = await api.get(`${FORECAST_PATH}/accuracy`, {
+      params: centerId ? { centerId } : undefined,
+    });
+    return response.data;
+  },
+};
 
-    return {
-      accuracy: 0.85,
-      totalForecasts: 156,
-      accurateForecasts: 132,
-      avgConfidence: 0.82,
-    };
-  }
-}
-
-export const sparepartForecastService = new SparepartForecastService();
+export default sparepartForecastService;

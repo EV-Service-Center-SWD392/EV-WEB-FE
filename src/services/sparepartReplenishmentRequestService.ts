@@ -1,98 +1,108 @@
-import {
+import type {
   SparepartReplenishmentRequestDto,
   CreateSparepartReplenishmentRequestDto,
   UpdateSparepartReplenishmentRequestDto,
 } from "@/entities/sparepart.types";
 
-class SparepartReplenishmentRequestService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { api } from "./api";
 
-  // Helper method for API requests
-  private async apiRequest<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}/api${endpoint}`;
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+const REPLENISHMENT_PATH = "/api/sparepartreplenishmentrequest";
 
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(errorData || `HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  // Replenishment Request CRUD operations
+/**
+ * Sparepart Replenishment Request Service
+ * Manages sparepart replenishment request operations
+ */
+export const sparepartReplenishmentRequestService = {
+  /**
+   * Get all requests
+   */
   async getAllRequests(): Promise<SparepartReplenishmentRequestDto[]> {
-    return this.apiRequest<SparepartReplenishmentRequestDto[]>("/sparepartreplenishmentrequest");
-  }
+    const response = await api.get<SparepartReplenishmentRequestDto[]>(REPLENISHMENT_PATH);
+    return response.data;
+  },
 
+  /**
+   * Get a single request by ID
+   */
   async getRequestById(id: string): Promise<SparepartReplenishmentRequestDto> {
-    return this.apiRequest<SparepartReplenishmentRequestDto>(`/sparepartreplenishmentrequest/${id}`);
-  }
+    const response = await api.get<SparepartReplenishmentRequestDto>(`${REPLENISHMENT_PATH}/${id}`);
+    return response.data;
+  },
 
+  /**
+   * Create a new request
+   */
   async createRequest(data: CreateSparepartReplenishmentRequestDto): Promise<SparepartReplenishmentRequestDto> {
-    return this.apiRequest<SparepartReplenishmentRequestDto>("/sparepartreplenishmentrequest", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
+    const response = await api.post<SparepartReplenishmentRequestDto>(REPLENISHMENT_PATH, data);
+    return response.data;
+  },
 
+  /**
+   * Update an existing request
+   */
   async updateRequest(id: string, data: UpdateSparepartReplenishmentRequestDto): Promise<SparepartReplenishmentRequestDto> {
-    return this.apiRequest<SparepartReplenishmentRequestDto>(`/sparepartreplenishmentrequest/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  }
+    const response = await api.put<SparepartReplenishmentRequestDto>(`${REPLENISHMENT_PATH}/${id}`, data);
+    return response.data;
+  },
 
+  /**
+   * Delete a request
+   */
   async deleteRequest(id: string): Promise<void> {
-    await this.apiRequest<void>(`/sparepartreplenishmentrequest/${id}`, {
-      method: "DELETE",
-    });
-  }
+    await api.delete(`${REPLENISHMENT_PATH}/${id}`);
+  },
 
-  // Specialized request operations
+  /**
+   * Get requests by sparepart
+   */
   async getRequestsBySparepart(sparepartId: string): Promise<SparepartReplenishmentRequestDto[]> {
-    return this.apiRequest<SparepartReplenishmentRequestDto[]>(`/sparepartreplenishmentrequest/sparepart/${sparepartId}`);
-  }
+    const response = await api.get<SparepartReplenishmentRequestDto[]>(`${REPLENISHMENT_PATH}/sparepart/${sparepartId}`);
+    return response.data;
+  },
 
+  /**
+   * Get requests by center
+   */
   async getRequestsByCenter(centerId: string): Promise<SparepartReplenishmentRequestDto[]> {
-    return this.apiRequest<SparepartReplenishmentRequestDto[]>(`/sparepartreplenishmentrequest/center/${centerId}`);
-  }
+    const response = await api.get<SparepartReplenishmentRequestDto[]>(`${REPLENISHMENT_PATH}/center/${centerId}`);
+    return response.data;
+  },
 
+  /**
+   * Get requests by status
+   */
   async getRequestsByStatus(status: string): Promise<SparepartReplenishmentRequestDto[]> {
-    return this.apiRequest<SparepartReplenishmentRequestDto[]>(`/sparepartreplenishmentrequest/status/${status}`);
-  }
+    const response = await api.get<SparepartReplenishmentRequestDto[]>(`${REPLENISHMENT_PATH}/status/${status}`);
+    return response.data;
+  },
 
+  /**
+   * Get pending requests
+   */
   async getPendingRequests(): Promise<SparepartReplenishmentRequestDto[]> {
-    return this.apiRequest<SparepartReplenishmentRequestDto[]>("/sparepartreplenishmentrequest/pending");
-  }
+    const response = await api.get<SparepartReplenishmentRequestDto[]>(`${REPLENISHMENT_PATH}/pending`);
+    return response.data;
+  },
 
+  /**
+   * Approve a request
+   */
   async approveRequest(id: string, approvedBy: string): Promise<SparepartReplenishmentRequestDto> {
-    return this.apiRequest<SparepartReplenishmentRequestDto>(`/sparepartreplenishmentrequest/${id}/approve`, {
-      method: "PUT",
-      body: JSON.stringify({ approvedBy }),
-    });
-  }
+    const response = await api.put<SparepartReplenishmentRequestDto>(`${REPLENISHMENT_PATH}/${id}/approve`, { approvedBy });
+    return response.data;
+  },
 
+  /**
+   * Reject a request
+   */
   async rejectRequest(id: string, rejectedBy: string, reason: string): Promise<SparepartReplenishmentRequestDto> {
-    return this.apiRequest<SparepartReplenishmentRequestDto>(`/sparepartreplenishmentrequest/${id}/reject`, {
-      method: "PUT",
-      body: JSON.stringify({ rejectedBy, reason }),
-    });
-  }
+    const response = await api.put<SparepartReplenishmentRequestDto>(`${REPLENISHMENT_PATH}/${id}/reject`, { rejectedBy, reason });
+    return response.data;
+  },
 
-  // Auto-generation of replenishment requests based on forecasts
+  /**
+   * Generate requests from forecasts
+   */
   async generateRequestsFromForecasts(centerId?: string): Promise<{
     generatedRequests: SparepartReplenishmentRequestDto[];
     summary: {
@@ -101,110 +111,59 @@ class SparepartReplenishmentRequestService {
       urgentRequests: number;
     };
   }> {
-    // Mock implementation - in real app, this would analyze forecasts and current inventory
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const response = await api.post(`${REPLENISHMENT_PATH}/generate-from-forecasts`, {
+      centerId,
+    });
+    return response.data;
+  },
 
-    const mockRequests: SparepartReplenishmentRequestDto[] = [
-      {
-        id: `req_${Date.now()}_1`,
-        centerId: centerId || "center_1",
-        sparepartId: "sp_1",
-        suggestedQuantity: 20,
-        notes: "AI gợi ý: Dự báo thiếu hàng trong 2 tuần tới",
-        status: "Pending",
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: `req_${Date.now()}_2`,
-        centerId: centerId || "center_1",
-        sparepartId: "sp_2",
-        suggestedQuantity: 15,
-        notes: "AI gợi ý: Mức tồn kho dưới ngưỡng an toàn",
-        status: "Pending",
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      },
-    ];
-
-    return {
-      generatedRequests: mockRequests,
-      summary: {
-        totalGenerated: mockRequests.length,
-        totalAmount: mockRequests.reduce((sum, req) => sum + (req.suggestedQuantity || 0), 0),
-        urgentRequests: 1,
-      },
-    };
-  }
-
-  // Request analytics
-  async getRequestStats(_centerId?: string): Promise<{
+  /**
+   * Get request statistics
+   */
+  async getRequestStats(centerId?: string): Promise<{
     totalRequests: number;
     pendingRequests: number;
     approvedRequests: number;
     rejectedRequests: number;
-    avgProcessingTime: number; // in hours
+    avgProcessingTime: number;
     totalRequestedValue: number;
   }> {
-    // Mock implementation
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const response = await api.get(`${REPLENISHMENT_PATH}/stats`, {
+      params: centerId ? { centerId } : undefined,
+    });
+    return response.data;
+  },
 
-    return {
-      totalRequests: 45,
-      pendingRequests: 12,
-      approvedRequests: 28,
-      rejectedRequests: 5,
-      avgProcessingTime: 18.5,
-      totalRequestedValue: 125000000, // VND
-    };
-  }
-
-  // Bulk operations
+  /**
+   * Bulk approve requests
+   */
   async bulkApproveRequests(requestIds: string[], approvedBy: string): Promise<{
     successCount: number;
     failureCount: number;
     results: { id: string; success: boolean; error?: string }[];
   }> {
-    const results = [];
-    let successCount = 0;
-    let failureCount = 0;
+    const response = await api.put(`${REPLENISHMENT_PATH}/bulk-approve`, {
+      requestIds,
+      approvedBy,
+    });
+    return response.data;
+  },
 
-    for (const id of requestIds) {
-      try {
-        await this.approveRequest(id, approvedBy);
-        results.push({ id, success: true });
-        successCount++;
-      } catch (error) {
-        results.push({ id, success: false, error: error instanceof Error ? error.message : "Unknown error" });
-        failureCount++;
-      }
-    }
-
-    return { successCount, failureCount, results };
-  }
-
+  /**
+   * Bulk reject requests
+   */
   async bulkRejectRequests(requestIds: string[], rejectedBy: string, reason: string): Promise<{
     successCount: number;
     failureCount: number;
     results: { id: string; success: boolean; error?: string }[];
   }> {
-    const results = [];
-    let successCount = 0;
-    let failureCount = 0;
+    const response = await api.put(`${REPLENISHMENT_PATH}/bulk-reject`, {
+      requestIds,
+      rejectedBy,
+      reason,
+    });
+    return response.data;
+  },
+};
 
-    for (const id of requestIds) {
-      try {
-        await this.rejectRequest(id, rejectedBy, reason);
-        results.push({ id, success: true });
-        successCount++;
-      } catch (error) {
-        results.push({ id, success: false, error: error instanceof Error ? error.message : "Unknown error" });
-        failureCount++;
-      }
-    }
-
-    return { successCount, failureCount, results };
-  }
-}
-
-export const sparepartReplenishmentRequestService = new SparepartReplenishmentRequestService();
+export default sparepartReplenishmentRequestService;
