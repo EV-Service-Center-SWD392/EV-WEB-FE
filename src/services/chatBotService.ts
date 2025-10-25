@@ -25,6 +25,8 @@ interface ChatResponse {
   function_calls?: string[];
   function_results?: FunctionResult[];
   response: string;
+  // legacy alias used by some callers
+  reply?: string;
   success: boolean;
   timestamp: string;
   user_id?: string;
@@ -34,7 +36,7 @@ interface ChatResponse {
 }
 
 class ChatBotService {
-  private baseUrl = process.env.NEXT_PUBLIC_AI_API;
+  private baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   private async apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}/api${endpoint}`;
@@ -112,6 +114,15 @@ class ChatBotService {
         if (firstResult.result && firstResult.result.data) {
           (res as any).parsed = firstResult.result.data;
         }
+      }
+
+      // Provide a backwards-compatible alias `reply` for callers expecting it
+      try {
+        if (res && typeof (res as any).reply === "undefined") {
+          (res as any).reply = res.response;
+        }
+      } catch (e) {
+        // ignore
       }
 
       return res;

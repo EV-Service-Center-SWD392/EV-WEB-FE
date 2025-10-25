@@ -58,7 +58,7 @@ export default function ChatBotWidget() {
         const botMsg: UIMessage = { role: "assistant", parsed: res.parsed, timestamp: new Date().toISOString() };
         setMessages((m) => [...m, botMsg]);
       } else {
-        const botMsg: UIMessage = { role: "assistant", content: res?.reply || "", timestamp: new Date().toISOString() };
+        const botMsg: UIMessage = { role: "assistant", content: res?.response || "", timestamp: new Date().toISOString() };
         setMessages((m) => [...m, botMsg]);
       }
     } catch (err) {
