@@ -12,17 +12,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type {
-  InventoryItem,
-  CreateInventoryRequest,
-  UpdateInventoryRequest,
+  InventoryDto,
+  CreateInventoryDto,
+  UpdateInventoryDto,
 } from "@/entities/inventory.types";
 
 interface InventoryFormProps {
-  item?: InventoryItem | null;
+  item?: InventoryDto | null;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (
-    _data: CreateInventoryRequest | UpdateInventoryRequest
+    _data: CreateInventoryDto | UpdateInventoryDto
   ) => Promise<void>;
   isLoading?: boolean;
 }
@@ -59,14 +59,10 @@ export function InventoryForm({
   isLoading = false,
 }: InventoryFormProps) {
   const [formData, setFormData] = useState({
-    partName: "",
-    serviceCenter: "",
+    centerId: "",
     quantity: "",
-    vehicleBrand: "",
-    vehicleType: "",
-    unitPrice: "",
-    minStock: "",
-    isActive: true,
+    minimumStockLevel: "",
+    status: "ACTIVE",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -74,25 +70,17 @@ export function InventoryForm({
   useEffect(() => {
     if (item) {
       setFormData({
-        partName: item.partName,
-        serviceCenter: item.serviceCenter,
-        quantity: item.quantity.toString(),
-        vehicleBrand: item.vehicleBrand,
-        vehicleType: item.vehicleType,
-        unitPrice: item.unitPrice.toString(),
-        minStock: item.minStock.toString(),
-        isActive: item.isActive,
+        centerId: item.centerId,
+        quantity: (item.quantity || 0).toString(),
+        minimumStockLevel: (item.minimumStockLevel || 0).toString(),
+        status: item.status || "ACTIVE",
       });
     } else {
       setFormData({
-        partName: "",
-        serviceCenter: "",
+        centerId: "",
         quantity: "",
-        vehicleBrand: "",
-        vehicleType: "",
-        unitPrice: "",
-        minStock: "",
-        isActive: true,
+        minimumStockLevel: "",
+        status: "ACTIVE",
       });
     }
     setErrors({});
@@ -101,12 +89,8 @@ export function InventoryForm({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.partName.trim()) {
-      newErrors.partName = "Tên linh kiện là bắt buộc";
-    }
-
-    if (!formData.serviceCenter) {
-      newErrors.serviceCenter = "Trung tâm dịch vụ là bắt buộc";
+    if (!formData.centerId.trim()) {
+      newErrors.centerId = "Trung tâm dịch vụ là bắt buộc";
     }
 
     if (!formData.quantity.trim()) {
@@ -118,30 +102,13 @@ export function InventoryForm({
       newErrors.quantity = "Số lượng phải là số không âm";
     }
 
-    if (!formData.vehicleBrand) {
-      newErrors.vehicleBrand = "Hãng xe là bắt buộc";
-    }
-
-    if (!formData.vehicleType) {
-      newErrors.vehicleType = "Loại xe là bắt buộc";
-    }
-
-    if (!formData.unitPrice.trim()) {
-      newErrors.unitPrice = "Đơn giá là bắt buộc";
+    if (!formData.minimumStockLevel.trim()) {
+      newErrors.minimumStockLevel = "Tồn kho tối thiểu là bắt buộc";
     } else if (
-      isNaN(Number(formData.unitPrice)) ||
-      Number(formData.unitPrice) <= 0
+      isNaN(Number(formData.minimumStockLevel)) ||
+      Number(formData.minimumStockLevel) < 0
     ) {
-      newErrors.unitPrice = "Đơn giá phải là số dương";
-    }
-
-    if (!formData.minStock.trim()) {
-      newErrors.minStock = "Tồn kho tối thiểu là bắt buộc";
-    } else if (
-      isNaN(Number(formData.minStock)) ||
-      Number(formData.minStock) < 0
-    ) {
-      newErrors.minStock = "Tồn kho tối thiểu phải là số không âm";
+      newErrors.minimumStockLevel = "Tồn kho tối thiểu phải là số không âm";
     }
 
     setErrors(newErrors);
@@ -158,27 +125,18 @@ export function InventoryForm({
     try {
       if (item) {
         // Update item
-        const updateData: UpdateInventoryRequest = {
-          partName: formData.partName,
-          serviceCenter: formData.serviceCenter,
+        const updateData: UpdateInventoryDto = {
           quantity: Number(formData.quantity),
-          vehicleBrand: formData.vehicleBrand,
-          vehicleType: formData.vehicleType,
-          unitPrice: Number(formData.unitPrice),
-          minStock: Number(formData.minStock),
-          isActive: formData.isActive,
+          minimumStockLevel: Number(formData.minimumStockLevel),
+          status: formData.status,
         };
         await onSubmit(updateData);
       } else {
         // Create new item
-        const createData: CreateInventoryRequest = {
-          partName: formData.partName,
-          serviceCenter: formData.serviceCenter,
+        const createData: CreateInventoryDto = {
+          centerId: formData.centerId,
           quantity: Number(formData.quantity),
-          vehicleBrand: formData.vehicleBrand,
-          vehicleType: formData.vehicleType,
-          unitPrice: Number(formData.unitPrice),
-          minStock: Number(formData.minStock),
+          minimumStockLevel: Number(formData.minimumStockLevel),
         };
         await onSubmit(createData);
       }
@@ -197,120 +155,26 @@ export function InventoryForm({
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Tên linh kiện */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tên linh kiện <span className="text-red-500">*</span>
-            </label>
-            <Input
-              type="text"
-              value={formData.partName}
-              onChange={(e) =>
-                setFormData({ ...formData, partName: e.target.value })
-              }
-              className={errors.partName ? "border-red-300" : ""}
-              placeholder="Ví dụ: Pin Lithium 60V 20Ah"
-            />
-            {errors.partName && (
-              <p className="text-red-500 text-sm mt-1">{errors.partName}</p>
-            )}
-          </div>
-
-          {/* Thông tin xe tương thích */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Hãng xe <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.vehicleBrand}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, vehicleBrand: value })
-                }
-              >
-                <SelectTrigger
-                  className={errors.vehicleBrand ? "border-red-300" : ""}
-                >
-                  <SelectValue placeholder="Chọn hãng xe" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicleBrands.map((brand) => (
-                    <SelectItem key={brand} value={brand}>
-                      {brand}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.vehicleBrand && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.vehicleBrand}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Loại xe <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.vehicleType}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, vehicleType: value })
-                }
-              >
-                <SelectTrigger
-                  className={errors.vehicleType ? "border-red-300" : ""}
-                >
-                  <SelectValue placeholder="Chọn loại xe" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicleTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.vehicleType && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.vehicleType}
-                </p>
-              )}
-            </div>
-          </div>
-
           {/* Trung tâm dịch vụ */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Trung tâm dịch vụ <span className="text-red-500">*</span>
+              Center ID <span className="text-red-500">*</span>
             </label>
-            <Select
-              value={formData.serviceCenter}
-              onValueChange={(value) =>
-                setFormData({ ...formData, serviceCenter: value })
+            <Input
+              type="text"
+              value={formData.centerId}
+              onChange={(e) =>
+                setFormData({ ...formData, centerId: e.target.value })
               }
-            >
-              <SelectTrigger
-                className={errors.serviceCenter ? "border-red-300" : ""}
-              >
-                <SelectValue placeholder="Chọn trung tâm dịch vụ" />
-              </SelectTrigger>
-              <SelectContent>
-                {serviceCenters.map((center) => (
-                  <SelectItem key={center} value={center}>
-                    {center}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.serviceCenter && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.serviceCenter}
-              </p>
+              className={errors.centerId ? "border-red-300" : ""}
+              placeholder="Nhập Center ID"
+            />
+            {errors.centerId && (
+              <p className="text-red-500 text-sm mt-1">{errors.centerId}</p>
             )}
           </div>
 
-          {/* Thông tin tồn kho và giá */}
+          {/* Thông tin tồn kho */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -338,60 +202,39 @@ export function InventoryForm({
               <Input
                 type="number"
                 min="0"
-                value={formData.minStock}
+                value={formData.minimumStockLevel}
                 onChange={(e) =>
-                  setFormData({ ...formData, minStock: e.target.value })
+                  setFormData({ ...formData, minimumStockLevel: e.target.value })
                 }
-                className={errors.minStock ? "border-red-300" : ""}
+                className={errors.minimumStockLevel ? "border-red-300" : ""}
                 placeholder="Nhập tồn kho tối thiểu"
               />
-              {errors.minStock && (
-                <p className="text-red-500 text-sm mt-1">{errors.minStock}</p>
+              {errors.minimumStockLevel && (
+                <p className="text-red-500 text-sm mt-1">{errors.minimumStockLevel}</p>
               )}
             </div>
           </div>
 
+          {/* Trạng thái */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Đơn giá (VND) <span className="text-red-500">*</span>
+              Trạng thái
             </label>
-            <Input
-              type="number"
-              min="0"
-              value={formData.unitPrice}
-              onChange={(e) =>
-                setFormData({ ...formData, unitPrice: e.target.value })
+            <Select
+              value={formData.status}
+              onValueChange={(value) =>
+                setFormData({ ...formData, status: value })
               }
-              className={errors.unitPrice ? "border-red-300" : ""}
-              placeholder="Nhập đơn giá"
-            />
-            {errors.unitPrice && (
-              <p className="text-red-500 text-sm mt-1">{errors.unitPrice}</p>
-            )}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
+                <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-
-          {/* Trạng thái (chỉ hiện khi sửa) */}
-          {item && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Trạng thái
-              </label>
-              <Select
-                value={formData.isActive.toString()}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, isActive: value === "true" })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Đang hoạt động</SelectItem>
-                  <SelectItem value="false">Ngừng hoạt động</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           {/* Nút hành động */}
           <div className="flex gap-3 pt-4">

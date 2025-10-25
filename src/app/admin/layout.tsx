@@ -46,9 +46,10 @@ export default function AdminLayout({
 
         {/* Main Content */}
         <main className="flex-1 overflow-hidden">{children}</main>
-        {/* ChatBot widget (floating) */}
-        <ChatBotWidget />
       </div>
+      
+      {/* ChatBot widget (floating) */}
+      <ChatBotWidget />
     </div>
   );
 }

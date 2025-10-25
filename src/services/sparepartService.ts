@@ -1,4 +1,4 @@
-import {
+import type {
   SparepartDto,
   CreateSparepartDto,
   UpdateSparepartDto,
@@ -10,141 +10,145 @@ import {
   UpdateSparepartTypeDto,
 } from "@/entities/sparepart.types";
 
-class SparepartService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://evscmmsbe-production.up.railway.app";
+import { api } from "./api";
 
-  // Helper method for API requests
-  private async apiRequest<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}/api${endpoint}`;
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+const SPAREPART_PATH = "/api/sparepart";
+const SPAREPART_TYPE_PATH = "/api/spareparttype";
 
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(errorData || `HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  // Sparepart CRUD operations
+/**
+ * Sparepart Service
+ * Manages sparepart operations
+ */
+export const sparepartService = {
+  /**
+   * Get all spareparts with optional filters
+   */
   async getAllSpareparts(filters?: SparepartFilters): Promise<SparepartDto[]> {
-    const queryParams = new URLSearchParams();
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          queryParams.append(key, String(value));
-        }
-      });
-    }
+    const response = await api.get<SparepartDto[]>(SPAREPART_PATH, {
+      params: filters,
+    });
+    return response.data;
+  },
 
-    const endpoint = `/sparepart${queryParams.toString() ? `?${queryParams}` : ""}`;
-    return this.apiRequest<SparepartDto[]>(endpoint);
-  }
-
+  /**
+   * Get a single sparepart by ID
+   */
   async getSparepartById(id: string): Promise<SparepartDto> {
-    return this.apiRequest<SparepartDto>(`/sparepart/${id}`);
-  }
+    const response = await api.get<SparepartDto>(`${SPAREPART_PATH}/${id}`);
+    return response.data;
+  },
 
+  /**
+   * Create a new sparepart
+   */
   async createSparepart(data: CreateSparepartDto): Promise<SparepartDto> {
-    return this.apiRequest<SparepartDto>("/sparepart", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
+    const response = await api.post<SparepartDto>(SPAREPART_PATH, data);
+    return response.data;
+  },
 
+  /**
+   * Update an existing sparepart
+   */
   async updateSparepart(id: string, data: UpdateSparepartDto): Promise<SparepartDto> {
-    return this.apiRequest<SparepartDto>(`/sparepart/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  }
+    const response = await api.put<SparepartDto>(`${SPAREPART_PATH}/${id}`, data);
+    return response.data;
+  },
 
+  /**
+   * Delete a sparepart
+   */
   async deleteSparepart(id: string): Promise<void> {
-    await this.apiRequest<void>(`/sparepart/${id}`, {
-      method: "DELETE",
-    });
-  }
+    await api.delete(`${SPAREPART_PATH}/${id}`);
+  },
 
+  /**
+   * Search spareparts by term
+   */
   async searchSpareparts(searchTerm: string): Promise<SparepartDto[]> {
-    return this.apiRequest<SparepartDto[]>(`/sparepart/search?searchTerm=${encodeURIComponent(searchTerm)}`);
-  }
+    const response = await api.get<SparepartDto[]>(`${SPAREPART_PATH}/search`, {
+      params: { searchTerm },
+    });
+    return response.data;
+  },
 
+  /**
+   * Get spareparts by type
+   */
   async getSparepartsByType(typeId: string): Promise<SparepartDto[]> {
-    return this.apiRequest<SparepartDto[]>(`/sparepart/type/${typeId}`);
-  }
+    const response = await api.get<SparepartDto[]>(`${SPAREPART_PATH}/type/${typeId}`);
+    return response.data;
+  },
 
+  /**
+   * Get spareparts by vehicle model
+   */
   async getSparepartsByVehicleModel(vehicleModelId: string): Promise<SparepartDto[]> {
-    return this.apiRequest<SparepartDto[]>(`/sparepart/vehicle-model/${vehicleModelId}`);
-  }
+    const response = await api.get<SparepartDto[]>(`${SPAREPART_PATH}/vehicle-model/${vehicleModelId}`);
+    return response.data;
+  },
 
+  /**
+   * Get spareparts by manufacturer
+   */
   async getSparepartsByManufacturer(manufacturer: string): Promise<SparepartDto[]> {
-    return this.apiRequest<SparepartDto[]>(`/sparepart/manufacturer/${encodeURIComponent(manufacturer)}`);
-  }
+    const response = await api.get<SparepartDto[]>(`${SPAREPART_PATH}/manufacturer/${encodeURIComponent(manufacturer)}`);
+    return response.data;
+  },
 
-  // Sparepart Type operations
+  /**
+   * Get all sparepart types
+   */
   async getAllSparepartTypes(): Promise<SparepartTypeDto[]> {
-    return this.apiRequest<SparepartTypeDto[]>("/spareparttype");
-  }
+    const response = await api.get<SparepartTypeDto[]>(SPAREPART_TYPE_PATH);
+    return response.data;
+  },
 
+  /**
+   * Get a single sparepart type by ID
+   */
   async getSparepartTypeById(id: string): Promise<SparepartTypeDto> {
-    return this.apiRequest<SparepartTypeDto>(`/spareparttype/${id}`);
-  }
+    const response = await api.get<SparepartTypeDto>(`${SPAREPART_TYPE_PATH}/${id}`);
+    return response.data;
+  },
 
+  /**
+   * Create a new sparepart type
+   */
   async createSparepartType(data: CreateSparepartTypeDto): Promise<SparepartTypeDto> {
-    return this.apiRequest<SparepartTypeDto>("/spareparttype", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
+    const response = await api.post<SparepartTypeDto>(SPAREPART_TYPE_PATH, data);
+    return response.data;
+  },
 
+  /**
+   * Update an existing sparepart type
+   */
   async updateSparepartType(id: string, data: UpdateSparepartTypeDto): Promise<SparepartTypeDto> {
-    return this.apiRequest<SparepartTypeDto>(`/spareparttype/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  }
+    const response = await api.put<SparepartTypeDto>(`${SPAREPART_TYPE_PATH}/${id}`, data);
+    return response.data;
+  },
 
+  /**
+   * Delete a sparepart type
+   */
   async deleteSparepartType(id: string): Promise<void> {
-    await this.apiRequest<void>(`/spareparttype/${id}`, {
-      method: "DELETE",
-    });
-  }
+    await api.delete(`${SPAREPART_TYPE_PATH}/${id}`);
+  },
 
-  // Statistics and analytics
+  /**
+   * Get sparepart statistics
+   */
   async getSparepartStats(): Promise<SparepartStats> {
-    // Mock implementation - you might need to create this endpoint in backend
-    const allSpareparts = await this.getAllSpareparts();
-    const allTypes = await this.getAllSparepartTypes();
-    
-    return {
-      totalSpareparts: allSpareparts.length,
-      totalTypes: allTypes.length,
-      lowStockCount: 0, // Would need inventory data
-      outOfStockCount: 0, // Would need inventory data
-      totalValue: 0, // Would need to calculate
-      pendingForecasts: 0, // Would need forecast data
-      pendingReplenishments: 0, // Would need replenishment data
-    };
-  }
+    const response = await api.get<SparepartStats>(`${SPAREPART_PATH}/stats`);
+    return response.data;
+  },
 
+  /**
+   * Get low stock spareparts
+   */
   async getLowStockSpareparts(): Promise<SparepartWithDetails[]> {
-    // This would need to be implemented in backend with inventory join
-    const allSpareparts = await this.getAllSpareparts();
-    // Mock implementation - in real app, backend should handle this
-    return allSpareparts.map(sp => ({ ...sp, lowStock: true }));
-  }
-}
+    const response = await api.get<SparepartWithDetails[]>(`${SPAREPART_PATH}/low-stock`);
+    return response.data;
+  },
+};
 
-export const sparepartService = new SparepartService();
+export default sparepartService;

@@ -8,20 +8,20 @@ import { InventoryTable } from "@/components/admin/InventoryTable";
 import { InventoryForm } from "@/components/admin/InventoryForm";
 import { inventoryService } from "@/services/inventoryService";
 import type {
-  InventoryItem,
+  InventoryDto,
   InventoryFilters as InventoryFiltersType,
   InventoryStats,
-  CreateInventoryRequest,
-  UpdateInventoryRequest,
+  CreateInventoryDto,
+  UpdateInventoryDto,
 } from "@/entities/inventory.types";
 
 export default function ManagerInventoryPage() {
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
+  const [items, setItems] = useState<InventoryDto[]>([]);
+  const [filteredItems, setFilteredItems] = useState<InventoryDto[]>([]);
   const [filters, setFilters] = useState<InventoryFiltersType>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editingItem, setEditingItem] = useState<InventoryDto | null>(null);
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [stats, setStats] = useState<InventoryStats>({
     totalInventories: 0,
@@ -41,7 +41,7 @@ export default function ManagerInventoryPage() {
   const loadInventoryItems = async () => {
     try {
       setIsLoading(true);
-      const data = await inventoryService.getInventoryItems(filters);
+      const data = await inventoryService.getAllInventories(filters);
       setItems(data);
       setFilteredItems(data);
     } catch (error) {
@@ -63,7 +63,7 @@ export default function ManagerInventoryPage() {
   const handleSearch = async () => {
     try {
       setIsLoading(true);
-      const data = await inventoryService.getInventoryItems(filters);
+      const data = await inventoryService.getAllInventories(filters);
       setFilteredItems(data);
     } catch (error) {
       console.error("Error searching inventory items:", error);
@@ -83,7 +83,7 @@ export default function ManagerInventoryPage() {
     setIsFormOpen(true);
   };
 
-  const handleEditItem = (item: InventoryItem) => {
+  const handleEditItem = (item: InventoryDto) => {
     setEditingItem(item);
     setIsFormOpen(true);
   };
@@ -94,7 +94,7 @@ export default function ManagerInventoryPage() {
     }
 
     try {
-      await inventoryService.deleteInventoryItem(itemId);
+      await inventoryService.deleteInventory(itemId);
       await loadInventoryItems(); // Reload data
       await loadStats();
     } catch (error) {
@@ -105,7 +105,7 @@ export default function ManagerInventoryPage() {
 
   const handleUpdateStock = async (itemId: string, quantity: number) => {
     try {
-      await inventoryService.updateStock(itemId, quantity);
+      await inventoryService.updateQuantity(itemId, quantity);
       await loadInventoryItems(); // Reload data
       await loadStats();
     } catch (error) {
@@ -115,21 +115,21 @@ export default function ManagerInventoryPage() {
   };
 
   const handleFormSubmit = async (
-    data: CreateInventoryRequest | UpdateInventoryRequest
+    data: CreateInventoryDto | UpdateInventoryDto
   ) => {
     try {
       setIsFormLoading(true);
 
       if (editingItem) {
         // Update item
-        await inventoryService.updateInventoryItem(
-          editingItem.id,
-          data as UpdateInventoryRequest
+        await inventoryService.updateInventory(
+          editingItem.inventoryId,
+          data as UpdateInventoryDto
         );
       } else {
         // Create new item
-        await inventoryService.createInventoryItem(
-          data as CreateInventoryRequest
+        await inventoryService.createInventory(
+          data as CreateInventoryDto
         );
       }
 
