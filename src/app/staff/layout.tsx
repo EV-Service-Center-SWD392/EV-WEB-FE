@@ -7,6 +7,7 @@ import { useAuthStore } from "@/stores/auth";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import StaffNavbar from "@/components/staff/StaffNavbar";
 import StaffSidebar from "@/components/staff/StaffSidebar";
+import ChatBotWidget from "@/components/chatbot/ChatBotWidget";
 
 export default function StaffLayout({
   children,
@@ -45,6 +46,8 @@ export default function StaffLayout({
 
         {/* Main Content */}
         <main className="flex-1 p-8 bg-background">{children}</main>
+        {/* ChatBot widget (floating) */}
+        <ChatBotWidget />
       </div>
     </div>
   );
