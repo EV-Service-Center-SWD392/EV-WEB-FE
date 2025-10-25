@@ -46,9 +46,10 @@ export default function StaffLayout({
 
         {/* Main Content */}
         <main className="flex-1 p-8 bg-background">{children}</main>
-        {/* ChatBot widget (floating) */}
-        <ChatBotWidget />
       </div>
+      
+      {/* ChatBot widget (floating) */}
+      <ChatBotWidget />
     </div>
   );
 }

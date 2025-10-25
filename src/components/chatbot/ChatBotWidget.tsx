@@ -81,14 +81,14 @@ export default function ChatBotWidget() {
   };
 
   return (
-    <div>
+    <div className="pointer-events-none">
       {/* Floating indicator */}
-      <div className="fixed right-4 bottom-4 z-50 flex items-center">
+      <div className="fixed right-4 bottom-4 z-[9999] flex items-center pointer-events-auto">
         {!open && (
           <button
             aria-label="Open chatbot"
             onClick={toggle}
-            className="group flex items-center gap-2 bg-slate-900 text-white px-3 py-2 rounded-full shadow-lg hover:scale-105 transition-transform"
+            className="group flex items-center gap-2 bg-slate-900 text-white px-3 py-2 rounded-full shadow-lg hover:scale-105 transition-transform pointer-events-auto"
             title="ChatBot"
           >
             <span className="relative">
