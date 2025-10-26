@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { chatBotService } from "@/services/chatBotService";
 import { MessageSquare, X, Send } from "lucide-react";
+import JsonRenderer from "./JsonRenderer";
 
 /**
  * Lightweight ChatBot floating widget inspired by Next.js DevIndicator.
@@ -53,9 +53,14 @@ export default function ChatBotWidget() {
     try {
       const res = await chatBotService.sendMessage({ message: text });
 
-      // If backend returned parsed data attach as parsed; otherwise return response string
-      if (res && res.parsed) {
-        const botMsg: UIMessage = { role: "assistant", parsed: res.parsed, timestamp: new Date().toISOString() };
+      // Extract function results or use parsed data
+      let parsedData = res.parsed;
+      if (res.function_results && res.function_results.length > 0) {
+        parsedData = res.function_results[0]; // Use first function result
+      }
+      
+      if (parsedData) {
+        const botMsg: UIMessage = { role: "assistant", parsed: parsedData, timestamp: new Date().toISOString() };
         setMessages((m) => [...m, botMsg]);
       } else {
         const botMsg: UIMessage = { role: "assistant", content: res?.response || "", timestamp: new Date().toISOString() };
@@ -125,35 +130,22 @@ export default function ChatBotWidget() {
             <div className="flex-1 overflow-auto p-3 space-y-3 bg-slate-50">
               {messages.length === 0 && (
                 <div className="text-xs text-slate-500 text-center mt-6">
-                  Xin chào! Hỏi tôi về tồn kho hoặc ghi chú nhanh về phụ tùng.
+                  <div className="mb-2">👋 Xin chào! Tôi có thể giúp bạn:</div>
+                  <div className="text-left space-y-1 bg-slate-100 p-2 rounded">
+                    <div>• Tìm kiếm phụ tùng</div>
+                    <div>• Kiểm tra tồn kho</div>
+                    <div>• Thông tin giá cả</div>
+                    <div>• Trạng thái đơn hàng</div>
+                  </div>
                 </div>
               )}
 
               {messages.map((m, idx) => (
                 <div key={idx} className={`max-w-full break-words ${m.role === "user" ? "self-end" : "self-start"}`}>
                   {m.parsed ? (
-                    // Render parsed JSON as one or more cards
-                    Array.isArray(m.parsed) ? (
-                      m.parsed.map((item: any, i: number) => (
-                        <Card key={i} className="mb-2">
-                          <CardHeader>
-                            <CardTitle className="text-sm">{item.name || item.title || `Item ${i + 1}`}</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <pre className="whitespace-pre-wrap text-xs text-slate-700">{JSON.stringify(item, null, 2)}</pre>
-                          </CardContent>
-                        </Card>
-                      ))
-                    ) : (
-                      <Card className="mb-2">
-                        <CardHeader>
-                          <CardTitle className="text-sm">{m.parsed?.name || m.parsed?.title || "Result"}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <pre className="whitespace-pre-wrap text-xs text-slate-700">{JSON.stringify(m.parsed, null, 2)}</pre>
-                        </CardContent>
-                      </Card>
-                    )
+                    <div className="mb-2">
+                      <JsonRenderer data={m.parsed} />
+                    </div>
                   ) : (
                     <div
                       className={`px-3 py-2 rounded-lg ${m.role === "user" ? "bg-white text-slate-900" : "bg-slate-100 text-slate-800"}`}
