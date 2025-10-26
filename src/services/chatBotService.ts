@@ -111,9 +111,7 @@ class ChatBotService {
       // Extract data from function_results for UI consumption
       if (res && res.function_results && res.function_results.length > 0) {
         const firstResult = res.function_results[0];
-        if (firstResult.result && firstResult.result.data) {
-          (res as any).parsed = firstResult.result.data;
-        }
+        (res as any).parsed = firstResult;
       }
 
       // Provide a backwards-compatible alias `reply` for callers expecting it
