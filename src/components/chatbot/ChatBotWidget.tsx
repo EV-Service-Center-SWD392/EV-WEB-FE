@@ -25,6 +25,7 @@ export default function ChatBotWidget() {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -43,10 +44,10 @@ export default function ChatBotWidget() {
 
   const send = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || isSending) return;
 
-  const userMsg: UIMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
-  setMessages((m) => [...m, userMsg]);
+    const userMsg: UIMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
+    setMessages((m) => [...m, userMsg]);
     setInput("");
     setIsSending(true);
 
@@ -78,8 +79,8 @@ export default function ChatBotWidget() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
       e.preventDefault();
       send();
     }
@@ -159,15 +160,32 @@ export default function ChatBotWidget() {
             </div>
 
             <div className="p-3 border-t bg-white">
-              <div className="flex items-center gap-2">
-                <Input
+              <div className="flex items-end gap-2">
+                <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onCompositionStart={() => setIsComposing(true)}
+                  onCompositionEnd={() => setIsComposing(false)}
                   placeholder="Gõ tin nhắn..."
-                  className="flex-1"
+                  className="flex-1 min-h-[40px] max-h-[120px] resize-none border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={1}
+                  style={{
+                    height: "auto",
+                    minHeight: "40px",
+                    maxHeight: "120px",
+                  }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = "auto";
+                    target.style.height = Math.min(target.scrollHeight, 120) + "px";
+                  }}
                 />
-                <Button onClick={send} disabled={isSending || input.trim() === ""}>
+                <Button 
+                  onClick={send} 
+                  disabled={isSending || input.trim() === ""}
+                  className="h-10 w-10 p-0 flex-shrink-0"
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
