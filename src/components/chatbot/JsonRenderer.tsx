@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { replenishmentRequestService } from "@/services/replenishmentRequestService";
 
 interface JsonRendererProps {
   data: any;
@@ -108,6 +110,13 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data }) => {
                   </div>
                 </div>
               )}
+              {part.suggested_order_quantity > 0 && (
+                <ReplenishmentButton 
+                  sparepartId={part.spare_part_id}
+                  quantity={part.suggested_order_quantity}
+                  partName={part.part_name}
+                />
+              )}
             </CardContent>
           </Card>
         ))}
@@ -147,6 +156,56 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data }) => {
   }
 
   return null;
+};
+
+// Replenishment Button Component
+const ReplenishmentButton: React.FC<{
+  sparepartId: string;
+  quantity: number;
+  partName: string;
+}> = ({ sparepartId, quantity, partName }) => {
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleCreateRequest = async () => {
+    setLoading(true);
+    try {
+      await replenishmentRequestService.createRequest({
+        sparepartId,
+        centerId: "default-center-id", // You may want to get this from context
+        requestedQuantity: quantity,
+        requestedBy: "system",
+        priority: "medium",
+        notes: `Auto-generated from forecast for ${partName}`,
+        status: "pending"
+      });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error("Failed to create replenishment request:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+        ✅ Yêu cầu bổ sung đã tạo
+      </div>
+    );
+  }
+
+  return (
+    <Button
+      onClick={handleCreateRequest}
+      disabled={loading}
+      size="sm"
+      className="w-full text-xs h-7 bg-blue-600 hover:bg-blue-700"
+    >
+      {loading ? "Đang tạo..." : `Tạo yêu cầu bổ sung (${quantity})`}
+    </Button>
+  );
 };
 
 export default JsonRenderer;
