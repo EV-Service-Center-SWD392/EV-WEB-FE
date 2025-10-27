@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { chatBotService } from "@/services/chatBotService";
 import { MessageSquare, X, Send } from "lucide-react";
 import JsonRenderer from "./JsonRenderer";
+import { AISparepartSuggestion } from "../admin/sparepart/AISparepartSuggestion";
 
 /**
  * Lightweight ChatBot floating widget inspired by Next.js DevIndicator.
@@ -141,22 +142,35 @@ export default function ChatBotWidget() {
                 </div>
               )}
 
-              {messages.map((m, idx) => (
-                <div key={idx} className={`max-w-full break-words ${m.role === "user" ? "self-end" : "self-start"}`}>
-                  {m.parsed ? (
-                    <div className="mb-2">
-                      <JsonRenderer data={m.parsed} />
-                    </div>
-                  ) : (
-                    <div
-                      className={`px-3 py-2 rounded-lg ${m.role === "user" ? "bg-white text-slate-900" : "bg-slate-100 text-slate-800"}`}
-                    >
-                      <div className="text-sm">{m.content}</div>
-                      <div className="text-[10px] text-slate-400 mt-1 text-right">{new Date(m.timestamp).toLocaleTimeString()}</div>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {messages.map((m, idx) => {
+                const isCreateSparepartResponse = m.parsed?.result?.action === "create_sparepart_form" || 
+                  (m.parsed && typeof m.parsed === 'object' && 'function_results' in m.parsed && 
+                   m.parsed.function_results?.[0]?.result?.action === "create_sparepart_form");
+                
+                return (
+                  <div key={idx} className={`max-w-full break-words ${m.role === "user" ? "self-end" : "self-start"}`}>
+                    {isCreateSparepartResponse ? (
+                      <AISparepartSuggestion 
+                        aiResponse={m.parsed.function_results ? m.parsed : { function_results: [{ result: m.parsed.result }] }}
+                        onSuccess={() => {
+                          console.log('Sparepart created successfully');
+                        }}
+                      />
+                    ) : m.parsed ? (
+                      <div className="mb-2">
+                        <JsonRenderer data={m.parsed} />
+                      </div>
+                    ) : (
+                      <div
+                        className={`px-3 py-2 rounded-lg ${m.role === "user" ? "bg-white text-slate-900" : "bg-slate-100 text-slate-800"}`}
+                      >
+                        <div className="text-sm">{m.content}</div>
+                        <div className="text-[10px] text-slate-400 mt-1 text-right">{new Date(m.timestamp).toLocaleTimeString()}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="p-3 border-t bg-white">
