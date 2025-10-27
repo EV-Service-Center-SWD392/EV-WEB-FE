@@ -2,7 +2,7 @@ import axios from "axios";
 
 export const api = axios.create({
   baseURL: (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/+$/, ""),
-  withCredentials: true, // nếu backend dùng cookie HttpOnly
+  withCredentials: false, // true nếu backend dùng cookie HttpOnly
 });
 
 api.interceptors.request.use((config) => {
