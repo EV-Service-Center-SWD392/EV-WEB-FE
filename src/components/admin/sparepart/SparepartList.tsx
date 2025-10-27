@@ -32,7 +32,7 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
 
   const filteredSpareparts = spareparts.filter(sp => {
     const matchesSearch = sp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (sp.manufacture?.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (sp.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = selectedType === "all" || sp.typeId === selectedType;
     const matchesStatus = selectedStatus === "all" || sp.status === selectedStatus;
     
@@ -225,7 +225,7 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
                     </TableCell>
                     
                     <TableCell>
-                      <span className="text-gray-700">{sparepart.manufacture || "N/A"}</span>
+                      <span className="text-gray-700">{sparepart.manufacturer || "N/A"}</span>
                     </TableCell>
                     
                     <TableCell>

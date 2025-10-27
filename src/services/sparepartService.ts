@@ -12,8 +12,8 @@ import type {
 
 import { api } from "./api";
 
-const SPAREPART_PATH = "/api/sparepart";
-const SPAREPART_TYPE_PATH = "/api/spareparttype";
+const SPAREPART_PATH = "/sparepart";
+const SPAREPART_TYPE_PATH = "/spareparttype";
 
 /**
  * Sparepart Service
@@ -91,7 +91,9 @@ export const sparepartService = {
    * Get spareparts by manufacturer
    */
   async getSparepartsByManufacturer(manufacturer: string): Promise<SparepartDto[]> {
-    const response = await api.get<SparepartDto[]>(`${SPAREPART_PATH}/manufacturer/${encodeURIComponent(manufacturer)}`);
+    const response = await api.get<SparepartDto[]>(SPAREPART_PATH, {
+      params: { manufacturer },
+    });
     return response.data;
   },
 

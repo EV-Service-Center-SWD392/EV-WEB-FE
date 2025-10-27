@@ -67,26 +67,27 @@ function SparepartManagementPage() {
       // Load all data in parallel
       const [
         sparepartsData,
-        statsData,
         forecastsData,
         requestsData
       ] = await Promise.all([
         sparepartService.getAllSpareparts().catch(() => []),
-        sparepartService.getSparepartStats().catch(() => ({
-          totalSpareparts: 0,
-          totalTypes: 0,
-          lowStockCount: 0,
-          outOfStockCount: 0,
-          totalValue: 0,
-          pendingForecasts: 0,
-          pendingReplenishments: 0,
-        })),
         sparepartForecastService.getAllForecasts().catch(() => []),
         sparepartReplenishmentRequestService.getAllRequests().catch(() => [])
       ]);
 
+      // Calculate stats from actual data
+      const calculatedStats: SparepartStats = {
+        totalSpareparts: sparepartsData.length,
+        totalTypes: new Set(sparepartsData.map(sp => sp.typeId).filter(Boolean)).size,
+        lowStockCount: sparepartsData.filter(sp => sp.status?.toLowerCase() === 'lowstock').length,
+        outOfStockCount: sparepartsData.filter(sp => sp.status?.toLowerCase() === 'outofstock').length,
+        totalValue: sparepartsData.reduce((sum, sp) => sum + (sp.unitPrice || 0), 0),
+        pendingForecasts: forecastsData.filter(f => f.status === 'Pending').length,
+        pendingReplenishments: requestsData.filter(r => r.status === 'Pending').length,
+      };
+
       setSpareparts(sparepartsData);
-      setStats(statsData);
+      setStats(calculatedStats);
       setForecasts(forecastsData);
       setReplenishmentRequests(requestsData);
 

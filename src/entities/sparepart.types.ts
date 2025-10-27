@@ -5,12 +5,16 @@ export interface SparepartDto {
   inventoryId?: string;
   typeId?: string;
   name: string;
+  description?: string | null;
+  manufacturer?: string;
+  partNumber?: string | null;
   unitPrice?: number;
-  manufacture?: string;
   status?: string;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  inventoryName?: string | null;
+  typeName?: string | null;
 }
 
 export interface CreateSparepartDto {
@@ -18,17 +22,21 @@ export interface CreateSparepartDto {
   inventoryId: string;
   typeId: string;
   name: string;
+  description?: string;
+  manufacturer?: string;
+  partNumber?: string;
   unitPrice?: number;
-  manufacture?: string;
 }
 
 export interface UpdateSparepartDto {
   vehicleModelId?: number;
-  inventoryId: string;
-  typeId: string;
-  name: string;
+  inventoryId?: string;
+  typeId?: string;
+  name?: string;
+  description?: string;
+  manufacturer?: string;
+  partNumber?: string;
   unitPrice?: number;
-  manufacture?: string;
   status?: string;
 }
 
@@ -153,7 +161,7 @@ export interface SparepartFilters {
   name?: string;
   typeId?: string;
   vehicleModelId?: number;
-  manufacture?: string;
+  manufacturer?: string;
   status?: string;
   lowStock?: boolean;
   outOfStock?: boolean;
