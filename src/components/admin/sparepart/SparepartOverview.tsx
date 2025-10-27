@@ -211,7 +211,7 @@ export function SparepartOverview({
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">{item.name}</p>
                       <p className="text-sm text-gray-500">
-                        {item.manufacture} • {formatCurrency(item.unitPrice || 0)}
+                        {item.manufacturer} • {formatCurrency(item.unitPrice || 0)}
                       </p>
                     </div>
                     <div className="text-right">
