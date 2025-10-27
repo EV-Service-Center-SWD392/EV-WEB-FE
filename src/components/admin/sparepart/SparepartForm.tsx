@@ -13,9 +13,10 @@ interface SparepartFormProps {
   open: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
+  initialData?: Partial<CreateSparepartDto>;
 }
 
-export function SparepartForm({ open, onSuccess, onCancel }: SparepartFormProps) {
+export function SparepartForm({ open, onSuccess, onCancel, initialData }: SparepartFormProps) {
   const [formData, setFormData] = useState<CreateSparepartDto>({
     vehicleModelId: 3,
     centerName: "",
@@ -25,6 +26,7 @@ export function SparepartForm({ open, onSuccess, onCancel }: SparepartFormProps)
     manufacturer: "",
     partNumber: "",
     unitPrice: 0,
+    ...initialData,
   });
   
   const [isLoading, setIsLoading] = useState(false);
