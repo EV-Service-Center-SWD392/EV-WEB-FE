@@ -12,6 +12,8 @@ import {
   Zap
 } from "lucide-react";
 
+import { SparepartForm } from "./SparepartForm";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,7 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [showForm, setShowForm] = useState(false);
 
   const filteredSpareparts = spareparts.filter(sp => {
     const matchesSearch = sp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -83,6 +86,14 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
 
   return (
     <div className="space-y-6">
+      <SparepartForm 
+        open={showForm}
+        onSuccess={() => {
+          setShowForm(false);
+          onUpdate();
+        }}
+        onCancel={() => setShowForm(false)}
+      />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -95,7 +106,10 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
           </p>
         </div>
         
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700"
+          onClick={() => setShowForm(true)}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Thêm phụ tùng mới
         </Button>

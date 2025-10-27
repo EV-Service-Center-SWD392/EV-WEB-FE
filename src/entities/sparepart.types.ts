@@ -19,8 +19,8 @@ export interface SparepartDto {
 
 export interface CreateSparepartDto {
   vehicleModelId?: number;
-  inventoryId: string;
-  typeId: string;
+  centerName: string;
+  typeName: string;
   name: string;
   description?: string;
   manufacturer?: string;
