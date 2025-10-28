@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { InventoryFilters } from "@/components/admin/InventoryFilters";
@@ -46,6 +47,7 @@ export default function ManagerInventoryPage() {
       setFilteredItems(data);
     } catch (error) {
       console.error("Error loading inventory items:", error);
+      toast.error("Có lỗi xảy ra khi tải danh sách linh kiện");
     } finally {
       setIsLoading(false);
     }
@@ -57,6 +59,7 @@ export default function ManagerInventoryPage() {
       setStats(statsData);
     } catch (error) {
       console.error("Error loading stats:", error);
+      toast.error("Có lỗi xảy ra khi tải thống kê");
     }
   };
 
@@ -65,8 +68,10 @@ export default function ManagerInventoryPage() {
       setIsLoading(true);
       const data = await inventoryService.getAllInventories(filters);
       setFilteredItems(data);
+      toast.success("Tìm kiếm hoàn tất");
     } catch (error) {
       console.error("Error searching inventory items:", error);
+      toast.error("Có lỗi xảy ra khi tìm kiếm linh kiện");
     } finally {
       setIsLoading(false);
     }
@@ -97,9 +102,10 @@ export default function ManagerInventoryPage() {
       await inventoryService.deleteInventory(itemId);
       await loadInventoryItems(); // Reload data
       await loadStats();
+      toast.success("Xóa linh kiện thành công");
     } catch (error) {
       console.error("Error deleting item:", error);
-      alert("Có lỗi xảy ra khi xóa linh kiện");
+      toast.error("Có lỗi xảy ra khi xóa linh kiện");
     }
   };
 
@@ -108,9 +114,10 @@ export default function ManagerInventoryPage() {
       await inventoryService.updateQuantity(itemId, quantity);
       await loadInventoryItems(); // Reload data
       await loadStats();
+      toast.success("Cập nhật tồn kho thành công");
     } catch (error) {
       console.error("Error updating stock:", error);
-      alert("Có lỗi xảy ra khi cập nhật tồn kho");
+      toast.error("Có lỗi xảy ra khi cập nhật tồn kho");
     }
   };
 
@@ -126,11 +133,13 @@ export default function ManagerInventoryPage() {
           editingItem.inventoryId,
           data as UpdateInventoryDto
         );
+        toast.success("Cập nhật linh kiện thành công");
       } else {
         // Create new item
         await inventoryService.createInventory(
           data as CreateInventoryDto
         );
+        toast.success("Tạo linh kiện mới thành công");
       }
 
       setIsFormOpen(false);
@@ -139,7 +148,7 @@ export default function ManagerInventoryPage() {
       await loadStats();
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("Có lỗi xảy ra khi lưu dữ liệu");
+      toast.error("Có lỗi xảy ra khi lưu dữ liệu");
     } finally {
       setIsFormLoading(false);
     }

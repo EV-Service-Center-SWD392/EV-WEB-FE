@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,9 +38,11 @@ export function SparepartForm({ open, onSuccess, onCancel, initialData }: Sparep
     
     try {
       await sparepartService.createSparepart(formData);
+      toast.success("Tạo phụ tùng thành công");
       onSuccess?.();
     } catch (error) {
       console.error("Error creating sparepart:", error);
+      toast.error("Có lỗi xảy ra khi tạo phụ tùng");
     } finally {
       setIsLoading(false);
     }

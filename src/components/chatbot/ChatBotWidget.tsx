@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { chatBotService } from "@/services/chatBotService";
 import { MessageSquare, X, Send } from "lucide-react";
 import JsonRenderer from "./JsonRenderer";
@@ -16,6 +15,7 @@ import { AISparepartSuggestion } from "../admin/sparepart/AISparepartSuggestion"
  */
 export default function ChatBotWidget() {
   const [open, setOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   type UIMessage = {
     role: "user" | "assistant";
     content?: string;
@@ -43,6 +43,28 @@ export default function ChatBotWidget() {
 
   const toggle = () => setOpen((v) => !v);
 
+  // Count cards in a message
+  const countCards = (data: any): number => {
+    if (!data) return 0;
+    
+    // Count spare parts cards
+    if (data.function === "get_spare_parts" && data.result?.data) {
+      return data.result.data.length;
+    }
+    
+    // Count forecast cards
+    if (data.function === "forecast_demand" && data.result?.forecast_result?.spare_parts_forecasts) {
+      return data.result.forecast_result.spare_parts_forecasts.length + 1; // +1 for summary card
+    }
+    
+    // Count array items as cards
+    if (Array.isArray(data)) {
+      return data.length;
+    }
+    
+    return 0;
+  };
+
   const send = async () => {
     const text = input.trim();
     if (!text || isSending) return;
@@ -64,11 +86,18 @@ export default function ChatBotWidget() {
       if (parsedData) {
         const botMsg: UIMessage = { role: "assistant", parsed: parsedData, timestamp: new Date().toISOString() };
         setMessages((m) => [...m, botMsg]);
+        
+        // Auto-expand if more than 20 cards
+        const cardCount = countCards(parsedData);
+        if (cardCount > 20) {
+          setIsExpanded(true);
+        }
       } else {
         const botMsg: UIMessage = { role: "assistant", content: res?.response || "", timestamp: new Date().toISOString() };
         setMessages((m) => [...m, botMsg]);
       }
-    } catch (err) {
+    } catch (error) {
+      console.error("ChatBot error:", error);
       const errMsg: UIMessage = {
         role: "assistant",
         content: "Xin lỗi, chatbot hiện đang gặp lỗi. Vui lòng thử lại sau.",
@@ -110,7 +139,7 @@ export default function ChatBotWidget() {
         {open && (
           <div
             ref={panelRef}
-            className="w-80 md:w-[360px] max-h-[60vh] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col"
+            className={`${isExpanded ? 'w-[25vw] max-h-[80vh]' : 'w-80 md:w-[360px] max-h-[60vh]'} bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col transition-all duration-300`}
           >
             <div className="flex items-center justify-between px-4 py-2 border-b">
               <div className="flex items-center gap-2">
@@ -119,6 +148,16 @@ export default function ChatBotWidget() {
                 <span className="text-xs text-slate-500">AI assistant</span>
               </div>
               <div className="flex items-center gap-2">
+                {isExpanded && (
+                  <button
+                    aria-label="Collapse chat"
+                    onClick={() => setIsExpanded(false)}
+                    className="p-1 rounded hover:bg-slate-100 text-xs"
+                    title="Thu gọn"
+                  >
+                    ⇲
+                  </button>
+                )}
                 <button
                   aria-label="Close chat"
                   onClick={() => setOpen(false)}
@@ -153,12 +192,19 @@ export default function ChatBotWidget() {
                       <AISparepartSuggestion 
                         aiResponse={m.parsed.function_results ? m.parsed : { function_results: [{ result: m.parsed.result }] }}
                         onSuccess={() => {
-                          console.log('Sparepart created successfully');
+                          // Sparepart created successfully
                         }}
                       />
                     ) : m.parsed ? (
                       <div className="mb-2">
-                        <JsonRenderer data={m.parsed} />
+                        <JsonRenderer 
+                          data={m.parsed} 
+                          onCardCount={(count) => {
+                            if (count > 20 && !isExpanded) {
+                              setIsExpanded(true);
+                            }
+                          }}
+                        />
                       </div>
                     ) : (
                       <div

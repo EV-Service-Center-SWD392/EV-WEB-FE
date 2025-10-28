@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -61,11 +62,15 @@ export default function RegisterPage() {
         phoneNumber: data.phoneNumber,
         address: data.address,
       });
-      setMsg(result.message || "Đăng ký thành công — chuyển tới đăng nhập…");
+      const successMessage = result.message || "Đăng ký thành công — chuyển tới đăng nhập…";
+      setMsg(successMessage);
+      toast.success("Đăng ký tài khoản thành công!");
       setTimeout(() => router.push("/login"), 800);
     } catch (e: unknown) {
       const error = e as { response?: { data?: { message?: string } } };
-      setMsg(error?.response?.data?.message || "Đăng ký thất bại");
+      const errorMessage = error?.response?.data?.message || "Đăng ký thất bại";
+      setMsg(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
