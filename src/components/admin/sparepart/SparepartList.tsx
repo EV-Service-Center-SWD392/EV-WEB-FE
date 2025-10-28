@@ -107,7 +107,7 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
         </div>
         
         <Button 
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-blue-600 hover:bg-blue-700 text-white"
           onClick={() => setShowForm(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -191,6 +191,7 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>STT</TableHead>
                 <TableHead>Tên phụ tùng</TableHead>
                 <TableHead>Nhà sản xuất</TableHead>
                 <TableHead>Giá đơn vị</TableHead>
@@ -218,8 +219,11 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredSpareparts.map((sparepart) => (
+                filteredSpareparts.map((sparepart, index) => (
                   <TableRow key={sparepart.sparepartId}>
+                    <TableCell className="font-medium text-gray-900">
+                      {index + 1}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">

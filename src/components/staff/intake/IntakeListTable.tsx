@@ -167,6 +167,7 @@ export function IntakeListTable({ searchQuery, statusFilter }: IntakeListTablePr
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-muted/50">
+                                    <TableHead className="font-semibold">STT</TableHead>
                                     <TableHead className="font-semibold">Mã Booking</TableHead>
                                     <TableHead className="font-semibold">Khách hàng</TableHead>
                                     <TableHead className="font-semibold">Phương tiện</TableHead>
@@ -184,6 +185,9 @@ export function IntakeListTable({ searchQuery, statusFilter }: IntakeListTablePr
                                         className="transition-all duration-200 hover:bg-muted/50 cursor-pointer group"
                                         onClick={() => router.push(`/staff/intake/${intake.id}`)}
                                     >
+                                        <TableCell className="font-medium text-gray-900">
+                                            {index + 1}
+                                        </TableCell>
                                         <TableCell className="font-medium">
                                             <div className="flex items-center gap-2">
                                                 <div className="p-1 rounded bg-blue-100 dark:bg-blue-900/20">

@@ -84,6 +84,7 @@ export function WorkOrderTable({
             <Table>
                 <TableHeader>
                     <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-[60px]">STT</TableHead>
                         <TableHead className="w-[120px]">Order ID</TableHead>
                         <TableHead>Vehicle</TableHead>
                         <TableHead>Service Type</TableHead>
@@ -96,7 +97,7 @@ export function WorkOrderTable({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {workOrders.map((order) => {
+                    {workOrders.map((order, index) => {
                         const progress = calculateWorkOrderProgress(order.tasks);
                         return (
                             <TableRow
@@ -104,6 +105,9 @@ export function WorkOrderTable({
                                 className="cursor-pointer transition-colors hover:bg-accent/50"
                                 onClick={() => handleViewDetail(order.id)}
                             >
+                                <TableCell className="font-medium text-gray-900">
+                                    {index + 1}
+                                </TableCell>
                                 <TableCell className="font-mono text-sm">
                                     #{order.id.slice(0, 8)}
                                 </TableCell>
