@@ -5,30 +5,9 @@ import { replenishmentRequestService } from "@/services/replenishmentRequestServ
 
 interface JsonRendererProps {
   data: any;
-  onCardCount?: (count: number) => void;
 }
 
-const JsonRenderer: React.FC<JsonRendererProps> = ({ data, onCardCount }) => {
-  // Calculate card count for all cases
-  const cardCount = React.useMemo(() => {
-    if (data?.function === "get_spare_parts" && data.result?.data) {
-      return data.result.data.length;
-    }
-    if (data?.function === "forecast_demand" && data.result?.forecast_result) {
-      return (data.result.forecast_result.spare_parts_forecasts?.length || 0) + 1;
-    }
-    if (Array.isArray(data)) {
-      return data.length;
-    }
-    return 0;
-  }, [data]);
-
-  // Call useEffect at top level
-  useEffect(() => {
-    if (cardCount > 0) {
-      onCardCount?.(cardCount);
-    }
-  }, [cardCount, onCardCount]);
+const JsonRenderer: React.FC<JsonRendererProps> = ({ data }) => {
 
   if (data === null || data === undefined) return <span className="text-slate-400">No data</span>;
 
@@ -43,7 +22,6 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data, onCardCount }) => {
       <div className="space-y-2">
         <div className="text-xs text-slate-600 mb-2">
           Tìm thấy {data.result.count} phụ tùng:
-          {cardCount > 20 && <span className="ml-2 text-orange-600 font-medium">(Đã mở rộng chat)</span>}
         </div>
         {data.result.data.map((item: any, i: number) => (
           <Card key={i} className="mb-2 text-xs">
@@ -102,7 +80,6 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data, onCardCount }) => {
         
         <div className="text-xs text-slate-600 mb-2">
           Chi tiết dự báo từng phụ tùng:
-          {cardCount > 20 && <span className="ml-2 text-orange-600 font-medium">(Đã mở rộng chat)</span>}
         </div>
         {forecast.spare_parts_forecasts?.map((part: any, i: number) => (
           <Card key={i} className="mb-2 text-xs">
@@ -155,13 +132,11 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data, onCardCount }) => {
     
     return (
       <div className="space-y-2">
-        {cardCount > 20 && (
-          <div className="text-xs text-orange-600 font-medium mb-2">(Đã mở rộng chat do có {cardCount} items)</div>
-        )}
+
         {data.map((item, index) => (
           <Card key={index} className="text-xs">
             <CardContent className="p-3">
-              <JsonRenderer data={item} onCardCount={onCardCount} />
+              <JsonRenderer data={item} />
             </CardContent>
           </Card>
         ))}
@@ -177,7 +152,7 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data, onCardCount }) => {
           <div key={index} className="text-xs">
             <div className="font-medium text-slate-700 mb-1">{key}:</div>
             <div className="ml-3 border-l-2 border-slate-200 pl-2">
-              <JsonRenderer data={value} onCardCount={onCardCount} />
+              <JsonRenderer data={value} />
             </div>
           </div>
         ))}
