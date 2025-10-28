@@ -29,36 +29,8 @@ export default function ChatBotWidget() {
   const [isComposing, setIsComposing] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  // Check if current messages need expansion
-  const shouldExpand = React.useMemo(() => {
-    return messages.some(message => {
-      if (!message.parsed) return false;
-      const cardCount = countCards(message.parsed);
-      return cardCount > 20;
-    });
-  }, [messages]);
-
-  // Update expansion state based on current messages
-  React.useEffect(() => {
-    setIsExpanded(shouldExpand);
-  }, [shouldExpand]);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        // close only if open and click outside the panel and not on the indicator
-        // keep it simple: don't auto-close for now
-      }
-    }
-
-    window.addEventListener("mousedown", handleClickOutside);
-    return () => window.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const toggle = () => setOpen((v) => !v);
-
   // Count cards in a message
-  const countCards = (data: any): number => {
+  const countCards = React.useCallback((data: any): number => {
     if (!data) return 0;
     
     // Count spare parts cards
@@ -77,7 +49,30 @@ export default function ChatBotWidget() {
     }
     
     return 0;
-  };
+  }, []);
+
+  // Check if current messages need expansion
+  const shouldExpand = React.useMemo(() => {
+    return messages.some(message => {
+      if (!message.parsed) return false;
+      const cardCount = countCards(message.parsed);
+      return cardCount > 20;
+    });
+  }, [messages, countCards]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        // close only if open and click outside the panel and not on the indicator
+        // keep it simple: don't auto-close for now
+      }
+    }
+
+    window.addEventListener("mousedown", handleClickOutside);
+    return () => window.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggle = () => setOpen((v) => !v);
 
   const send = async () => {
     const text = input.trim();
