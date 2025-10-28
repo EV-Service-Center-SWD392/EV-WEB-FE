@@ -139,7 +139,7 @@ export default function ChatBotWidget() {
         {open && (
           <div
             ref={panelRef}
-            className={`${isExpanded ? 'w-[25vw] max-h-[80vh]' : 'w-80 md:w-[360px] max-h-[60vh]'} bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col transition-all duration-300`}
+            className={`${isExpanded ? 'w-[50vw] h-[85vh]' : 'w-80 md:w-[360px] max-h-[60vh]'} bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col transition-all duration-300`}
           >
             <div className="flex items-center justify-between px-4 py-2 border-b">
               <div className="flex items-center gap-2">
