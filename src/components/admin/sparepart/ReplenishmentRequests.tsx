@@ -133,7 +133,7 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
           <Button 
             onClick={handleGenerateRequests}
             disabled={isGenerating}
-            className="bg-orange-600 hover:bg-orange-700"
+            className="bg-orange-600 hover:bg-orange-700 text-white"
           >
             {isGenerating ? (
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -308,6 +308,7 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>STT</TableHead>
                 <TableHead>Phụ tùng</TableHead>
                 <TableHead>Số lượng đề xuất</TableHead>
                 <TableHead>Mức độ ưu tiên</TableHead>
@@ -339,8 +340,11 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredRequests.map((request) => (
+                filteredRequests.map((request, index) => (
                   <TableRow key={request.id}>
+                    <TableCell className="font-medium text-gray-900">
+                      {index + 1}
+                    </TableCell>
                     <TableCell>
                       <div className="font-medium text-gray-900">
                         {getSparepartName(request.sparepartId)}

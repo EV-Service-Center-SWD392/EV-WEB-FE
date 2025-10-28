@@ -123,7 +123,7 @@ export function ForecastDashboard({ forecasts, spareparts, onUpdate }: ForecastD
         <Button 
           onClick={handleGenerateAIForecast}
           disabled={isGenerating}
-          className="bg-purple-600 hover:bg-purple-700"
+          className="bg-purple-600 hover:bg-purple-700 text-white"
         >
           {isGenerating ? (
             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -280,6 +280,7 @@ export function ForecastDashboard({ forecasts, spareparts, onUpdate }: ForecastD
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>STT</TableHead>
                 <TableHead>Phụ tùng</TableHead>
                 <TableHead>Dự báo sử dụng</TableHead>
                 <TableHead>Tồn kho an toàn</TableHead>
@@ -312,8 +313,11 @@ export function ForecastDashboard({ forecasts, spareparts, onUpdate }: ForecastD
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredForecasts.map((forecast) => (
+                filteredForecasts.map((forecast, index) => (
                   <TableRow key={forecast.forecastId}>
+                    <TableCell className="font-medium text-gray-900">
+                      {index + 1}
+                    </TableCell>
                     <TableCell>
                       <div className="font-medium text-gray-900">
                         {getSparepartName(forecast.sparepartId)}

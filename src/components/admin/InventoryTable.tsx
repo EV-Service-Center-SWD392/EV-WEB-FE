@@ -61,6 +61,9 @@ export function InventoryTable({
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                STT
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Inventory ID
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -87,7 +90,7 @@ export function InventoryTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {items.map((item) => {
+            {items.map((item, index) => {
               const stockStatus = getStockStatus(item);
               const quantity = item.quantity || 0;
               const minStock = item.minimumStockLevel || 0;
@@ -95,6 +98,9 @@ export function InventoryTable({
 
               return (
                 <tr key={item.inventoryId} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {index + 1}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
@@ -187,7 +193,7 @@ export function InventoryTable({
                         variant="destructive"
                         size="sm"
                         onClick={() => onDelete(item.inventoryId)}
-                        className="bg-red-600 hover:bg-red-700"
+                        className="bg-red-600 hover:bg-red-700 text-white"
                       >
                         Xóa
                       </Button>
