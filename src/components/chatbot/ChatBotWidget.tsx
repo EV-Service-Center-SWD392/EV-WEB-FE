@@ -29,6 +29,20 @@ export default function ChatBotWidget() {
   const [isComposing, setIsComposing] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
+  // Check if current messages need expansion
+  const shouldExpand = React.useMemo(() => {
+    return messages.some(message => {
+      if (!message.parsed) return false;
+      const cardCount = countCards(message.parsed);
+      return cardCount > 20;
+    });
+  }, [messages]);
+
+  // Update expansion state based on current messages
+  React.useEffect(() => {
+    setIsExpanded(shouldExpand);
+  }, [shouldExpand]);
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -86,12 +100,6 @@ export default function ChatBotWidget() {
       if (parsedData) {
         const botMsg: UIMessage = { role: "assistant", parsed: parsedData, timestamp: new Date().toISOString() };
         setMessages((m) => [...m, botMsg]);
-        
-        // Auto-expand if more than 20 cards
-        const cardCount = countCards(parsedData);
-        if (cardCount > 20) {
-          setIsExpanded(true);
-        }
       } else {
         const botMsg: UIMessage = { role: "assistant", content: res?.response || "", timestamp: new Date().toISOString() };
         setMessages((m) => [...m, botMsg]);
@@ -139,7 +147,7 @@ export default function ChatBotWidget() {
         {open && (
           <div
             ref={panelRef}
-            className={`${isExpanded ? 'w-[50vw] h-[85vh]' : 'w-80 md:w-[360px] max-h-[60vh]'} bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col transition-all duration-300`}
+            className={`${shouldExpand ? 'w-[50vw] h-[85vh]' : 'w-80 md:w-[360px] max-h-[60vh]'} bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col transition-all duration-300`}
           >
             <div className="flex items-center justify-between px-4 py-2 border-b">
               <div className="flex items-center gap-2">
@@ -148,14 +156,17 @@ export default function ChatBotWidget() {
                 <span className="text-xs text-slate-500">AI assistant</span>
               </div>
               <div className="flex items-center gap-2">
-                {isExpanded && (
+                {shouldExpand && (
                   <button
                     aria-label="Collapse chat"
-                    onClick={() => setIsExpanded(false)}
+                    onClick={() => {
+                      // Clear messages to reset expansion
+                      setMessages([]);
+                    }}
                     className="p-1 rounded hover:bg-slate-100 text-xs"
-                    title="Thu gọn"
+                    title="Xóa tin nhắn"
                   >
-                    ⇲
+                    🗑️
                   </button>
                 )}
                 <button
@@ -197,14 +208,7 @@ export default function ChatBotWidget() {
                       />
                     ) : m.parsed ? (
                       <div className="mb-2">
-                        <JsonRenderer 
-                          data={m.parsed} 
-                          onCardCount={(count) => {
-                            if (count > 20 && !isExpanded) {
-                              setIsExpanded(true);
-                            }
-                          }}
-                        />
+                        <JsonRenderer data={m.parsed} />
                       </div>
                     ) : (
                       <div
