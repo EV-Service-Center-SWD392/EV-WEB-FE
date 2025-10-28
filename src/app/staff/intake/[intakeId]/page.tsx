@@ -8,6 +8,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, CheckCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -53,20 +54,26 @@ export default function IntakePage({ params }: IntakePageProps) {
     const saveChecklistDraft = React.useCallback(async () => {
         if (pendingResponses.size === 0) return;
 
-        const responsesToSave = Array.from(pendingResponses.values());
-        await saveResponses.mutateAsync({
-            responses: responsesToSave.map((r) => ({
-                checklistItemId: r.checklistItemId!,
-                boolValue: r.boolValue,
-                numberValue: r.numberValue,
-                textValue: r.textValue,
-                severity: r.severity,
-                note: r.note,
-                photoUrl: r.photoUrl,
-            })),
-        });
+        try {
+            const responsesToSave = Array.from(pendingResponses.values());
+            await saveResponses.mutateAsync({
+                responses: responsesToSave.map((r) => ({
+                    checklistItemId: r.checklistItemId!,
+                    boolValue: r.boolValue,
+                    numberValue: r.numberValue,
+                    textValue: r.textValue,
+                    severity: r.severity,
+                    note: r.note,
+                    photoUrl: r.photoUrl,
+                })),
+            });
 
-        setPendingResponses(new Map());
+            setPendingResponses(new Map());
+            toast.success('Lưu bản nháp thành công');
+        } catch (error) {
+            toast.error('Có lỗi xảy ra khi lưu bản nháp');
+            throw error;
+        }
     }, [pendingResponses, saveResponses]);
 
     useAutoSave({
@@ -77,15 +84,21 @@ export default function IntakePage({ params }: IntakePageProps) {
     });
 
     const handleUpdateIntake = async (data: IntakeFormInput) => {
-        await updateIntake.mutateAsync({
-            intakeId,
-            data: {
-                odometer: data.odometer || undefined,
-                batterySoC: data.batterySoC || undefined,
-                notes: data.notes,
-                photos: data.photos,
-            },
-        });
+        try {
+            await updateIntake.mutateAsync({
+                intakeId,
+                data: {
+                    odometer: data.odometer || undefined,
+                    batterySoC: data.batterySoC || undefined,
+                    notes: data.notes,
+                    photos: data.photos,
+                },
+            });
+            toast.success('Cập nhật thông tin tiếp nhận thành công');
+        } catch (error) {
+            toast.error('Có lỗi xảy ra khi cập nhật thông tin');
+            throw error;
+        }
     };
 
     const handleChecklistResponseChange = (response: Partial<ChecklistResponse>) => {
@@ -103,13 +116,19 @@ export default function IntakePage({ params }: IntakePageProps) {
     };
 
     const handleFinalize = async () => {
-        // Save any pending responses first
-        if (pendingResponses.size > 0) {
-            await saveChecklistDraft();
-        }
+        try {
+            // Save any pending responses first
+            if (pendingResponses.size > 0) {
+                await saveChecklistDraft();
+            }
 
-        // Then finalize the intake
-        await finalizeIntake.mutateAsync(intakeId);
+            // Then finalize the intake
+            await finalizeIntake.mutateAsync(intakeId);
+            toast.success('Hoàn tất tiếp nhận dịch vụ thành công');
+        } catch (error) {
+            toast.error('Có lỗi xảy ra khi hoàn tất tiếp nhận');
+            throw error;
+        }
     };
 
     if (isLoadingIntake || isLoadingChecklist) {

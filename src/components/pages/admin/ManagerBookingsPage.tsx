@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { BookingFilters } from "@/components/admin/BookingFilters";
@@ -37,6 +38,7 @@ export default function ManagerBookingsPage() {
       setFilteredBookings(data);
     } catch (error) {
       console.error("Error loading bookings:", error);
+      toast.error("Có lỗi xảy ra khi tải danh sách lịch đặt");
     } finally {
       setIsLoading(false);
     }
@@ -47,8 +49,10 @@ export default function ManagerBookingsPage() {
       setIsLoading(true);
       const data = await bookingService.getBookings(filters);
       setFilteredBookings(data);
+      toast.success("Tìm kiếm hoàn tất");
     } catch (error) {
       console.error("Error searching bookings:", error);
+      toast.error("Có lỗi xảy ra khi tìm kiếm lịch đặt");
     } finally {
       setIsLoading(false);
     }
@@ -78,9 +82,10 @@ export default function ManagerBookingsPage() {
     try {
       await bookingService.deleteBooking(bookingId);
       await loadBookings(); // Reload data
+      toast.success("Xóa lịch đặt thành công");
     } catch (error) {
       console.error("Error deleting booking:", error);
-      alert("Có lỗi xảy ra khi xóa lịch đặt");
+      toast.error("Có lỗi xảy ra khi xóa lịch đặt");
     }
   };
 
@@ -91,9 +96,10 @@ export default function ManagerBookingsPage() {
     try {
       await bookingService.updateBooking(bookingId, { status });
       await loadBookings(); // Reload data
+      toast.success("Cập nhật trạng thái thành công");
     } catch (error) {
       console.error("Error updating booking status:", error);
-      alert("Có lỗi xảy ra khi cập nhật trạng thái");
+      toast.error("Có lỗi xảy ra khi cập nhật trạng thái");
     }
   };
 
@@ -109,9 +115,11 @@ export default function ManagerBookingsPage() {
           editingBooking.id,
           data as UpdateBookingRequest
         );
+        toast.success("Cập nhật lịch đặt thành công");
       } else {
         // Create new booking
         await bookingService.createBooking(data as CreateBookingRequest);
+        toast.success("Tạo lịch đặt mới thành công");
       }
 
       setIsFormOpen(false);
@@ -119,7 +127,7 @@ export default function ManagerBookingsPage() {
       await loadBookings(); // Reload data
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("Có lỗi xảy ra khi lưu dữ liệu");
+      toast.error("Có lỗi xảy ra khi lưu dữ liệu");
     } finally {
       setIsFormLoading(false);
     }

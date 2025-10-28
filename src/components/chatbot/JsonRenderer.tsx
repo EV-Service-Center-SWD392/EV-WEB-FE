@@ -1,13 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { replenishmentRequestService } from "@/services/replenishmentRequestService";
 
 interface JsonRendererProps {
   data: any;
+  onCardCount?: (count: number) => void;
 }
 
-const JsonRenderer: React.FC<JsonRendererProps> = ({ data }) => {
+const JsonRenderer: React.FC<JsonRendererProps> = ({ data, onCardCount }) => {
+  // Calculate card count for all cases
+  const cardCount = React.useMemo(() => {
+    if (data?.function === "get_spare_parts" && data.result?.data) {
+      return data.result.data.length;
+    }
+    if (data?.function === "forecast_demand" && data.result?.forecast_result) {
+      return (data.result.forecast_result.spare_parts_forecasts?.length || 0) + 1;
+    }
+    if (Array.isArray(data)) {
+      return data.length;
+    }
+    return 0;
+  }, [data]);
+
+  // Call useEffect at top level
+  useEffect(() => {
+    if (cardCount > 0) {
+      onCardCount?.(cardCount);
+    }
+  }, [cardCount, onCardCount]);
+
   if (data === null || data === undefined) return <span className="text-slate-400">No data</span>;
 
   if (typeof data === "string" || typeof data === "number" || typeof data === "boolean") {
@@ -16,9 +38,13 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data }) => {
 
   // Special handling for spare parts function
   if (data.function === "get_spare_parts" && data.result?.data) {
+    
     return (
       <div className="space-y-2">
-        <div className="text-xs text-slate-600 mb-2">Tìm thấy {data.result.count} phụ tùng:</div>
+        <div className="text-xs text-slate-600 mb-2">
+          Tìm thấy {data.result.count} phụ tùng:
+          {cardCount > 20 && <span className="ml-2 text-orange-600 font-medium">(Đã mở rộng chat)</span>}
+        </div>
         {data.result.data.map((item: any, i: number) => (
           <Card key={i} className="mb-2 text-xs">
             <CardHeader className="pb-2">
@@ -50,6 +76,7 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data }) => {
   // Special handling for forecast demand function
   if (data.function === "forecast_demand" && data.result?.forecast_result) {
     const forecast = data.result.forecast_result;
+    
     return (
       <div className="space-y-3">
         <Card className="bg-blue-50">
@@ -73,7 +100,10 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data }) => {
           </CardContent>
         </Card>
         
-        <div className="text-xs text-slate-600 mb-2">Chi tiết dự báo từng phụ tùng:</div>
+        <div className="text-xs text-slate-600 mb-2">
+          Chi tiết dự báo từng phụ tùng:
+          {cardCount > 20 && <span className="ml-2 text-orange-600 font-medium">(Đã mở rộng chat)</span>}
+        </div>
         {forecast.spare_parts_forecasts?.map((part: any, i: number) => (
           <Card key={i} className="mb-2 text-xs">
             <CardHeader className="pb-2">
@@ -122,12 +152,16 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data }) => {
 
   // Handle arrays
   if (Array.isArray(data)) {
+    
     return (
       <div className="space-y-2">
+        {cardCount > 20 && (
+          <div className="text-xs text-orange-600 font-medium mb-2">(Đã mở rộng chat do có {cardCount} items)</div>
+        )}
         {data.map((item, index) => (
           <Card key={index} className="text-xs">
             <CardContent className="p-3">
-              <JsonRenderer data={item} />
+              <JsonRenderer data={item} onCardCount={onCardCount} />
             </CardContent>
           </Card>
         ))}
@@ -143,7 +177,7 @@ const JsonRenderer: React.FC<JsonRendererProps> = ({ data }) => {
           <div key={index} className="text-xs">
             <div className="font-medium text-slate-700 mb-1">{key}:</div>
             <div className="ml-3 border-l-2 border-slate-200 pl-2">
-              <JsonRenderer data={value} />
+              <JsonRenderer data={value} onCardCount={onCardCount} />
             </div>
           </div>
         ))}

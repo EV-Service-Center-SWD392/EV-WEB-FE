@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,7 @@ export default function ForgotPasswordPage() {
     try {
       const result = await forgotPassword(data.email);
       setMsg(result.message);
+      toast.success("Gửi yêu cầu khôi phục mật khẩu thành công");
 
       // Chuyển sang trang reset password sau 3s
       setTimeout(() => {
@@ -48,7 +50,9 @@ export default function ForgotPasswordPage() {
       }, 3000);
     } catch (e: unknown) {
       const error = e as { message?: string };
-      setMsg(error?.message || "Có lỗi xảy ra. Vui lòng thử lại sau.");
+      const errorMessage = error?.message || "Có lỗi xảy ra. Vui lòng thử lại sau.";
+      setMsg(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

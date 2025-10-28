@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -69,10 +70,13 @@ export default function LoginPage() {
 
       // ✅ SỬA: Sử dụng logic redirect mới
       const redirectUrl = getRoleBasedRedirect(res.user.role);
+      toast.success(`Chào mừng ${res.user.name}! Đăng nhập thành công.`);
       router.push(redirectUrl);
     } catch (e: unknown) {
       const error = e as { response?: { data?: { message?: string } } };
-      setErr(error?.response?.data?.message || "Đăng nhập thất bại");
+      const errorMessage = error?.response?.data?.message || "Đăng nhập thất bại";
+      setErr(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
