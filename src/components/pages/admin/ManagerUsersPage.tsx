@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { UserFilters } from "@/components/admin/UserFilters";
@@ -36,6 +37,7 @@ export default function ManagerUsersPage() {
       setFilteredUsers(data);
     } catch (error) {
       console.error("Error loading users:", error);
+      toast.error("Có lỗi xảy ra khi tải danh sách người dùng");
     } finally {
       setIsLoading(false);
     }
@@ -46,8 +48,10 @@ export default function ManagerUsersPage() {
       setIsLoading(true);
       const data = await userService.getUsers(filters);
       setFilteredUsers(data);
+      toast.success("Tìm kiếm hoàn tất");
     } catch (error) {
       console.error("Error searching users:", error);
+      toast.error("Có lỗi xảy ra khi tìm kiếm người dùng");
     } finally {
       setIsLoading(false);
     }
@@ -77,9 +81,10 @@ export default function ManagerUsersPage() {
     try {
       await userService.deleteUser(userId);
       await loadUsers(); // Reload data
+      toast.success("Xóa người dùng thành công");
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Có lỗi xảy ra khi xóa người dùng");
+      toast.error("Có lỗi xảy ra khi xóa người dùng");
     }
   };
 
@@ -90,9 +95,10 @@ export default function ManagerUsersPage() {
 
       await userService.updateUser(userId, { isActive: !user.isActive });
       await loadUsers(); // Reload data
+      toast.success(`${user.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'} người dùng thành công`);
     } catch (error) {
       console.error("Error toggling user status:", error);
-      alert("Có lỗi xảy ra khi thay đổi trạng thái người dùng");
+      toast.error("Có lỗi xảy ra khi thay đổi trạng thái người dùng");
     }
   };
 
@@ -105,9 +111,11 @@ export default function ManagerUsersPage() {
       if (editingUser) {
         // Update user
         await userService.updateUser(editingUser.id, data as UpdateUserRequest);
+        toast.success("Cập nhật người dùng thành công");
       } else {
         // Create new user
         await userService.createUser(data as CreateUserRequest);
+        toast.success("Tạo người dùng mới thành công");
       }
 
       setIsFormOpen(false);
@@ -115,7 +123,7 @@ export default function ManagerUsersPage() {
       await loadUsers(); // Reload data
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("Có lỗi xảy ra khi lưu dữ liệu");
+      toast.error("Có lỗi xảy ra khi lưu dữ liệu");
     } finally {
       setIsFormLoading(false);
     }

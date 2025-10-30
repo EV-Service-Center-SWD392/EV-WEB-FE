@@ -4,11 +4,11 @@ import React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { InventoryItem } from "@/entities/inventory.types";
+import type { InventoryDto } from "@/entities/inventory.types";
 
 interface InventoryTableProps {
-  items: InventoryItem[];
-  onEdit: (_item: InventoryItem) => void;
+  items: InventoryDto[];
+  onEdit: (_item: InventoryDto) => void;
   onDelete: (_itemId: string) => void;
   onUpdateStock: (_itemId: string, _quantity: number) => void;
 }
@@ -34,10 +34,12 @@ export function InventoryTable({
     });
   };
 
-  const getStockStatus = (item: InventoryItem) => {
-    if (item.quantity === 0) {
+  const getStockStatus = (item: InventoryDto) => {
+    const quantity = item.quantity || 0;
+    const minStock = item.minimumStockLevel || 0;
+    if (quantity === 0) {
       return { text: "Hết hàng", color: "bg-red-100 text-red-800" };
-    } else if (item.quantity <= item.minStock) {
+    } else if (quantity <= minStock) {
       return { text: "Sắp hết", color: "bg-yellow-100 text-yellow-800" };
     }
     return { text: "Còn hàng", color: "bg-green-100 text-green-800" };
@@ -59,13 +61,16 @@ export function InventoryTable({
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Linh kiện
+                STT
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Xe tương thích
+                Inventory ID
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Trung tâm
+                Center ID
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Trạng thái
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Tồn kho
@@ -85,54 +90,62 @@ export function InventoryTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {items.map((item) => {
+            {items.map((item, index) => {
               const stockStatus = getStockStatus(item);
-              const totalValue = item.quantity * item.unitPrice;
+              const quantity = item.quantity || 0;
+              const minStock = item.minimumStockLevel || 0;
+              const totalValue = quantity * 100000; // Mock unit price
 
               return (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {item.partName}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Cập nhật: {formatDate(item.lastUpdated)}
-                      </div>
-                    </div>
+                <tr key={item.inventoryId} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {index + 1}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {item.vehicleBrand}
+                        {item.inventoryId}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {item.vehicleType}
+                        Cập nhật: {item.updatedAt ? formatDate(item.updatedAt) : 'N/A'}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {item.serviceCenter}
+                      {item.centerId}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col gap-1">
+                      <Badge
+                        className={
+                          item.status === 'ACTIVE'
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }
+                      >
+                        {item.status === 'ACTIVE' ? "Hoạt động" : "Tạm dừng"}
+                      </Badge>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {item.quantity} / {item.minStock}
+                        {quantity} / {minStock}
                       </div>
                       <div className="text-xs text-gray-500">
-                        SL tối thiểu: {item.minStock}
+                        SL tối thiểu: {minStock}
                       </div>
                       <div className="flex items-center gap-1 mt-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() =>
-                            handleQuickStockUpdate(item.id, item.quantity, -1)
+                            handleQuickStockUpdate(item.inventoryId, quantity, -1)
                           }
                           className="h-6 w-6 p-0 text-xs"
-                          disabled={item.quantity <= 0}
+                          disabled={quantity <= 0}
                         >
                           -
                         </Button>
@@ -140,7 +153,7 @@ export function InventoryTable({
                           size="sm"
                           variant="outline"
                           onClick={() =>
-                            handleQuickStockUpdate(item.id, item.quantity, 1)
+                            handleQuickStockUpdate(item.inventoryId, quantity, 1)
                           }
                           className="h-6 w-6 p-0 text-xs"
                         >
@@ -151,7 +164,7 @@ export function InventoryTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {formatCurrency(item.unitPrice)}
+                      {formatCurrency(100000)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -163,15 +176,6 @@ export function InventoryTable({
                     <div className="flex flex-col gap-1">
                       <Badge className={stockStatus.color}>
                         {stockStatus.text}
-                      </Badge>
-                      <Badge
-                        className={
-                          item.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }
-                      >
-                        {item.isActive ? "Hoạt động" : "Tạm dừng"}
                       </Badge>
                     </div>
                   </td>
@@ -188,8 +192,8 @@ export function InventoryTable({
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => onDelete(item.id)}
-                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => onDelete(item.inventoryId)}
+                        className="bg-red-600 hover:bg-red-700 text-white"
                       >
                         Xóa
                       </Button>
@@ -206,7 +210,7 @@ export function InventoryTable({
         <div className="text-center py-12">
           <div className="text-gray-500 text-lg">Không có dữ liệu</div>
           <div className="text-gray-400 text-sm mt-2">
-            Không tìm thấy linh kiện nào phù hợp với bộ lọc hiện tại
+            Không tìm thấy inventory nào phù hợp với bộ lọc hiện tại
           </div>
         </div>
       )}

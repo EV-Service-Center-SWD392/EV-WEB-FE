@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { InventoryFilters } from "@/components/admin/InventoryFilters";
@@ -8,25 +9,28 @@ import { InventoryTable } from "@/components/admin/InventoryTable";
 import { InventoryForm } from "@/components/admin/InventoryForm";
 import { inventoryService } from "@/services/inventoryService";
 import type {
-  InventoryItem,
+  InventoryDto,
   InventoryFilters as InventoryFiltersType,
-  CreateInventoryRequest,
-  UpdateInventoryRequest,
+  InventoryStats,
+  CreateInventoryDto,
+  UpdateInventoryDto,
 } from "@/entities/inventory.types";
 
 export default function ManagerInventoryPage() {
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
+  const [items, setItems] = useState<InventoryDto[]>([]);
+  const [filteredItems, setFilteredItems] = useState<InventoryDto[]>([]);
   const [filters, setFilters] = useState<InventoryFiltersType>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editingItem, setEditingItem] = useState<InventoryDto | null>(null);
   const [isFormLoading, setIsFormLoading] = useState(false);
-  const [stats, setStats] = useState({
-    totalItems: 0,
+  const [stats, setStats] = useState<InventoryStats>({
+    totalInventories: 0,
+    totalQuantity: 0,
     totalValue: 0,
-    lowStockItems: 0,
-    outOfStockItems: 0,
+    lowStockCount: 0,
+    outOfStockCount: 0,
+    activeCenters: 0,
   });
 
   // Load inventory items on component mount
@@ -38,11 +42,12 @@ export default function ManagerInventoryPage() {
   const loadInventoryItems = async () => {
     try {
       setIsLoading(true);
-      const data = await inventoryService.getInventoryItems(filters);
+      const data = await inventoryService.getAllInventories(filters);
       setItems(data);
       setFilteredItems(data);
     } catch (error) {
       console.error("Error loading inventory items:", error);
+      toast.error("Có lỗi xảy ra khi tải danh sách linh kiện");
     } finally {
       setIsLoading(false);
     }
@@ -54,16 +59,19 @@ export default function ManagerInventoryPage() {
       setStats(statsData);
     } catch (error) {
       console.error("Error loading stats:", error);
+      toast.error("Có lỗi xảy ra khi tải thống kê");
     }
   };
 
   const handleSearch = async () => {
     try {
       setIsLoading(true);
-      const data = await inventoryService.getInventoryItems(filters);
+      const data = await inventoryService.getAllInventories(filters);
       setFilteredItems(data);
+      toast.success("Tìm kiếm hoàn tất");
     } catch (error) {
       console.error("Error searching inventory items:", error);
+      toast.error("Có lỗi xảy ra khi tìm kiếm linh kiện");
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +88,7 @@ export default function ManagerInventoryPage() {
     setIsFormOpen(true);
   };
 
-  const handleEditItem = (item: InventoryItem) => {
+  const handleEditItem = (item: InventoryDto) => {
     setEditingItem(item);
     setIsFormOpen(true);
   };
@@ -91,43 +99,47 @@ export default function ManagerInventoryPage() {
     }
 
     try {
-      await inventoryService.deleteInventoryItem(itemId);
+      await inventoryService.deleteInventory(itemId);
       await loadInventoryItems(); // Reload data
       await loadStats();
+      toast.success("Xóa linh kiện thành công");
     } catch (error) {
       console.error("Error deleting item:", error);
-      alert("Có lỗi xảy ra khi xóa linh kiện");
+      toast.error("Có lỗi xảy ra khi xóa linh kiện");
     }
   };
 
   const handleUpdateStock = async (itemId: string, quantity: number) => {
     try {
-      await inventoryService.updateStock(itemId, quantity);
+      await inventoryService.updateQuantity(itemId, quantity);
       await loadInventoryItems(); // Reload data
       await loadStats();
+      toast.success("Cập nhật tồn kho thành công");
     } catch (error) {
       console.error("Error updating stock:", error);
-      alert("Có lỗi xảy ra khi cập nhật tồn kho");
+      toast.error("Có lỗi xảy ra khi cập nhật tồn kho");
     }
   };
 
   const handleFormSubmit = async (
-    data: CreateInventoryRequest | UpdateInventoryRequest
+    data: CreateInventoryDto | UpdateInventoryDto
   ) => {
     try {
       setIsFormLoading(true);
 
       if (editingItem) {
         // Update item
-        await inventoryService.updateInventoryItem(
-          editingItem.id,
-          data as UpdateInventoryRequest
+        await inventoryService.updateInventory(
+          editingItem.inventoryId,
+          data as UpdateInventoryDto
         );
+        toast.success("Cập nhật linh kiện thành công");
       } else {
         // Create new item
-        await inventoryService.createInventoryItem(
-          data as CreateInventoryRequest
+        await inventoryService.createInventory(
+          data as CreateInventoryDto
         );
+        toast.success("Tạo linh kiện mới thành công");
       }
 
       setIsFormOpen(false);
@@ -136,7 +148,7 @@ export default function ManagerInventoryPage() {
       await loadStats();
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("Có lỗi xảy ra khi lưu dữ liệu");
+      toast.error("Có lỗi xảy ra khi lưu dữ liệu");
     } finally {
       setIsFormLoading(false);
     }
@@ -181,7 +193,7 @@ export default function ManagerInventoryPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-sm text-gray-600">Tổng linh kiện</div>
           <div className="text-2xl font-bold text-gray-900">
-            {stats.totalItems}
+            {stats.totalInventories}
           </div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -193,13 +205,13 @@ export default function ManagerInventoryPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-sm text-red-600">Tồn kho thấp</div>
           <div className="text-2xl font-bold text-red-600">
-            {stats.lowStockItems}
+            {stats.lowStockCount}
           </div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-sm text-red-600">Hết hàng</div>
           <div className="text-2xl font-bold text-red-600">
-            {stats.outOfStockItems}
+            {stats.outOfStockCount}
           </div>
         </div>
       </div>
@@ -226,9 +238,9 @@ export default function ManagerInventoryPage() {
             <div className="text-sm text-gray-600">
               Hiển thị {filteredItems.length} / {items.length} linh kiện
             </div>
-            {stats.lowStockItems > 0 && (
+            {stats.lowStockCount > 0 && (
               <div className="text-sm text-red-600 bg-red-50 px-3 py-1 rounded-md">
-                ⚠️ Có {stats.lowStockItems} linh kiện sắp hết hàng
+                ⚠️ Có {stats.lowStockCount} linh kiện sắp hết hàng
               </div>
             )}
           </div>

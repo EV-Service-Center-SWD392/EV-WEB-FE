@@ -7,6 +7,7 @@ import { useAuthStore } from "@/stores/auth";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import StaffNavbar from "@/components/staff/StaffNavbar";
 import StaffSidebar from "@/components/staff/StaffSidebar";
+import ChatBotWidget from "@/components/chatbot/ChatBotWidget";
 
 export default function StaffLayout({
   children,
@@ -24,7 +25,7 @@ export default function StaffLayout({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <LoadingSpinner />
       </div>
     );
@@ -35,7 +36,7 @@ export default function StaffLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Staff Navbar */}
       <StaffNavbar />
 
@@ -44,8 +45,11 @@ export default function StaffLayout({
         <StaffSidebar />
 
         {/* Main Content */}
-        <main className="flex-1 p-6 bg-gray-50">{children}</main>
+        <main className="flex-1 p-8 bg-background">{children}</main>
       </div>
+      
+      {/* ChatBot widget (floating) */}
+      <ChatBotWidget />
     </div>
   );
 }

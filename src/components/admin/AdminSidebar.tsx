@@ -2,34 +2,50 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { 
+  LayoutDashboard, 
+  Users, 
+  Calendar, 
+  Package, 
+  Settings, 
+  TrendingUp,
+  LucideIcon
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 interface MenuItem {
   href: string;
   label: string;
+  icon: LucideIcon;
 }
 
 const menuItems: MenuItem[] = [
   {
     href: "/admin/dashboard",
     label: "Dashboard",
+    icon: LayoutDashboard,
   },
   {
     href: "/admin/manager-users",
-    label: "Manager Users",
+    label: "Quản lý người dùng",
+    icon: Users,
   },
   {
     href: "/admin/manager-bookings",
-    label: "Manager Bookings",
+    label: "Quản lý đặt lịch",
+    icon: Calendar,
   },
+
   {
-    href: "/admin/manager-inventory",
-    label: "Manager Inventory",
+    href: "/admin/sparepart-management",
+    label: "Quản lý phụ tùng",
+    icon: Settings,
   },
   {
     href: "/admin/manager-revenue",
-    label: "Manager Revenue",
+    label: "Quản lý doanh thu",
+    icon: TrendingUp,
   },
 ];
 
@@ -51,18 +67,20 @@ export default function AdminSidebar() {
         <nav className="space-y-1">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
+            const Icon = item.icon;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "block px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-gray-100 text-gray-900"
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 )}
               >
+                <Icon className="h-4 w-4" />
                 {item.label}
               </Link>
             );
