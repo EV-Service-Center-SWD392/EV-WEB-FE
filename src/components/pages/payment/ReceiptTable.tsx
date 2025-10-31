@@ -1,7 +1,7 @@
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
-import { Button } from "./button";
-import { Skeleton } from "./skeleton";
+import { Button } from "../../ui/button";
+import { Skeleton } from "../../ui/skeleton";
 import {
   Table,
   TableHeader,
@@ -9,7 +9,7 @@ import {
   TableHead,
   TableBody,
   TableCell,
-} from "./table";
+} from "../../ui/table";
 import type { ReceiptDto } from "@/services/receiptService";
 
 interface ReceiptTableProps {

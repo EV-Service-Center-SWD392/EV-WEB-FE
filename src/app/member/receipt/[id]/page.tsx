@@ -1,8 +1,7 @@
 "use client";
-
 import { useParams, useRouter } from "next/navigation";
 import { useReceiptById } from "@/hooks/useReceipts";
-import ReceiptDetail from "@/components/ui/ReceiptDetail";
+import ReceiptDetail from "@/components/pages/payment/ReceiptDetail";
 
 export default function ReceiptPage() {
   const params = useParams();
@@ -16,6 +15,10 @@ export default function ReceiptPage() {
   };
 
   return (
-    <ReceiptDetail receipt={receipt} isLoading={isLoading} onBack={handleBack} />
+    <ReceiptDetail
+      receipt={receipt}
+      isLoading={isLoading}
+      onBack={handleBack}
+    />
   );
 }
