@@ -1,8 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  bookingService,
-  CreateBookingPayload,
-} from "@/services/bookingService";
+import { bookingService } from "@/services/bookingService";
+import type { CreateBookingRequest } from "@/entities/booking.types";
 
 // Hook để lấy danh sách booking của member
 export const useMyBookings = () => {
@@ -26,7 +24,7 @@ export const useCreateBooking = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: CreateBookingPayload) =>
+    mutationFn: (payload: CreateBookingRequest) =>
       bookingService.createBooking(payload),
     onSuccess: () => {
       // Khi tạo booking thành công, làm mới lại list booking

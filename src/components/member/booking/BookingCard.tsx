@@ -27,48 +27,7 @@ export interface BookingCardData {
 }
 
 // MOCK DATA using the new interface for demonstration
-export const MOCK_BOOKINGS_DATA: BookingCardData[] = [
-  {
-    id: "1",
-    vehicleName: "Vinfast VF8",
-    vehicleImageUrl: "/images/vf8.jpg",
-    scheduledAt: "2025-10-20T09:00:00Z",
-    serviceCount: 3,
-    partsCount: 2,
-    totalAmount: 2500000,
-    status: "PROPOSING",
-  },
-  {
-    id: "2",
-    vehicleName: "Tesla Model 3",
-    vehicleImageUrl: "/images/model3.jpg",
-    scheduledAt: "2025-10-22T14:00:00Z",
-    serviceCount: 1,
-    partsCount: 0,
-    totalAmount: 500000,
-    status: "IN_PROGRESS",
-  },
-  {
-    id: "3",
-    vehicleName: "Porsche Taycan",
-    vehicleImageUrl: "/images/taycan.jpg",
-    scheduledAt: "2025-09-15T11:00:00Z",
-    serviceCount: 5,
-    partsCount: 8,
-    totalAmount: 15200000,
-    status: "COMPLETED",
-  },
-  {
-    id: "4",
-    vehicleName: "Hyundai Ioniq 5",
-    vehicleImageUrl: "/images/ioniq5.jpg",
-    scheduledAt: "2025-09-10T16:00:00Z",
-    serviceCount: 2,
-    partsCount: 0,
-    totalAmount: 0,
-    status: "CANCELLED",
-  },
-];
+// Booking data moved to JSON mock files under src/mockData/
 
 // UPDATED styles to match OrderStatus
 const statusStyles: Record<

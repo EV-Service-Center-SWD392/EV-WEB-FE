@@ -5,16 +5,17 @@ import { PlusIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import Modal from "../../../components/Modal";
 import {
   BookingCard,
-  MOCK_BOOKINGS_DATA,
   OrderStatus,
 } from "../../../components/member/booking/BookingCard";
+import BOOKINGS from "../../../mockData/bookings.json";
+import VEHICLES from "../../../mockData/vehicles.json";
+import BOOKINGSCHEDULES from "../../../mockData/bookingschedules.json";
 import {
   BookingModalContent,
   BookingMode,
-  BookingDetailsData,
 } from "../../../components/member/booking/BookingModalContent";
 
-const MOCK_DETAIL_DATA: BookingDetailsData = {
+const MOCK_DETAIL_DATA: any = {
   id: "1",
   vehicleName: "Vinfast VF8",
   licensePlate: "51K-123.45",
@@ -39,10 +40,9 @@ const MOCK_DETAIL_DATA: BookingDetailsData = {
 export default function MemberBookingPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<BookingMode>("VIEW");
-  const [currentBooking, setCurrentBooking] =
-    useState<Partial<BookingDetailsData> | null>(null);
+  const [currentBooking, setCurrentBooking] = useState<any | null>(null);
 
-  const openModal = (mode: BookingMode, data: Partial<BookingDetailsData>) => {
+  const openModal = (mode: BookingMode, data: any) => {
     setModalMode(mode);
     setCurrentBooking(data);
     setIsModalOpen(true);
@@ -91,11 +91,35 @@ export default function MemberBookingPage() {
           </div>
 
           {/* List of Booking Cards */}
-          {MOCK_BOOKINGS_DATA.map((booking) => (
-            <div key={booking.id} onClick={() => handleCardClick(booking)}>
-              <BookingCard booking={booking} />
-            </div>
-          ))}
+          {BOOKINGS.map((booking: any) => {
+            const vehicle = (VEHICLES as any[]).find(
+              (v) => v.vehicleId === booking.vehicleId
+            );
+            const schedule = (BOOKINGSCHEDULES as any[]).find(
+              (s) => s.slotId === booking.slotId
+            );
+
+            const cardData = {
+              id: booking.bookingId || booking.id || "",
+              vehicleName: vehicle?.licensePlate || booking.vehicleId || "",
+              vehicleImageUrl: vehicle?.image || "/images/placeholder.jpg",
+              scheduledAt:
+                schedule?.startUtc || booking.createAt || booking.createAt,
+              serviceCount: 0,
+              partsCount: 0,
+              totalAmount: 0,
+              status: (booking.status as any) || "PENDING",
+            };
+
+            return (
+              <div
+                key={booking.bookingId || booking.id}
+                onClick={() => handleCardClick(booking)}
+              >
+                <BookingCard booking={cardData} />
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -107,7 +131,7 @@ export default function MemberBookingPage() {
             bookingData={currentBooking}
             onClose={closeModal}
             onSubmit={(payload) => {
-              console.log(`Submitting for mode: ${modalMode}`, payload);
+              console.warn(`Submitting for mode: ${modalMode}`, payload);
               closeModal();
             }}
           />

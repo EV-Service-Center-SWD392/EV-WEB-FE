@@ -1,0 +1,24 @@
+[
+  {
+    "bookingId": "b1",
+    "customerId": "cust_1",
+    "vehicleId": "v1",
+    "slotId": "sc1",
+    "notes": "Check battery",
+    "status": "PENDING",
+    "isActive": true,
+    "createAt": "2025-10-01T08:00:00Z",
+    "updateAt": "2025-10-01T08:00:00Z"
+  },
+  {
+    "bookingId": "b2",
+    "customerId": "cust_2",
+    "vehicleId": "v2",
+    "slotId": "sc3",
+    "notes": "",
+    "status": "IN_PROGRESS",
+    "isActive": true,
+    "createAt": "2025-10-05T09:00:00Z",
+    "updateAt": "2025-10-05T09:00:00Z"
+  }
+]

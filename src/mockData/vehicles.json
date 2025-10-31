@@ -1,0 +1,38 @@
+[
+  {
+    "vehicleId": "v1",
+    "customerId": "cust_1",
+    "modelId": "m_vf8",
+    "licensePlate": "51K-123.45",
+    "year": 2023,
+    "color": "Midnight Blue",
+    "status": "ACTIVE",
+    "isActive": true,
+    "createAt": "2025-01-01T00:00:00Z",
+    "updateAt": "2025-01-01T00:00:00Z"
+  },
+  {
+    "vehicleId": "v2",
+    "customerId": "cust_2",
+    "modelId": "m_tm3",
+    "licensePlate": "30A-987.65",
+    "year": 2022,
+    "color": "Pearl White",
+    "status": "ACTIVE",
+    "isActive": true,
+    "createAt": "2025-01-01T00:00:00Z",
+    "updateAt": "2025-01-01T00:00:00Z"
+  },
+  {
+    "vehicleId": "v3",
+    "customerId": "cust_3",
+    "modelId": "m_taycan",
+    "licensePlate": "59C-111.22",
+    "year": 2021,
+    "color": "Arctic Silver",
+    "status": "ACTIVE",
+    "isActive": true,
+    "createAt": "2025-01-01T00:00:00Z",
+    "updateAt": "2025-01-01T00:00:00Z"
+  }
+]

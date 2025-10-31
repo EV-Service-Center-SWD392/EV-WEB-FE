@@ -58,7 +58,23 @@ export function BookingForm({
   onSubmit,
   isLoading = false,
 }: BookingFormProps) {
-  const [formData, setFormData] = useState({
+  type FormData = {
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    vehicleType: string;
+    vehicleBrand: string;
+    serviceCenter: string;
+    technicianId: string;
+    scheduledDate: string;
+    repairParts: string;
+    description: string;
+    status: BookingStatus;
+    estimatedCost: string;
+    actualCost: string;
+  };
+
+  const [formData, setFormData] = useState<FormData>({
     customerName: "",
     customerEmail: "",
     customerPhone: "",

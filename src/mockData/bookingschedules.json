@@ -1,0 +1,38 @@
+[
+  {
+    "slotId": "sc1",
+    "centerId": "c1",
+    "startUtc": "2025-10-20T09:00:00Z",
+    "endUtc": "2025-10-20T09:30:00Z",
+    "capacity": 1,
+    "note": "Morning slot",
+    "status": "OPEN",
+    "isActive": true,
+    "createAt": "2025-01-01T00:00:00Z",
+    "updateAt": "2025-01-01T00:00:00Z"
+  },
+  {
+    "slotId": "sc2",
+    "centerId": "c1",
+    "startUtc": "2025-10-20T10:30:00Z",
+    "endUtc": "2025-10-20T11:00:00Z",
+    "capacity": 1,
+    "note": "Late morning",
+    "status": "OPEN",
+    "isActive": true,
+    "createAt": "2025-01-01T00:00:00Z",
+    "updateAt": "2025-01-01T00:00:00Z"
+  },
+  {
+    "slotId": "sc3",
+    "centerId": "c2",
+    "startUtc": "2025-10-22T14:00:00Z",
+    "endUtc": "2025-10-22T14:30:00Z",
+    "capacity": 1,
+    "note": "Afternoon",
+    "status": "OPEN",
+    "isActive": true,
+    "createAt": "2025-01-01T00:00:00Z",
+    "updateAt": "2025-01-01T00:00:00Z"
+  }
+]

@@ -1,10 +1,12 @@
 export interface Vehicle {
-  id: string;
+  vehicleId: string;
   customerId: string;
-  modelId: string; // Sẽ cần thêm type cho VehicleModel sau
+  modelId: string; // keep reference to model id
   licensePlate: string;
-  year: number;
-  color: string;
-  createdAt: string;
-  updatedAt: string;
+  year?: number;
+  color?: string;
+  status?: string;
+  isActive?: boolean;
+  createAt: string;
+  updateAt: string;
 }
