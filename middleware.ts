@@ -8,10 +8,27 @@ export function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // Try to read user cookie to extract role (fallback when token might be missing temporarily)
+  let hasValidUser = false;
+  const userCookie = request.cookies.get("user")?.value;
+
+  if (userCookie) {
+    try {
+      const decoded = decodeURIComponent(userCookie);
+      const parsed = JSON.parse(decoded);
+      // If user cookie has an id and role, consider it valid
+      if (parsed && parsed.id && parsed.role) {
+        hasValidUser = true;
+      }
+    } catch {
+      // Invalid user cookie, ignore
+    }
+  }
+
   // ✅ SỬA: Protected routes - chỉ dashboard routes cần auth
   const protectedRoutes = [
     "/admin",
-    "/staff", 
+    "/staff",
     "/technician",
     "/member",
     "/bookings",
@@ -26,14 +43,20 @@ export function middleware(request: NextRequest) {
   );
 
   // Redirect unauthenticated users from protected routes
-  if (isProtectedRoute && !token) {
+  // Allow if either token exists OR valid user cookie exists (covers the timing gap)
+  if (isProtectedRoute && !token && !hasValidUser) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // ✅ SỬA: Auth pages - redirect authenticated users to homepage
-  const authPages = ["/login", "/register", "/forgot-password", "/reset-password"];
+  const authPages = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+  ];
   if (authPages.includes(pathname) && token) {
     // ✅ Tất cả roles sau khi login thành công đều về homepage
     // Từ đó họ sẽ navigate manually đến dashboard

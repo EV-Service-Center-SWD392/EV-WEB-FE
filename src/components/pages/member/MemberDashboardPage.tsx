@@ -235,7 +235,7 @@ export default function MemberDashboardPage() {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> 
     </div>
   );
 }
