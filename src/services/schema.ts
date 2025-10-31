@@ -4956,6 +4956,10 @@ export interface components {
             createdAt?: string | null;
             /** Format: date-time */
             updatedAt?: string | null;
+            customerEmail?: string | null;
+            customerFullName?: string | null;
+            customerAddress?: string | null;
+            customerPhone?: string | null;
             items?: components["schemas"]["ReceiptItemDto"][] | null;
         };
         ReceiptItemDto: {

@@ -7,7 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "openapi:pull": "openapi-typescript https://localhost:7268/swagger/v1/swagger.json -o src/services/schema.ts"
+    "openapi:pull": "openapi-typescript http://localhost:5020/swagger/v1/swagger.json -o src/services/schema.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+
 import {
   Table,
   TableBody,
@@ -8,138 +8,100 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { components } from "@/services/schema";
 
-type ReceiptDto = components["schemas"]["ReceiptDto"];
-// type ReceiptItemDto = components["schemas"]["ReceiptItemDto"];
+type TransactionDto = components["schemas"]["TransactionDto"];
 // Mock data - replace with actual API call
-const MOCK_RECEIPTS: ReceiptDto[] = [
+const MOCK_TRANSACTIONS: TransactionDto[] = [
   {
-    receiptId: "RCP001",
-    totalAmount: 150.99,
-    customerId: "CUST001",
     transactionId: "TXN001",
+    orderId: "ORD001",
+    description: "Product Purchase",
+    totalAmount: 150.99,
+    status: "completed",
     createdAt: new Date().toISOString(),
-    items: [
-      {
-        receiptItemId: "RCPI001",
-        itemId: "ITEM001",
-        itemName: "Product A",
-        itemType: "product",
-        quantity: 1,
-        unitPrice: 75.99,
-        lineTotal: 75.99,
-      },
-      {
-        receiptItemId: "RCPI002",
-        itemId: "ITEM002",
-        itemName: "Product B",
-        itemType: "product",
-        quantity: 1,
-        unitPrice: 75.0,
-        lineTotal: 75.0,
-      },
-    ],
   },
   {
-    receiptId: "RCP002",
-    totalAmount: 29.99,
-    customerId: "CUST001",
     transactionId: "TXN002",
-    createdAt: new Date(Date.now() - 86400000).toISOString(), // Hôm qua
-    items: [
-      {
-        receiptItemId: "RCPI003",
-        itemId: "ITEM003",
-        itemName: "Subscription - Monthly",
-        itemType: "subscription",
-        quantity: 1,
-        unitPrice: 29.99,
-        lineTotal: 29.99,
-      },
-    ],
+    orderId: "ORD002",
+    description: "Subscription Payment",
+    totalAmount: 29.99,
+    status: "completed",
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
   },
   {
-    receiptId: "RCP003",
-    totalAmount: 200.5,
-    customerId: "CUST002",
-    transactionId: "TXN004",
-    createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 ngày trước
-    items: [
-      {
-        receiptItemId: "RCPI004",
-        itemId: "ITEM004",
-        itemName: "Service Fee",
-        itemType: "service",
-        quantity: 1,
-        unitPrice: 200.5,
-        lineTotal: 200.5,
-      },
-    ],
+    transactionId: "TXN003",
+    orderId: "ORD003",
+    description: "Refund",
+    totalAmount: 50.0,
+    status: "pending",
+    createdAt: new Date(Date.now() - 172800000).toISOString(),
   },
 ];
 
-export default function ReceiptHistoryTable() {
-  const router = useRouter();
+const getStatusColor = (status?: string | null) => {
+  switch (status?.toLowerCase()) {
+    case "completed":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+    case "pending":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+    case "failed":
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+    default:
+      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+  }
+};
 
-  const handleViewDetails = (receiptId?: string) => {
-    if (receiptId) {
-      router.push(`/receipt/${receiptId}`);
-    }
-  };
-
+export default function TransactionTable() {
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead>Receipt ID</TableHead>
-            <TableHead>Total Amount</TableHead>
-            <TableHead>Customer ID</TableHead>
-            <TableHead>Transaction ID</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Action</TableHead>
+            <TableHead>Mã thanh toán</TableHead>
+            <TableHead>Mã đơn hàng</TableHead>
+            <TableHead>Mô tả</TableHead>
+            <TableHead>Tổng tiền</TableHead>
+            <TableHead>Trạng thái</TableHead>
+            <TableHead>Ngày</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {MOCK_RECEIPTS.length === 0 ? (
+          {MOCK_TRANSACTIONS.length === 0 ? (
             <TableRow>
               <TableCell
                 colSpan={6}
                 className="text-center py-8 text-muted-foreground"
               >
-                No receipts found
+                No transactions found
               </TableCell>
             </TableRow>
           ) : (
-            MOCK_RECEIPTS.map((receipt) => (
-              <TableRow key={receipt.receiptId} className="hover:bg-muted/50">
+            MOCK_TRANSACTIONS.map((transaction) => (
+              <TableRow
+                key={transaction.transactionId}
+                className="hover:bg-muted/50"
+              >
                 <TableCell className="font-medium">
-                  {receipt.receiptId}
+                  {transaction.transactionId}
                 </TableCell>
+                <TableCell>{transaction.orderId || "-"}</TableCell>
+                <TableCell>{transaction.description || "-"}</TableCell>
                 <TableCell className="font-semibold">
-                  {formatCurrency(receipt.totalAmount || 0)}
-                </TableCell>
-                <TableCell>{receipt.customerId}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {receipt.transactionId || "-"}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatDate(receipt.createdAt)}
+                  {formatCurrency(transaction.totalAmount || 0)}
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => handleViewDetails(receipt.receiptId)}
+                  <Badge
+                    variant="outline"
+                    className={getStatusColor(transaction.status)}
                   >
-                    <ChevronRight className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
+                    {transaction.status || "unknown"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDate(transaction.createdAt)}
                 </TableCell>
               </TableRow>
             ))
