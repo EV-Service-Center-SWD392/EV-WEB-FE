@@ -18,7 +18,7 @@ export default function StaffLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== "staff")) {
+    if (!isLoading && (!user || user.role.toLocaleLowerCase() !== "staff")) {
       router.push("/login");
     }
   }, [user, isLoading, router]);
@@ -31,7 +31,7 @@ export default function StaffLayout({
     );
   }
 
-  if (!user || user.role !== "staff") {
+  if (!user || user.role.toLocaleLowerCase() !== "staff") {
     return null;
   }
 
@@ -47,7 +47,7 @@ export default function StaffLayout({
         {/* Main Content */}
         <main className="flex-1 p-8 bg-background">{children}</main>
       </div>
-      
+
       {/* ChatBot widget (floating) */}
       <ChatBotWidget />
     </div>

@@ -3,7 +3,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useTransactionById } from "@/hooks/useTransactions";
 import TransactionDetail from "@/components/pages/payment/TransactionDetail";
 
-export default function MemberTransactionDetailPage() {
+export default function StaffTransactionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const transactionId = params.id as string;
@@ -24,7 +24,7 @@ export default function MemberTransactionDetailPage() {
       isLoading={isLoading}
       onBack={handleBack}
       onRefresh={handleRefresh}
-      isCustomer={true}
+      isCustomer={false}
     />
   );
 }

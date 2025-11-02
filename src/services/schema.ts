@@ -3570,6 +3570,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/Transaction/paymentId/{orderCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    orderCode: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TransactionDto"][];
+                        "application/json": components["schemas"]["TransactionDto"][];
+                        "text/json": components["schemas"]["TransactionDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/UserAccount/{id}": {
         parameters: {
             query?: never;
@@ -5033,9 +5072,11 @@ export interface components {
             createdAt?: string | null;
             /** Format: date-time */
             updatedAt?: string | null;
+            paymentMethodName?: string | null;
             paymentlink?: string | null;
             /** Format: int32 */
             paymentId?: number | null;
+            receiptId?: string | null;
         };
         UpdateCenterDto: {
             name: string;

@@ -10,7 +10,9 @@ import {
   UserCheck,
   Wrench,
   BarChart3,
-  ChevronRight
+  ChevronRight,
+  Receipt,
+  CreditCard,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -36,6 +38,16 @@ const menuItems: MenuItem[] = [
     href: "/staff/schedules",
     label: "Schedules",
     icon: Calendar,
+  },
+  {
+    href: "/staff/receipt",
+    label: "Hóa đơn",
+    icon: Receipt,
+  },
+  {
+    href: "/staff/payment",
+    label: "Giao dịch",
+    icon: CreditCard,
   },
   {
     href: "/staff/workorders",
@@ -74,13 +86,17 @@ export default function StaffSidebar() {
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">EV</span>
+              <span className="text-primary-foreground font-bold text-sm">
+                EV
+              </span>
             </div>
             <div>
               <h2 className="text-lg font-semibold text-card-foreground">
                 Staff Panel
               </h2>
-              <p className="text-xs text-muted-foreground">Service Operations</p>
+              <p className="text-xs text-muted-foreground">
+                Service Operations
+              </p>
             </div>
           </div>
         </div>
@@ -106,14 +122,14 @@ export default function StaffSidebar() {
                   <Icon
                     className={cn(
                       "h-4 w-4 transition-colors",
-                      isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                      isActive
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground"
                     )}
                   />
                   <span>{item.label}</span>
                 </div>
-                {isActive && (
-                  <ChevronRight className="h-4 w-4 text-primary" />
-                )}
+                {isActive && <ChevronRight className="h-4 w-4 text-primary" />}
               </Link>
             );
           })}

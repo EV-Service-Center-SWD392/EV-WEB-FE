@@ -38,11 +38,11 @@ export default function ReceiptDetail({
           onClick={onBack}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          Quay lại
         </Button>
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground">Receipt not found</p>
+            <p className="text-muted-foreground">Không tìm thấy hóa đơn</p>
           </CardContent>
         </Card>
       </div>
@@ -54,16 +54,16 @@ export default function ReceiptDetail({
       <div className="mb-6 flex items-center justify-between">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          Quay lại
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            Download PDF
+            Tải PDF
           </Button>
           <Button variant="outline" size="sm">
             <Mail className="h-4 w-4 mr-2" />
-            Email Receipt
+            Gửi hóa đơn
           </Button>
         </div>
       </div>
@@ -74,13 +74,13 @@ export default function ReceiptDetail({
           <CardHeader>
             <div className="flex justify-between items-start">
               <div>
-                <CardTitle>Receipt #{receipt.receiptId?.slice(0, 8)}</CardTitle>
+                <CardTitle>Hóa Đơn #{receipt.receiptId?.slice(0, 8)}</CardTitle>
                 <CardDescription>
                   {formatDate(receipt.createdAt)}
                 </CardDescription>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Transaction ID</p>
+                <p className="text-sm text-muted-foreground">Mã giao dịch</p>
                 <p className="font-mono text-sm">
                   {receipt.transactionId?.slice(0, 8) || "-"}
                 </p>
@@ -92,17 +92,19 @@ export default function ReceiptDetail({
         {/* Customer Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Customer Information</CardTitle>
+            <CardTitle>Thông Tin Khách Hàng</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <p className="text-sm text-muted-foreground mb-1">
-                Customer Name
+                Tên Khách Hàng
               </p>
               <p className="font-medium">{receipt.customerFullName || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Customer ID</p>
+              <p className="text-sm text-muted-foreground mb-1">
+                Mã Khách Hàng
+              </p>
               <p className="font-medium font-mono text-sm">
                 {receipt.customerId?.slice(0, 8)}
               </p>
@@ -112,11 +114,13 @@ export default function ReceiptDetail({
               <p className="font-medium">{receipt.customerEmail || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Phone</p>
+              <p className="text-sm text-muted-foreground mb-1">
+                Số điện thoại
+              </p>
               <p className="font-medium">{receipt.customerPhone || "-"}</p>
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm text-muted-foreground mb-1">Address</p>
+              <p className="text-sm text-muted-foreground mb-1">Địa chỉ</p>
               <p className="font-medium">{receipt.customerAddress || "-"}</p>
             </div>
           </CardContent>
@@ -151,7 +155,7 @@ export default function ReceiptDetail({
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Qty: {item.quantity} ×{" "}
+                            Số lượng: {item.quantity} ×{" "}
                             {formatCurrency(item.unitPrice || 0)}
                           </p>
                         </div>
@@ -165,7 +169,7 @@ export default function ReceiptDetail({
                   {/* Totals */}
                   <div className="pt-4 border-t border-border space-y-2">
                     <div className="flex justify-between text-lg font-bold">
-                      <p>Total Amount</p>
+                      <p>Tổng Số Tiền</p>
                       <p className="text-primary">
                         {formatCurrency(receipt.totalAmount || 0)}
                       </p>
@@ -174,7 +178,7 @@ export default function ReceiptDetail({
                 </>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  No items in receipt
+                  Không có mặt hàng nào trong hóa đơn
                 </p>
               )}
             </div>
@@ -191,7 +195,7 @@ function ReceiptDetailSkeleton({ onBack }: { onBack: () => void }) {
       <div className="mb-6 flex items-center justify-between">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          Quay lại
         </Button>
         <div className="flex gap-2">
           <Skeleton className="h-9 w-32" />
