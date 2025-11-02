@@ -57,19 +57,23 @@ export async function login(payload: {
 }
 
 export async function register(payload: {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
-  username?: string;
   phoneNumber?: string;
   address?: string;
 }): Promise<AuthResultDto> {
   if (USE_MOCK_API) {
-    const res = await mockRegister(payload);
+    const res = await mockRegister({
+      name: `${payload.firstName} ${payload.lastName}`,
+      email: payload.email,
+      password: payload.password,
+    });
     return {
       userId: res.id,
       email: payload.email,
-      fullName: payload.name,
+      fullName: `${payload.firstName} ${payload.lastName}`,
       role: "member",
       accessToken: `mock-jwt-${res.id}-${Date.now()}`,
       refreshToken: null,
@@ -77,13 +81,13 @@ export async function register(payload: {
     };
   }
 
-  // Map our simple register payload to API's RegisterDto
+  // Map payload directly to API's RegisterDto
   const apiPayload: RegisterDto = {
     email: payload.email,
     password: payload.password,
     confirmPassword: payload.password,
-    firstName: payload.name,
-    lastName: "",
+    firstName: payload.firstName,
+    lastName: payload.lastName,
     phoneNumber: payload.phoneNumber ?? null,
     address: payload.address ?? null,
   };

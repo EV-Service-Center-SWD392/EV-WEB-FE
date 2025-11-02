@@ -30,7 +30,7 @@ export default function CTASection() {
                 </Button>
               </div>
             </>
-          ) : user.role === "member" ? (
+          ) : user.role.toLocaleLowerCase() === "customer" ? (
             <>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground">
                 Quản lý xe điện của bạn
