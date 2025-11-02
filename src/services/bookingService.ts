@@ -1,5 +1,6 @@
 import { BookingStatus, BookingRecord } from "@/entities/booking.types";
 import BOOKINGS_JSON from "../mockData/bookings.json";
+import axios from "axios";
 
 // Basic normalizer for status: ensure it matches BookingStatus values
 function normalizeStatus(s?: string): BookingStatus {
@@ -99,9 +100,15 @@ class BookingService {
     const base = process.env.NEXT_PUBLIC_API_BASE_URL;
     if (!base) return [];
     try {
-      const res = await fetch(`${base.replace(/\/$/, "")}/api/Center`);
-      if (!res.ok) return [];
-      const data = await res.json();
+      const url = `${base.replace(/\/$/, "")}/api/Center`;
+      const res = await axios.get(url, {
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+          Accept: "application/json",
+        },
+        timeout: 5000,
+      });
+      const data = res.data;
       return Array.isArray(data) ? data : [];
     } catch {
       // swallow and return empty list in dev
