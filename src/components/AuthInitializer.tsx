@@ -25,7 +25,8 @@ export default function AuthInitializer({
       setLoading(true);
       me()
         .then((userData) => {
-          setAuth(userData, token);
+          if (userData) setAuth(userData, token);
+          else clear();
         })
         .catch(() => {
           // Token is invalid, clear auth state

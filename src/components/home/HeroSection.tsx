@@ -37,7 +37,7 @@ export default function HeroSection() {
                 <Link href="/login">Đăng nhập</Link>
               </Button>
             </>
-          ) : user.role === "member" ? (
+          ) : user.role.toLocaleLowerCase() === "customer" ? (
             <>
               <Button asChild size="lg">
                 <Link href="/member/dashboard">Vào Dashboard</Link>
