@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +16,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 import type { TransactionDto } from "@/services/transactionService";
 import { useTransactionManagement } from "@/hooks/useTransactions";
 
@@ -46,6 +53,9 @@ export default function TransactionDetail({
   onRefresh,
   isCustomer = true,
 }: TransactionDetailProps) {
+  const searchParams = useSearchParams();
+  const fromCreatePage = searchParams.get("fromCreatePage") === "true";
+
   const { isProcessing, cancelTransaction, removeTransaction, confirmPayment } =
     useTransactionManagement();
 
@@ -53,6 +63,14 @@ export default function TransactionDetail({
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showConfirmPaymentDialog, setShowConfirmPaymentDialog] =
     useState(false);
+  const [showWarning, setShowWarning] = useState(false);
+
+  // Show warning message if redirected from create page
+  useEffect(() => {
+    if (fromCreatePage && transaction?.status?.toLowerCase() === "created") {
+      setShowWarning(true);
+    }
+  }, [fromCreatePage, transaction]);
 
   if (isLoading) {
     return <TransactionDetailSkeleton />;
@@ -110,10 +128,14 @@ export default function TransactionDetail({
 
     if (success) {
       setShowCancelConfirm(false);
-      // Refresh the page or redirect after cancellation
+      // Refresh the page after cancellation
       if (onRefresh) {
         onRefresh();
       }
+      // Force a small delay to ensure the refresh happens
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } else {
       alert("Không thể hủy giao dịch. Vui lòng thử lại.");
     }
@@ -130,10 +152,14 @@ export default function TransactionDetail({
 
     if (success) {
       setShowConfirmPaymentDialog(false);
-      // Refresh the page or redirect after confirmation
+      // Refresh the page after confirmation
       if (onRefresh) {
         onRefresh();
       }
+      // Force a small delay to ensure the refresh happens
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } else {
       alert("Không thể xác nhận thanh toán. Vui lòng thử lại.");
     }
@@ -160,6 +186,40 @@ export default function TransactionDetail({
           </p>
         </div>
       </div>
+
+      {/* Warning Message - Show when redirected from create page */}
+      {showWarning && (
+        <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600 rounded-md flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-yellow-800">
+              Giao dịch chưa xử lý
+            </p>
+            <p className="text-sm text-yellow-700  mt-1">
+              Bạn đang có giao dịch chưa xử lý. Hãy tiến hành thanh toán hoặc
+              hủy nếu muốn tạo giao dịch mới.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowWarning(false)}
+            className="text-yellow-600 hover:text-yellow-800"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Main Transaction Details */}
@@ -189,6 +249,27 @@ export default function TransactionDetail({
                   <p className="mt-2 text-sm bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200 p-3 rounded-md">
                     {transaction.reason}
                   </p>
+                </div>
+              )}
+
+            {/* Receipt ID - Show when status is paid */}
+            {transaction.status?.toLowerCase() === "paid" &&
+              transaction.receiptId && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Mã Hóa Đơn
+                  </label>
+                  <Link
+                    href={
+                      isCustomer
+                        ? `/member/receipt/${transaction.receiptId}`
+                        : `/staff/receipt/${transaction.receiptId}`
+                    }
+                    className="mt-1 flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
+                  >
+                    {transaction.receiptId}
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
                 </div>
               )}
 

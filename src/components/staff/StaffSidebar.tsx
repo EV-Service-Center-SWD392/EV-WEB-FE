@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Receipt,
   CreditCard,
+  Plus,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -48,6 +49,11 @@ const menuItems: MenuItem[] = [
     href: "/staff/payment",
     label: "Giao dịch",
     icon: CreditCard,
+  },
+  {
+    href: "/staff/create-payment",
+    label: "Tạo giao dịch",
+    icon: Plus,
   },
   {
     href: "/staff/workorders",

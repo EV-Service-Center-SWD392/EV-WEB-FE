@@ -9,6 +9,8 @@ import {
   getTransactionById,
   updateTransactionStatus,
   deleteTransaction,
+  cancelTransaction as cancelTransactionApi,
+  getTransactionByPaymentId,
 } from "@/services/transactionService";
 import type { TransactionDto } from "@/services/transactionService";
 
@@ -115,11 +117,11 @@ export function useTransactionManagement() {
     try {
       setIsProcessing(true);
       setError(null);
-      await updateTransactionStatus(transactionId, { status: "cancelled" });
+      await deleteTransaction(transactionId);
       return true;
     } catch (err) {
       setError(err as Error);
-      console.error("Error confirming payment:", err);
+      console.error("Error deleting transaction:", err);
       return false;
     } finally {
       setIsProcessing(false);
@@ -173,5 +175,59 @@ export function useTransactionManagement() {
     removeTransaction,
     confirmPayment,
     updateStatus,
+  };
+}
+
+/**
+ * Hook for payment return operations
+ * Handles cancel transaction and get transaction by payment ID
+ */
+export function usePaymentReturn() {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  /**
+   * Cancel transaction by orderCode
+   */
+  const cancelByOrderCode = async (orderCode: number): Promise<boolean> => {
+    try {
+      setIsProcessing(true);
+      setError(null);
+      await cancelTransactionApi(orderCode);
+      return true;
+    } catch (err) {
+      setError(err as Error);
+      console.error("Error canceling transaction by order code:", err);
+      return false;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /**
+   * Get transaction by payment ID (orderCode)
+   */
+  const getTransactionByOrderCode = async (
+    orderCode: number
+  ): Promise<TransactionDto | null> => {
+    try {
+      setIsProcessing(true);
+      setError(null);
+      const transaction = await getTransactionByPaymentId(orderCode);
+      return transaction;
+    } catch (err) {
+      setError(err as Error);
+      console.error("Error getting transaction by order code:", err);
+      return null;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return {
+    isProcessing,
+    error,
+    cancelByOrderCode,
+    getTransactionByOrderCode,
   };
 }

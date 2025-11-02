@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Download, Mail } from "lucide-react";
+import { ArrowLeft, Download, Mail, CheckCircle } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import type { ReceiptDto } from "@/services/receiptService";
 
@@ -25,6 +27,17 @@ export default function ReceiptDetail({
   isLoading,
   onBack,
 }: ReceiptDetailProps) {
+  const searchParams = useSearchParams();
+  const alreadyPaid = searchParams.get("alreadyPaid") === "true";
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // Show success message if redirected from create-payment page
+  useEffect(() => {
+    if (alreadyPaid) {
+      setShowSuccessMessage(true);
+    }
+  }, [alreadyPaid]);
+
   if (isLoading) {
     return <ReceiptDetailSkeleton onBack={onBack} />;
   }
@@ -67,6 +80,40 @@ export default function ReceiptDetail({
           </Button>
         </div>
       </div>
+
+      {/* Success Message - Show when order is already paid */}
+      {showSuccessMessage && (
+        <div className="mb-6 p-4 bg-green-50  border-l-4 border-green-400  rounded-md flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600  mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-800 ">
+              Đơn hàng đã được thanh toán
+            </p>
+            <p className="text-sm text-green-700 mt-1">
+              Đơn hàng của bạn đã được thanh toán thành công. Dưới đây là hóa
+              đơn chi tiết.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowSuccessMessage(false)}
+            className="text-green-600 hover:text-green-800"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-6">
         {/* Receipt Header */}

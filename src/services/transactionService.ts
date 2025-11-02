@@ -84,6 +84,18 @@ export async function cancelTransaction(orderCode: number): Promise<boolean> {
   return data;
 }
 
+/**
+ * Get transaction by payment ID (orderCode)
+ */
+export async function getTransactionByPaymentId(
+  orderCode: number
+): Promise<TransactionDto> {
+  const { data } = await api.get<TransactionDto>(
+    `/Transaction/paymentId/${orderCode}`
+  );
+  return data;
+}
+
 export const transactionService = {
   getTransactions,
   createTransaction,
@@ -93,6 +105,7 @@ export const transactionService = {
   getTransactionsByUser,
   getTransactionsByOrder,
   cancelTransaction,
+  getTransactionByPaymentId,
 };
 
 export default transactionService;

@@ -12,6 +12,7 @@ import {
   History,
   Wrench,
   Home,
+  Plus,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -46,6 +47,11 @@ const navigation = [
     name: "Thanh toán",
     href: "/member/payment",
     icon: CreditCard,
+  },
+  {
+    name: "Tạo giao dịch",
+    href: "/member/create-payment",
+    icon: Plus,
   },
   {
     name: "Hồ sơ",
