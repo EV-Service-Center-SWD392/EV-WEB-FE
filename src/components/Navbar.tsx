@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { User } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 
 export default function Navbar() {
@@ -31,6 +32,17 @@ export default function Navbar() {
         return "/";
     }
   };
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -81,9 +93,45 @@ export default function Navbar() {
               </>
             ) : (
               <>
+                {/* Personal dropdown (person icon) */}
+                <div className="relative" ref={menuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-expanded={menuOpen}
+                    aria-label="Open personal menu"
+                    className="p-2 rounded hover:bg-muted transition-colors"
+                  >
+                    <User className="h-5 w-5 text-gray-700" />
+                  </button>
+
+                  {menuOpen && (
+                    <ul className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-50 py-1">
+                      <li>
+                        <Link
+                          href="/member/payments-history"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          Lịch sử thanh toán
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/member/invoices-history"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          Lịch sử hóa đơn
+                        </Link>
+                      </li>
+                    </ul>
+                  )}
+                </div>
                 <Button variant="outline" asChild>
                   <Link href={getDashboardUrl(user.role)}>Dashboard</Link>
                 </Button>
+
                 <Button variant="ghost" onClick={logout}>
                   Đăng xuất
                 </Button>

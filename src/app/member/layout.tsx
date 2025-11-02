@@ -17,7 +17,7 @@ export default function MemberLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== "member")) {
+    if (!isLoading && (!user || user.role.toLocaleLowerCase() !== "customer")) {
       router.push("/login");
     }
   }, [user, isLoading, router]);
@@ -30,7 +30,7 @@ export default function MemberLayout({
     );
   }
 
-  if (!user || user.role !== "member") {
+  if (!user || user.role.toLowerCase() !== "customer") {
     return null;
   }
 

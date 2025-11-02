@@ -18,9 +18,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { login } from "@/services/auth";
+import { login, type Role } from "@/services/auth";
 import { useAuthStore } from "@/stores/auth";
 import { LoadingButton } from "@/components/ui/LoadingSpinner";
+import { components } from "@/services/schema";
+
+type AuthResult = components["schemas"]["AuthResultDto"];
 
 const schema = z.object({
   email: z.string().email("Email không hợp lệ"),
@@ -47,14 +50,14 @@ export default function LoginPage() {
     if (next) return next;
 
     // Logic redirect theo role
-    switch (role) {
+    switch (role.toLocaleLowerCase()) {
       case "admin":
         return "/admin/dashboard";
       case "staff":
         return "/staff/dashboard";
       case "technician":
         return "/technician/dashboard";
-      case "member":
+      case "customer":
         return "/"; // ✅ Member ở lại homepage thay vì dashboard
       default:
         return "/";
@@ -66,15 +69,27 @@ export default function LoginPage() {
     setErr("");
     try {
       const res = await login(data);
-      setAuth(res.user, res.access_token ?? null);
+
+      // AuthResultDto shape: { userId, email, fullName, role, accessToken, refreshToken, expiresAt }
+      const auth = res as AuthResult;
+      console.log("auth: ", auth);
+      const user = {
+        id: auth.userId ?? "",
+        name: auth.fullName ?? auth.email ?? "",
+        email: auth.email ?? "",
+        role: (auth.role as Role) ?? ("customer" as Role),
+      };
+
+      setAuth(user, auth.accessToken ?? null);
 
       // ✅ SỬA: Sử dụng logic redirect mới
-      const redirectUrl = getRoleBasedRedirect(res.user.role);
-      toast.success(`Chào mừng ${res.user.name}! Đăng nhập thành công.`);
+      const redirectUrl = getRoleBasedRedirect(auth.role ?? "customer");
+      toast.success(`Chào mừng ${user.name}! Đăng nhập thành công.`);
       router.push(redirectUrl);
     } catch (e: unknown) {
       const error = e as { response?: { data?: { message?: string } } };
-      const errorMessage = error?.response?.data?.message || "Đăng nhập thất bại";
+      const errorMessage =
+        error?.response?.data?.message || "Đăng nhập thất bại";
       setErr(errorMessage);
       toast.error(errorMessage);
     } finally {

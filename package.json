@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "openapi:pull": "openapi-typescript http://localhost:5020/swagger/v1/swagger.json -o src/services/schema.ts"
   },
   "proxy": "https://evscmmsbe-production.up.railway.app/",
   "dependencies": {
@@ -15,6 +16,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.2",
+    "@radix-ui/react-alert-dialog": "^1.1.4",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
@@ -54,8 +56,10 @@
     "eslint-config-next": "15.5.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
+    "openapi-fetch": "^0.15.0",
+    "openapi-typescript": "^7.10.1",
     "prettier": "^3.6.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }

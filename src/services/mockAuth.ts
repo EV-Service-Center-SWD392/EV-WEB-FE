@@ -1,4 +1,4 @@
-export type Role = "member" | "staff" | "technician" | "admin";
+export type Role = "customer" | "staff" | "technician" | "admin";
 
 export interface MockUser {
   id: string;
@@ -70,7 +70,7 @@ export const MOCK_ACCOUNTS: MockUser[] = [
     password: "123456",
     name: "Phạm Thị Member",
     username: "member",
-    role: "member",
+    role: "customer",
     phoneNumber: "0904567890",
     address: "321 Member Lane, Quận 2, TPHCM",
     avatar:
@@ -146,7 +146,7 @@ export async function mockRegister(payload: {
     password: payload.password,
     name: payload.name,
     username: payload.username || `user${Date.now()}`,
-    role: "member", // Default role for new registrations
+    role: "customer", // Default role for new registrations
     phoneNumber: payload.phoneNumber || "",
     address: payload.address || "",
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(payload.name)}&background=random`,
@@ -272,7 +272,7 @@ export async function mockGetStats(
         workingHours: 8.5,
       };
 
-    case "member":
+    case "customer":
       return {
         myVehicles: 2,
         upcomingServices: 1,
