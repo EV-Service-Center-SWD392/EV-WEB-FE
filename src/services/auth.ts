@@ -75,7 +75,7 @@ export async function login(payload: {
   }
 
   const { data } = await api.post<AuthResultDto>(
-    "/Auth/login",
+    "/api/Auth/login",
     payload as LoginDto
   );
   return data;
@@ -123,7 +123,10 @@ export async function register(payload: {
     console.debug("[auth.ts] Register payload:", apiPayload);
   }
 
-  const { data } = await api.post<AuthResultDto>("/Auth/register", apiPayload);
+  const { data } = await api.post<AuthResultDto>(
+    "/api/Auth/register",
+    apiPayload
+  );
   return data;
 }
 
@@ -171,7 +174,7 @@ export async function createStaff(payload: {
   };
 
   const { data } = await api.post<AuthResultDto>(
-    "/Auth/create-staff",
+    "/api/Auth/create-staff",
     apiPayload
   );
   return data;
@@ -187,7 +190,7 @@ export async function me() {
   }
 
   // Call the backend /Auth/me endpoint (keep path consistent with other Auth calls)
-  const { data } = await api.get("/Auth/me");
+  const { data } = await api.get("api/Auth/me");
 
   // The real API may return a few shapes depending on backend implementation.
   // Normalize it to our local `User` shape: { id, name, email, role }
@@ -257,7 +260,7 @@ export async function refreshToken(payload: {
   };
 
   const { data } = await api.post<AuthResultDto>(
-    "/Auth/refresh-token",
+    "/api/Auth/refresh-token",
     apiPayload
   );
   return data;
@@ -273,7 +276,10 @@ export async function revokeToken(payload: {
   const apiPayload: RevokeTokenRequest = {
     refreshToken: payload.refreshToken ?? null,
   };
-  const { data } = await api.post<boolean>("/Auth/revoke-token", apiPayload);
+  const { data } = await api.post<boolean>(
+    "/api/Auth/revoke-token",
+    apiPayload
+  );
   return data;
 }
 
@@ -282,7 +288,7 @@ export async function revokeAllTokens(): Promise<boolean> {
     return true;
   }
 
-  const { data } = await api.post<boolean>("/Auth/revoke-all-tokens");
+  const { data } = await api.post<boolean>("/api/Auth/revoke-all-tokens");
   return data;
 }
 
