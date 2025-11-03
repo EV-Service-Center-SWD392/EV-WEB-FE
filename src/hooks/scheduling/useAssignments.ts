@@ -42,10 +42,6 @@ export function useCreateAssignment() {
             queryClient.invalidateQueries({ queryKey: ["assignments"] });
             queryClient.invalidateQueries({ queryKey: ["assignable-work"] });
             queryClient.invalidateQueries({ queryKey: ["assignable-bookings-work"] });
-
-            toast.success("Assignment created successfully", {
-                description: `Technician assigned to work item`,
-            });
         },
         onError: (error: unknown) => {
             const status = (error as { response?: { status?: number } })?.response?.status;

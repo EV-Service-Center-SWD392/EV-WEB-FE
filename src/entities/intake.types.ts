@@ -3,7 +3,12 @@
  * Based on SWD_ThanhThao_Rule.txt - Section B3
  */
 
-export type IntakeStatus = 'Draft' | 'Completed';
+export type IntakeStatus =
+    | 'Checked_In'
+    | 'Inspecting'
+    | 'Verified'
+    | 'Finalized'
+    | 'Cancelled';
 
 export type ChecklistItemType = 'Bool' | 'Number' | 'Text';
 
@@ -18,11 +23,27 @@ export type SeverityLevel = 'Low' | 'Medium' | 'High';
 
 export interface ServiceIntake {
     id: string;
-    bookingId: string;
+    bookingId?: string;
+    bookingCode?: string;
+    serviceCenterId?: string;
+    serviceCenterName?: string;
+    walkIn?: boolean;
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    vehicleBrand?: string;
+    vehicleModel?: string;
+    vehicleType?: string;
+    licensePlate?: string;
     odometer?: number;
     batterySoC?: number;
     photos?: IntakePhoto[];
     notes?: string;
+    arrivalNotes?: string;
+    scheduledDate?: string;
+    checklistInitializedAt?: string;
+    verifiedBy?: string;
+    verifiedAt?: string;
     status: IntakeStatus;
     createdAt: string;
     updatedAt?: string;
@@ -67,16 +88,33 @@ export interface ChecklistResponseWithItem extends ChecklistResponse {
 // Request/Response DTOs
 
 export interface CreateIntakeRequest {
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    vehicleBrand?: string;
+    vehicleModel?: string;
+    vehicleType?: string;
+    walkIn?: boolean;
+    licensePlate?: string;
     odometer?: number;
     batterySoC?: number;
     notes?: string;
+    arrivalNotes?: string;
     photos?: string[]; // URLs
 }
 
 export interface UpdateIntakeRequest {
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    vehicleBrand?: string;
+    vehicleModel?: string;
+    vehicleType?: string;
+    licensePlate?: string;
     odometer?: number;
     batterySoC?: number;
     notes?: string;
+    arrivalNotes?: string;
     photos?: string[];
     status?: IntakeStatus;
 }

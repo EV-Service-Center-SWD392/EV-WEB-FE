@@ -6,7 +6,8 @@
 'use client';
 
 import * as React from 'react';
-import { ImagePlus, X } from 'lucide-react';
+import { ImagePlus, Loader2, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import type { ChecklistItem, ChecklistResponse, SeverityLevel } from '@/entities/intake.types';
+import { uploadChecklistPhoto } from '@/services/intakeService';
 
 interface ChecklistItemRowProps {
     item: ChecklistItem;
@@ -36,6 +38,7 @@ export function ChecklistItemRow({
 }: ChecklistItemRowProps) {
     const [photoUrl, setPhotoUrl] = React.useState(response?.photoUrl ?? '');
     const [note, setNote] = React.useState(response?.note ?? '');
+    const [isUploadingPhoto, setIsUploadingPhoto] = React.useState(false);
 
     const handleValueChange = (value: boolean | number | string | undefined) => {
         const update: Partial<ChecklistResponse> = {
@@ -77,19 +80,27 @@ export function ChecklistItemRow({
         });
     };
 
-    const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        // TODO: Upload to server and get URL
-        const url = URL.createObjectURL(file);
-        setPhotoUrl(url);
-        onChangeAction({
-            ...response,
-            checklistItemId: item.id,
-            photoUrl: url,
-            note,
-        });
+        setIsUploadingPhoto(true);
+        try {
+            const remoteUrl = await uploadChecklistPhoto(file);
+            setPhotoUrl(remoteUrl);
+            onChangeAction({
+                ...response,
+                checklistItemId: item.id,
+                photoUrl: remoteUrl,
+                note,
+            });
+        } catch (error) {
+            console.error('Upload checklist photo failed', error);
+            toast.error('Không thể tải ảnh checklist, vui lòng thử lại.');
+        } finally {
+            setIsUploadingPhoto(false);
+            event.target.value = '';
+        }
     };
 
     const handleRemovePhoto = () => {
@@ -224,9 +235,19 @@ export function ChecklistItemRow({
                             variant="outline"
                             size="sm"
                             onClick={() => document.getElementById(`photo-${item.id}`)?.click()}
+                            disabled={isUploadingPhoto}
                         >
-                            <ImagePlus className="w-4 h-4 mr-2" />
-                            Attach Photo
+                            {isUploadingPhoto ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Đang tải ảnh...
+                                </>
+                            ) : (
+                                <>
+                                    <ImagePlus className="w-4 h-4 mr-2" />
+                                    Đính kèm ảnh
+                                </>
+                            )}
                         </Button>
                         <input
                             id={`photo-${item.id}`}
@@ -234,6 +255,7 @@ export function ChecklistItemRow({
                             accept="image/*"
                             className="hidden"
                             onChange={handlePhotoUpload}
+                            disabled={isUploadingPhoto}
                         />
                     </div>
                 )}

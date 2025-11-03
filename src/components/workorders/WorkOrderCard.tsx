@@ -52,7 +52,19 @@ export function WorkOrderCard({
 
     const getActionButton = () => {
         switch (workOrder.status) {
-            case 'Planned':
+            case 'Draft':
+                return (
+                    <Button size="sm" variant="outline" disabled className="w-full">
+                        Ready to submit
+                    </Button>
+                );
+            case 'AwaitingApproval':
+                return (
+                    <Button size="sm" variant="outline" disabled className="w-full">
+                        Pending approval
+                    </Button>
+                );
+            case 'Approved':
                 return (
                     <Button
                         size="sm"
@@ -115,6 +127,18 @@ export function WorkOrderCard({
                         Waiting for Parts
                     </Button>
                 );
+            case 'Revised':
+                return (
+                    <Button size="sm" variant="outline" disabled className="w-full">
+                        Needs revision
+                    </Button>
+                );
+            case 'Rejected':
+                return (
+                    <Button size="sm" variant="outline" disabled className="w-full">
+                        Rejected
+                    </Button>
+                );
             case 'Completed':
                 return (
                     <Button size="sm" variant="outline" disabled className="w-full">
@@ -166,6 +190,24 @@ export function WorkOrderCard({
                             <span className="text-muted-foreground">Customer: </span>
                             <span className="font-medium">{workOrder.customerInfo.name}</span>
                         </div>
+                    )}
+
+                    {/* Estimated Cost */}
+                    {workOrder.estimatedCost !== undefined && (
+                        <div className="text-sm text-muted-foreground">
+                            Estimated Cost:{' '}
+                            {new Intl.NumberFormat('vi-VN', {
+                                style: 'currency',
+                                currency: 'VND',
+                            }).format(workOrder.estimatedCost)}
+                        </div>
+                    )}
+
+                    {/* Parts Required */}
+                    {workOrder.partsRequired && (
+                        <p className="text-xs text-muted-foreground">
+                            Parts: {workOrder.partsRequired}
+                        </p>
                     )}
 
                     {/* Progress */}

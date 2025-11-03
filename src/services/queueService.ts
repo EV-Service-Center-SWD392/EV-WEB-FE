@@ -6,7 +6,7 @@ import type {
     QueueReorderDTO,
 } from "@/entities/queue.types";
 // TEMPORARY: Mock data for development
-import { getMockQueueTickets } from "@/lib/mockData/schedulingMockData";
+import { getMockQueueTickets, mockQueueTickets } from "@/lib/mockData/schedulingMockData";
 
 import { api } from "./api";
 
@@ -37,6 +37,27 @@ export const queueService = {
      * Add a service request to the queue
      */
     async addToQueue(dto: CreateQueueTicketDTO): Promise<QueueTicket> {
+        if (USE_MOCK_DATA) {
+            const now = new Date();
+            const ticketsInCenter = mockQueueTickets.filter((ticket) => ticket.centerId === dto.centerId);
+            const nextQueueNo =
+                ticketsInCenter.length > 0
+                    ? Math.max(...ticketsInCenter.map((ticket) => ticket.queueNo)) + 1
+                    : 1;
+
+            const newTicket: QueueTicket = {
+                id: `queue-${Date.now()}`,
+                centerId: dto.centerId,
+                serviceRequestId: dto.serviceRequestId,
+                queueNo: nextQueueNo,
+                priority: dto.priority ?? 2,
+                status: "Waiting",
+                createdAt: now.toISOString(),
+            };
+            mockQueueTickets.push(newTicket);
+            return newTicket;
+        }
+
         const response = await api.post<QueueTicket>(BASE_PATH, dto);
         return response.data;
     },

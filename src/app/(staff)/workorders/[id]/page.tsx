@@ -16,7 +16,12 @@ import {
     CheckCircle,
     ImagePlus,
     FileText,
+    ClipboardList,
+    XCircle,
+    Clock,
+    RefreshCcw,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +36,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { WorkOrderProgressTracker } from '@/components/workorders/WorkOrderProgressTracker';
 import { TaskList } from '@/components/workorders/TaskList';
 import {
@@ -45,7 +51,94 @@ import {
     useUploadPhoto,
     useDeletePhoto,
 } from '@/hooks/workorders/useWorkOrders';
+import type { WorkOrderStatus } from '@/entities/workorder.types';
 import { getWorkOrderStatusLabel } from '@/entities/workorder.types';
+import { cn } from '@/lib/utils';
+
+type StatusTone = 'info' | 'success' | 'warning' | 'danger';
+
+const toneStyles: Record<StatusTone, string> = {
+    info: 'border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-500/40 dark:bg-sky-900/30 dark:text-sky-100 [&>svg]:text-sky-500',
+    success: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-900/30 dark:text-emerald-100 [&>svg]:text-emerald-500',
+    warning: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-900/30 dark:text-amber-100 [&>svg]:text-amber-400',
+    danger: 'border-red-300 bg-red-50 text-red-900 dark:border-red-500/40 dark:bg-red-900/30 dark:text-red-100 [&>svg]:text-red-500',
+};
+
+const statusGuidance: Record<
+    WorkOrderStatus,
+    { title: string; description: string; tone: StatusTone; icon: LucideIcon }
+> = {
+    Draft: {
+        title: 'Draft in progress',
+        description:
+            'Collect the required tasks, estimated costs, and notes before submitting this work order for customer approval.',
+        tone: 'info',
+        icon: ClipboardList,
+    },
+    AwaitingApproval: {
+        title: 'Waiting for customer decision',
+        description:
+            'The proposal has been sent. Capture the customer response and use Approve or Reject once they confirm, or resubmit if changes are required.',
+        tone: 'warning',
+        icon: Clock,
+    },
+    Approved: {
+        title: 'Work order approved',
+        description:
+            'The customer agreed to the scope. Start work when a technician is ready using the Start Work action.',
+        tone: 'success',
+        icon: ShieldCheck,
+    },
+    InProgress: {
+        title: 'Technician is working',
+        description:
+            'Monitor progress and use Pause, Waiting Parts, or Send to QA if the workflow needs to branch.',
+        tone: 'info',
+        icon: Play,
+    },
+    Paused: {
+        title: 'Work is paused',
+        description:
+            'Resume the order when the blocker is cleared, or update notes with the reason for the pause.',
+        tone: 'warning',
+        icon: Pause,
+    },
+    WaitingParts: {
+        title: 'Waiting for spare parts',
+        description:
+            'Parts are on order. Update the ETA in notes and resume work as soon as the parts arrive.',
+        tone: 'warning',
+        icon: PackageOpen,
+    },
+    QA: {
+        title: 'Under QA review',
+        description:
+            'Quality assurance must sign off before the vehicle can be released. Capture any inspection findings.',
+        tone: 'info',
+        icon: ShieldCheck,
+    },
+    Revised: {
+        title: 'Customer requested revisions',
+        description:
+            'Adjust the tasks, pricing, or notes per customer feedback, then resubmit the order for approval.',
+        tone: 'info',
+        icon: RefreshCcw,
+    },
+    Rejected: {
+        title: 'Work order rejected',
+        description:
+            'The customer declined this proposal. Update the scope or close out the order after documenting the reason.',
+        tone: 'danger',
+        icon: XCircle,
+    },
+    Completed: {
+        title: 'Order completed',
+        description:
+            'Confirm delivery paperwork and customer handoff steps are done before archiving this order.',
+        tone: 'success',
+        icon: CheckCircle,
+    },
+};
 
 export default function StaffWorkOrderDetailPage() {
     const params = useParams();
@@ -75,7 +168,7 @@ export default function StaffWorkOrderDetailPage() {
         }
     }, [workOrder?.notes]);
 
-    const handleStatusChange = async (status: 'Planned' | 'InProgress' | 'Paused' | 'WaitingParts' | 'QA' | 'Completed') => {
+    const handleStatusChange = async (status: WorkOrderStatus) => {
         if (!workOrder) return;
         await updateStatusMutation.mutateAsync({ id: workOrder.id, status });
     };
@@ -116,6 +209,9 @@ export default function StaffWorkOrderDetailPage() {
         );
     }
 
+    const guidance = statusGuidance[workOrder.status];
+    const GuidanceIcon = guidance.icon;
+
     return (
         <div className="flex flex-col gap-6 p-6">
             {/* Header */}
@@ -141,7 +237,34 @@ export default function StaffWorkOrderDetailPage() {
 
                 {/* Status Actions */}
                 <div className="flex gap-2">
-                    {workOrder.status === 'Planned' && (
+                    {workOrder.status === 'Draft' && (
+                        <Button onClick={() => handleStatusChange('AwaitingApproval')}>
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            Submit for approval
+                        </Button>
+                    )}
+                    {(workOrder.status === 'Revised' || workOrder.status === 'Rejected') && (
+                        <Button onClick={() => handleStatusChange('AwaitingApproval')}>
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            Resubmit for approval
+                        </Button>
+                    )}
+                    {workOrder.status === 'AwaitingApproval' && (
+                        <>
+                            <Button
+                                variant="outline"
+                                onClick={() => handleStatusChange('Rejected')}
+                            >
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Reject
+                            </Button>
+                            <Button onClick={() => handleStatusChange('Approved')}>
+                                <ShieldCheck className="mr-2 h-4 w-4" />
+                                Approve
+                            </Button>
+                        </>
+                    )}
+                    {workOrder.status === 'Approved' && (
                         <Button onClick={() => handleStatusChange('InProgress')}>
                             <Play className="mr-2 h-4 w-4" />
                             Start Work
@@ -184,6 +307,12 @@ export default function StaffWorkOrderDetailPage() {
                 </div>
             </div>
 
+            <Alert className={cn('border-l-4 shadow-sm', toneStyles[guidance.tone])}>
+                <GuidanceIcon className="h-4 w-4" />
+                <AlertTitle>{guidance.title}</AlertTitle>
+                <AlertDescription>{guidance.description}</AlertDescription>
+            </Alert>
+
             {/* Tabs */}
             <Tabs defaultValue="overview" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
@@ -218,6 +347,42 @@ export default function StaffWorkOrderDetailPage() {
                                     <Label className="text-muted-foreground">Service Type</Label>
                                     <p className="font-medium">{workOrder.serviceType}</p>
                                 </div>
+                                {workOrder.partsRequired && (
+                                    <>
+                                        <Separator />
+                                        <div>
+                                            <Label className="text-muted-foreground">Parts / Materials</Label>
+                                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                                {workOrder.partsRequired}
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+                                {workOrder.estimatedCost !== undefined && (
+                                    <>
+                                        <Separator />
+                                        <div>
+                                            <Label className="text-muted-foreground">Estimated Cost</Label>
+                                            <p className="font-medium">
+                                                {new Intl.NumberFormat('vi-VN', {
+                                                    style: 'currency',
+                                                    currency: 'VND',
+                                                }).format(workOrder.estimatedCost)}
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+                                {workOrder.approvalNotes && (
+                                    <>
+                                        <Separator />
+                                        <div>
+                                            <Label className="text-muted-foreground">Approval Notes</Label>
+                                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                                {workOrder.approvalNotes}
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
                                 <Separator />
                                 <div>
                                     <Label className="text-muted-foreground">Technician</Label>

@@ -54,6 +54,8 @@ export const mockTechnicians: Technician[] = [
         centerId: "center-1",
         specialties: ["Battery", "Motor", "Charging System"],
         isActive: true,
+        shift: "Morning",
+        workload: "Balanced",
     },
     {
         id: "tech-2",
@@ -63,6 +65,8 @@ export const mockTechnicians: Technician[] = [
         centerId: "center-1",
         specialties: ["Electrical", "Diagnostics"],
         isActive: true,
+        shift: "Afternoon",
+        workload: "Light",
     },
     {
         id: "tech-3",
@@ -72,6 +76,8 @@ export const mockTechnicians: Technician[] = [
         centerId: "center-1",
         specialties: ["Battery", "BMS", "Cooling System"],
         isActive: true,
+        shift: "Evening",
+        workload: "Heavy",
     },
     {
         id: "tech-4",
@@ -81,6 +87,8 @@ export const mockTechnicians: Technician[] = [
         centerId: "center-2",
         specialties: ["Motor", "Transmission", "Brake System"],
         isActive: true,
+        shift: "Morning",
+        workload: "Balanced",
     },
     {
         id: "tech-5",
@@ -90,6 +98,8 @@ export const mockTechnicians: Technician[] = [
         centerId: "center-2",
         specialties: ["Charging", "Electronics"],
         isActive: true,
+        shift: "Afternoon",
+        workload: "Light",
     },
     {
         id: "tech-6",
@@ -99,6 +109,8 @@ export const mockTechnicians: Technician[] = [
         centerId: "center-3",
         specialties: ["Battery", "Motor", "General Maintenance"],
         isActive: true,
+        shift: "Morning",
+        workload: "Heavy",
     },
 ];
 
@@ -223,7 +235,7 @@ export const mockAssignments: Assignment[] = [
         bookingId: "booking-1",
         startUtc: `${new Date().toISOString().split("T")[0]}T08:00:00Z`,
         endUtc: `${new Date().toISOString().split("T")[0]}T10:00:00Z`,
-        status: "Started",
+        status: "Active",
         note: "Priority customer - VIP service",
         createdAt: `${new Date().toISOString()}`,
     },
@@ -234,7 +246,7 @@ export const mockAssignments: Assignment[] = [
         bookingId: "booking-2",
         startUtc: `${new Date().toISOString().split("T")[0]}T09:00:00Z`,
         endUtc: `${new Date().toISOString().split("T")[0]}T11:30:00Z`,
-        status: "Assigned",
+        status: "InQueue",
         note: "Requires battery diagnostic equipment",
         createdAt: `${new Date().toISOString()}`,
     },
