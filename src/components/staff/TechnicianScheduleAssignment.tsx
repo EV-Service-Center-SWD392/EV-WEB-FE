@@ -11,10 +11,13 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -29,7 +32,9 @@ import {
 } from "@/hooks/scheduling/useUserWorkSchedule";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import { ShiftType } from "@/entities/userworkschedule.types";
+import { userWorkScheduleService } from "@/services/userWorkScheduleService";
+import { ShiftType, BulkAssignTechniciansDto } from "@/entities/userworkschedule.types";
+import { toast } from "sonner";
 import { Technician } from "@/entities/slot.types";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -167,6 +172,8 @@ export default function TechnicianScheduleAssignment() {
   );
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTechnicians, setSelectedTechnicians] = useState<Set<string>>(new Set());
+  const [isDragging, setIsDragging] = useState(false);
 
   // Assignments state
   const [assignments, setAssignments] = useState<
@@ -324,35 +331,93 @@ export default function TechnicianScheduleAssignment() {
   const createScheduleMutation = useCreateUserWorkSchedule();
   const deleteScheduleMutation = useDeleteUserWorkSchedule();
 
+  // Multi-select handlers
+  const handleTechnicianSelect = (technicianId: string, checked: boolean) => {
+    const newSelected = new Set(selectedTechnicians);
+    if (checked) {
+      newSelected.add(technicianId);
+    } else {
+      newSelected.delete(technicianId);
+    }
+    setSelectedTechnicians(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedTechnicians(new Set(filteredTechnicians.map(t => t.id)));
+    } else {
+      setSelectedTechnicians(new Set());
+    }
+  };
+
   // Handle drag start
   const handleDragStart = (event: any) => {
     const technicianId = event.active.id as string;
+    
+    // If dragging from multi-select area and technicians are selected
+    if (selectedTechnicians.size > 0 && selectedTechnicians.has(technicianId)) {
+      setIsDragging(true);
+      return;
+    }
+    
+    // Single technician drag
     const technician = technicians.find((t) => t.id === technicianId);
     setDraggedTechnician(technician || null);
   };
 
   // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (!over) {
       setDraggedTechnician(null);
+      setIsDragging(false);
       return;
     }
 
+    const slotId = over.id as string;
+    const parts = slotId.split('-');
+    const dateStr = parts.slice(0, 3).join('-');
+    const shiftType = parts[3] as ShiftType;
+
+    // Handle bulk assignment if multiple technicians selected
+    if (isDragging && selectedTechnicians.size > 0) {
+      try {
+        const bulkAssignData: BulkAssignTechniciansDto = {
+          centerName: CENTER_NAME,
+          shift: shiftType,
+          workDate: dateStr,
+          technicianIds: Array.from(selectedTechnicians)
+        };
+
+        const result = await userWorkScheduleService.bulkAssignTechnicians(bulkAssignData);
+        
+        if (result.successCount > 0) {
+          toast.success(`Đã phân công thành công ${result.successCount} kỹ thuật viên`);
+          if (result.failureCount > 0) {
+            toast.warning(`${result.failureCount} kỹ thuật viên không thể phân công`);
+          }
+          refetchSchedules();
+          setSelectedTechnicians(new Set());
+        } else {
+          toast.error("Không thể phân công kỹ thuật viên");
+        }
+      } catch (error) {
+        const err = error as Error;
+        toast.error(err.message || "Lỗi khi phân công kỹ thuật viên");
+      }
+      
+      setIsDragging(false);
+      return;
+    }
+
+    // Single technician assignment
     const technicianId = active.id as string;
     const technician = technicians.find((t) => t.id === technicianId);
-    const slotId = over.id as string;
-
-    // Parse slot ID: "YYYY-MM-DD-ShiftType"
-    const parts = slotId.split('-');
-    const dateStr = parts.slice(0, 3).join('-'); // YYYY-MM-DD
-    const shiftType = parts[3] as ShiftType; // ShiftType
 
     if (technician && dateStr && shiftType) {
       const date = new Date(dateStr);
       
-      // Check if technician is already assigned to this shift on this date
       const existingAssignment = assignments.find(a => 
         a.technician.id === technician.id && 
         format(a.date, 'yyyy-MM-dd') === dateStr && 
@@ -361,10 +426,9 @@ export default function TechnicianScheduleAssignment() {
 
       if (existingAssignment) {
         setDraggedTechnician(null);
-        return; // Prevent duplicate assignment
+        return;
       }
       
-      // Create assignment
       const newAssignment = {
         id: `${technicianId}-${dateStr}-${shiftType}-${Date.now()}`,
         date,
@@ -372,10 +436,8 @@ export default function TechnicianScheduleAssignment() {
         shift: shiftType,
       };
       
-      // Add to UI immediately
       setAssignments((prev) => [...prev, newAssignment]);
 
-      // Call API to create schedule
       createScheduleMutation.mutate({
         userId: technician.id,
         centerName: CENTER_NAME,
@@ -383,11 +445,9 @@ export default function TechnicianScheduleAssignment() {
         workDate: format(date, "yyyy-MM-dd'T'HH:mm:ss"),
       }, {
         onSuccess: () => {
-          // Refetch to get updated data from server
           refetchSchedules();
         },
         onError: () => {
-          // Remove from UI if API call fails
           setAssignments((prev) => prev.filter(a => a.id !== newAssignment.id));
         }
       });
@@ -589,9 +649,29 @@ export default function TechnicianScheduleAssignment() {
                 </div>
               </div>
 
+              {/* Multi-select header */}
+              <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedTechnicians.size === filteredTechnicians.length && filteredTechnicians.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                  <span className="text-sm font-medium">Chọn tất cả</span>
+                  {selectedTechnicians.size > 0 && (
+                    <Badge variant="secondary" className="ml-auto">
+                      <Users className="h-3 w-3 mr-1" />
+                      {selectedTechnicians.size} đã chọn
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
               {/* Technician List */}
               <div className="flex-1 overflow-y-auto p-4 bg-white">
-                <div className="space-y-2">
+                <div 
+                  className={`space-y-2 ${selectedTechnicians.size > 0 ? 'cursor-grab' : ''}`}
+                  draggable={selectedTechnicians.size > 0}
+                >
                   {isLoadingTechnicians ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
@@ -604,10 +684,20 @@ export default function TechnicianScheduleAssignment() {
                     </div>
                   ) : (
                     filteredTechnicians.map((technician, index) => (
-                      <TechnicianListItem 
-                        key={technician.id || `technician-${index}`} 
-                        technician={technician} 
-                      />
+                      <div
+                        key={technician.id || `technician-${index}`}
+                        className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
+                          selectedTechnicians.has(technician.id) 
+                            ? 'bg-primary/10 border-primary' 
+                            : 'hover:bg-muted/50'
+                        } ${isDragging && selectedTechnicians.has(technician.id) ? 'opacity-50' : ''}`}
+                      >
+                        <Checkbox
+                          checked={selectedTechnicians.has(technician.id)}
+                          onCheckedChange={(checked) => handleTechnicianSelect(technician.id, checked as boolean)}
+                        />
+                        <TechnicianListItem technician={technician} />
+                      </div>
                     ))
                   )}
                 </div>
@@ -661,7 +751,9 @@ export default function TechnicianScheduleAssignment() {
                           return (
                             <div
                               key={slotId}
-                              className={`border-r border-gray-200 relative cursor-pointer hover:${slot.bgColor} transition-colors h-full min-h-[120px]`}
+                              className={`border-r border-gray-200 relative cursor-pointer hover:${slot.bgColor} transition-colors h-full min-h-[120px] ${
+                                isDragging ? 'border-primary bg-primary/5' : ''
+                              }`}
                               onClick={() => handleTimeSlotClick(day, slot.shift)}
                             >
                               <DroppableDay
