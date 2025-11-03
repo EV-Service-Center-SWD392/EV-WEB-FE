@@ -2,17 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Calendar, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Search, Users } from "lucide-react";
 
 import { userService } from "@/services/userService";
 import { userWorkScheduleService } from "@/services/userWorkScheduleService";
 import { UserRole, type User } from "@/entities/user.types";
-import type { UserWorkSchedule } from "@/entities/userworkschedule.types";
+import type { UserWorkSchedule, ShiftType, BulkAssignTechniciansDto } from "@/entities/userworkschedule.types";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 const SHIFTS = [
@@ -25,10 +27,13 @@ const WEEKDAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 
 
 export default function TechnicianSchedulePage() {
   const [technicians, setTechnicians] = useState<User[]>([]);
-  const [_userSchedules, setUserSchedules] = useState<UserWorkSchedule[]>([]);
+  const [userSchedules, setUserSchedules] = useState<UserWorkSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()));
+  const [selectedTechnicians, setSelectedTechnicians] = useState<Set<string>>(new Set());
+  const [draggedTechnicians, setDraggedTechnicians] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -66,6 +71,84 @@ export default function TechnicianSchedulePage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const handleTechnicianSelect = (technicianId: string, checked: boolean) => {
+    const newSelected = new Set(selectedTechnicians);
+    if (checked) {
+      newSelected.add(technicianId);
+    } else {
+      newSelected.delete(technicianId);
+    }
+    setSelectedTechnicians(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedTechnicians(new Set(filteredTechnicians.map(t => t.id)));
+    } else {
+      setSelectedTechnicians(new Set());
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    if (selectedTechnicians.size === 0) {
+      e.preventDefault();
+      toast.error("Vui lòng chọn ít nhất một kỹ thuật viên");
+      return;
+    }
+    setDraggedTechnicians(Array.from(selectedTechnicians));
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setDraggedTechnicians([]);
+  };
+
+  const handleDrop = async (e: React.DragEvent, shift: ShiftType, date: Date) => {
+    e.preventDefault();
+    
+    if (draggedTechnicians.length === 0) return;
+
+    try {
+      const bulkAssignData: BulkAssignTechniciansDto = {
+        centerName: "Main Center",
+        shift,
+        workDate: date.toISOString().split('T')[0],
+        technicianIds: draggedTechnicians
+      };
+
+      const result = await userWorkScheduleService.bulkAssignTechnicians(bulkAssignData);
+      
+      if (result.successCount > 0) {
+        toast.success(`Đã phân công thành công ${result.successCount} kỹ thuật viên`);
+        if (result.failureCount > 0) {
+          toast.warning(`${result.failureCount} kỹ thuật viên không thể phân công`);
+        }
+        await loadData();
+        setSelectedTechnicians(new Set());
+      } else {
+        toast.error("Không thể phân công kỹ thuật viên");
+      }
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || "Lỗi khi phân công kỹ thuật viên");
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+
+  const getSchedulesForSlot = (shift: ShiftType, date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return userSchedules.filter(schedule => 
+      schedule.shift === shift && 
+      schedule.workDate.startsWith(dateStr)
+    );
+  };
 
   const filteredTechnicians = technicians.filter(
     (tech) =>
@@ -143,22 +226,51 @@ export default function TechnicianSchedulePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-2 max-h-[500px] overflow-y-auto">
-              {filteredTechnicians.map((tech) => (
-                <div
-                  key={tech.id}
-                  className="flex items-center gap-3 p-3 border rounded-lg"
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                      {tech.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{tech.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{tech.email}</p>
+              <div className="flex items-center gap-2 p-2 border-b">
+                <Checkbox
+                  checked={selectedTechnicians.size === filteredTechnicians.length && filteredTechnicians.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+                <span className="text-sm font-medium">Chọn tất cả</span>
+                {selectedTechnicians.size > 0 && (
+                  <Badge variant="secondary" className="ml-auto">
+                    <Users className="h-3 w-3 mr-1" />
+                    {selectedTechnicians.size} đã chọn
+                  </Badge>
+                )}
+              </div>
+              
+              <div 
+                className={`space-y-2 ${selectedTechnicians.size > 0 ? 'cursor-grab' : ''}`}
+                draggable={selectedTechnicians.size > 0}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                {filteredTechnicians.map((tech) => (
+                  <div
+                    key={tech.id}
+                    className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
+                      selectedTechnicians.has(tech.id) 
+                        ? 'bg-primary/10 border-primary' 
+                        : 'hover:bg-muted/50'
+                    } ${isDragging && selectedTechnicians.has(tech.id) ? 'opacity-50' : ''}`}
+                  >
+                    <Checkbox
+                      checked={selectedTechnicians.has(tech.id)}
+                      onCheckedChange={(checked) => handleTechnicianSelect(tech.id, checked as boolean)}
+                    />
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                        {tech.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{tech.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{tech.email}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -186,14 +298,44 @@ export default function TechnicianSchedulePage() {
                       <p className="text-xs">{shift.time}</p>
                     </div>
 
-                    {weekDates.map((date, dayIndex) => (
-                      <div
-                        key={`${shift.id}-${dayIndex}`}
-                        className="min-h-[100px] p-2 border rounded-lg"
-                      >
-                        {/* Schedule cards will go here */}
-                      </div>
-                    ))}
+                    {weekDates.map((date, dayIndex) => {
+                      const schedules = getSchedulesForSlot(shift.id as ShiftType, date);
+                      return (
+                        <div
+                          key={`${shift.id}-${dayIndex}`}
+                          className={`min-h-[100px] p-2 border-2 border-dashed rounded-lg transition-colors ${
+                            isDragging ? 'border-primary bg-primary/5' : 'border-gray-200'
+                          }`}
+                          onDrop={(e) => handleDrop(e, shift.id as ShiftType, date)}
+                          onDragOver={handleDragOver}
+                        >
+                          {schedules.length > 0 ? (
+                            <div className="space-y-1">
+                              {schedules.map((schedule) => {
+                                const tech = technicians.find(t => t.id === schedule.userId);
+                                return (
+                                  <div
+                                    key={schedule.id}
+                                    className="bg-blue-100 text-blue-800 text-xs p-2 rounded border"
+                                  >
+                                    <p className="font-medium truncate">
+                                      {tech?.name || 'Unknown'}
+                                    </p>
+                                    <p className="text-blue-600">
+                                      {schedule.centerName}
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                              {isDragging ? 'Thả để phân công' : 'Trống'}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
