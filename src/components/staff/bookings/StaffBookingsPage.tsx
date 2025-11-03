@@ -20,7 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { bookingService } from "@/services/bookingService";
 import { staffDirectoryService } from "@/services/staffDirectoryService";
 import { assignmentService } from "@/services/assignmentService";
-import type { Booking, BookingStatus } from "@/entities/booking.types";
+import type { Booking } from "@/entities/booking.types";
+import { BookingStatus } from "@/entities/booking.types";
 import type { Center, Technician } from "@/entities/slot.types";
 import { AssignmentQuickForm } from "@/components/staff/scheduling/molecules/AssignmentQuickForm";
 

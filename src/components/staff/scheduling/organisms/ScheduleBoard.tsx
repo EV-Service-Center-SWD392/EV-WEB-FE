@@ -72,8 +72,6 @@ export const ScheduleBoard: React.FC<ScheduleBoardProps> = ({
     onSelectWork,
     onAssign,
     onTechnicianFiltersChange,
-    onConfirmWorkItem,
-    onRescheduleWorkItem,
     onRefresh,
     isLoadingCenters = false,
     isLoadingWorkItems = false,
@@ -141,15 +139,15 @@ export const ScheduleBoard: React.FC<ScheduleBoardProps> = ({
                             />
                         </div>
                     )}
-        </CardContent>
-    </Card>
+                </CardContent>
+            </Card>
 
-    <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-        <span className="font-semibold text-primary">Gợi ý:</span> Phân công kỹ thuật viên trước giờ hẹn, sau đó tiếp nhận
-        khách tại quầy để tạo intake và checklist.
-    </div>
+            <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+                <span className="font-semibold text-primary">Gợi ý:</span> Phân công kỹ thuật viên trước giờ hẹn, sau đó tiếp nhận
+                khách tại quầy để tạo intake và checklist.
+            </div>
 
-    {/* Main Content Grid */}
+            {/* Main Content Grid */}
             {selectedCenterId ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Left: Assignable Work List */}
@@ -168,8 +166,6 @@ export const ScheduleBoard: React.FC<ScheduleBoardProps> = ({
                                 onAssign={(item) => {
                                     onSelectWork(item.id);
                                 }}
-                                onConfirmWorkItem={onConfirmWorkItem}
-                                onRescheduleWorkItem={onRescheduleWorkItem}
                                 isLoading={isLoadingWorkItems}
                             />
                         </CardContent>

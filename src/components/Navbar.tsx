@@ -19,13 +19,17 @@ export default function Navbar() {
   };
 
   const getDashboardUrl = (role: string): string => {
-    switch (role) {
+    // Normalize role (case-insensitive)
+    const normalizedRole = role.toLowerCase().trim();
+
+    switch (normalizedRole) {
       case "admin":
         return "/admin/dashboard";
       case "staff":
         return "/staff/dashboard";
       case "technician":
         return "/technician/dashboard";
+      case "customer":
       case "member":
         return "/member/dashboard";
       default:
