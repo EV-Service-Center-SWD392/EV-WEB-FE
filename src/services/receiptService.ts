@@ -7,7 +7,7 @@ export type ReceiptItemDto = components["schemas"]["ReceiptItemDto"];
  * Get all receipts
  */
 export async function getReceipts(): Promise<ReceiptDto[]> {
-  const { data } = await api.get<ReceiptDto[]>("/Receipt");
+  const { data } = await api.get<ReceiptDto[]>("/api/Receipt");
   return data;
 }
 
@@ -15,7 +15,7 @@ export async function getReceipts(): Promise<ReceiptDto[]> {
  * Get receipt by id
  */
 export async function getReceiptById(id: string): Promise<ReceiptDto> {
-  const { data } = await api.get<ReceiptDto>(`/Receipt/${id}`);
+  const { data } = await api.get<ReceiptDto>(`/api/Receipt/${id}`);
   return data;
 }
 
@@ -26,7 +26,7 @@ export async function getReceiptsByCustomer(
   customerId: string
 ): Promise<ReceiptDto[]> {
   const { data } = await api.get<ReceiptDto[]>(
-    `/Receipt/customer/${customerId}`
+    `/api/Receipt/customer/${customerId}`
   );
   return data;
 }
@@ -35,7 +35,7 @@ export async function getReceiptsByCustomer(
  * Get receipts for the currently authenticated user
  */
 export async function getMyReceipts(): Promise<ReceiptDto[]> {
-  const { data } = await api.get<ReceiptDto[]>(`/Receipt/me`);
+  const { data } = await api.get<ReceiptDto[]>(`/api/Receipt/me`);
   return data;
 }
 
