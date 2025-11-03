@@ -22,8 +22,8 @@ import { register as registerApi } from "@/services/auth";
 
 const schema = z
   .object({
-    username: z.string().min(3, "Username phải có ít nhất 3 ký tự"),
-    fullName: z.string().min(2, "Họ tên phải có ít nhất 2 ký tự"),
+    firstName: z.string().min(1, "Tên phải có ít nhất 1 ký tự"),
+    lastName: z.string().min(1, "Họ phải có ít nhất 1 ký tự"),
     email: z.string().email("Email không hợp lệ"),
     password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
     confirmPassword: z
@@ -54,15 +54,15 @@ export default function RegisterPage() {
     setLoading(true);
     setMsg("");
     try {
-      const result = await registerApi({
-        name: data.fullName,
+      await registerApi({
+        firstName: data.firstName,
+        lastName: data.lastName,
         email: data.email,
         password: data.password,
-        username: data.username,
         phoneNumber: data.phoneNumber,
         address: data.address,
       });
-      const successMessage = result.message || "Đăng ký thành công — chuyển tới đăng nhập…";
+      const successMessage = "Đăng ký thành công — chuyển tới đăng nhập…";
       setMsg(successMessage);
       toast.success("Đăng ký tài khoản thành công!");
       setTimeout(() => router.push("/login"), 800);
@@ -103,36 +103,36 @@ export default function RegisterPage() {
         <CardContent>
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Row 1: Username & Full Name */}
+            {/* Row 1: First Name & Last Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Username Field */}
+              {/* First Name Field */}
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="firstName">Tên</Label>
                 <Input
-                  id="username"
+                  id="firstName"
                   type="text"
-                  placeholder="username123"
-                  {...register("username")}
+                  placeholder="Văn A"
+                  {...register("firstName")}
                 />
-                {errors.username && (
+                {errors.firstName && (
                   <p className="text-sm text-destructive">
-                    {errors.username.message}
+                    {errors.firstName.message}
                   </p>
                 )}
               </div>
 
-              {/* Full Name Field */}
+              {/* Last Name Field */}
               <div className="space-y-2">
-                <Label htmlFor="fullName">Họ và tên</Label>
+                <Label htmlFor="lastName">Họ</Label>
                 <Input
-                  id="fullName"
+                  id="lastName"
                   type="text"
-                  placeholder="Nguyễn Văn A"
-                  {...register("fullName")}
+                  placeholder="Nguyễn"
+                  {...register("lastName")}
                 />
-                {errors.fullName && (
+                {errors.lastName && (
                   <p className="text-sm text-destructive">
-                    {errors.fullName.message}
+                    {errors.lastName.message}
                   </p>
                 )}
               </div>
