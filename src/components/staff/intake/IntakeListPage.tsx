@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Search, Filter, BarChart3, Plus, TrendingUp } from "lucide-react";
+import { FileText, Search, Filter, BarChart3, Plus, TrendingUp, AlertCircle, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { IntakeStatus } from "@/entities/intake.types";
 import { IntakeListTable } from "@/components/staff/intake/IntakeListTable";
 import { useIntakeList } from "@/hooks/intake";
@@ -55,41 +56,6 @@ function StatCard({ title, value, icon: Icon, color, bgColor, trend }: StatCardP
   );
 }
 
-const stats = [
-  {
-    title: "Tổng phiếu tiếp nhận",
-    value: "24",
-    icon: FileText,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50 dark:bg-blue-950/20",
-    trend: { value: 12, isPositive: true },
-  },
-  {
-    title: "Đang kiểm tra",
-    value: "12",
-    icon: Filter,
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
-    trend: { value: 8, isPositive: true },
-  },
-  {
-    title: "Đã xác nhận",
-    value: "8",
-    icon: BarChart3,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50 dark:bg-purple-950/20",
-    trend: { value: 5, isPositive: true },
-  },
-  {
-    title: "Đã hoàn tất",
-    value: "6",
-    icon: Plus,
-    color: "text-green-600",
-    bgColor: "bg-green-50 dark:bg-green-950/20",
-    trend: { value: 4, isPositive: true },
-  },
-];
-
 export default function IntakeListPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -104,8 +70,78 @@ export default function IntakeListPage() {
   );
 
   const intakeListQuery = useIntakeList(intakeFilters);
-  const intakes = intakeListQuery.data ?? [];
+  const intakes = React.useMemo(() => intakeListQuery.data ?? [], [intakeListQuery.data]);
   const isLoadingIntakes = intakeListQuery.isLoading;
+  const isError = intakeListQuery.isError;
+  const error = intakeListQuery.error;
+
+  // Calculate stats from real data
+  const stats = React.useMemo(() => {
+    const total = intakes.length;
+    const inspecting = intakes.filter(i => i.status === 'Inspecting').length;
+    const verified = intakes.filter(i => i.status === 'Verified').length;
+    const finalized = intakes.filter(i => i.status === 'Finalized').length;
+
+    return [
+      {
+        title: "Tổng phiếu tiếp nhận",
+        value: total.toString(),
+        icon: FileText,
+        color: "text-blue-600",
+        bgColor: "bg-blue-50 dark:bg-blue-950/20",
+      },
+      {
+        title: "Đang kiểm tra",
+        value: inspecting.toString(),
+        icon: Filter,
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
+      },
+      {
+        title: "Đã xác nhận",
+        value: verified.toString(),
+        icon: BarChart3,
+        color: "text-purple-600",
+        bgColor: "bg-purple-50 dark:bg-purple-950/20",
+      },
+      {
+        title: "Đã hoàn tất",
+        value: finalized.toString(),
+        icon: Plus,
+        color: "text-green-600",
+        bgColor: "bg-green-50 dark:bg-green-950/20",
+      },
+    ];
+  }, [intakes]);
+
+  // Show error state
+  if (isError) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Quản lý phiếu tiếp nhận dịch vụ</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Theo dõi và chuẩn bị intake trước khi bàn giao checklist cho kỹ thuật viên.
+            </p>
+          </div>
+        </div>
+
+        <EmptyState
+          variant="error"
+          icon={AlertCircle}
+          title="Không thể tải danh sách phiếu tiếp nhận"
+          description={error instanceof Error ? error.message : 'Đã có lỗi xảy ra khi tải dữ liệu'}
+          action={
+            <Button onClick={() => intakeListQuery.refetch()} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Thử lại
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

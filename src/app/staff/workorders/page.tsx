@@ -6,7 +6,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, Filter } from 'lucide-react';
+import { Plus, Filter, RefreshCw, FileText } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { EmptyState } from '@/components/ui/empty-state';
 import { WorkOrderTable } from '@/components/workorders/WorkOrderTable';
 import { useWorkOrders, useUpdateWorkOrderStatus } from '@/hooks/workorders/useWorkOrders';
 import type { WorkOrderStatus } from '@/entities/workorder.types';
@@ -34,7 +35,7 @@ export default function StaffWorkOrdersPage() {
     const [searchQuery, setSearchQuery] = React.useState('');
 
     // Fetch work orders with optional polling (every 60 seconds)
-    const { data: workOrders, isLoading } = useWorkOrders({
+    const { data: workOrders, isLoading, isError, error } = useWorkOrders({
         status: statusFilter === 'all' ? undefined : statusFilter,
         refetchInterval: 60000, // Poll every 60 seconds
     });
@@ -42,10 +43,14 @@ export default function StaffWorkOrdersPage() {
     const updateStatusMutation = useUpdateWorkOrderStatus();
 
     const handleMarkCompleted = async (workOrderId: string) => {
-        await updateStatusMutation.mutateAsync({
-            id: workOrderId,
-            status: 'Completed',
-        });
+        try {
+            await updateStatusMutation.mutateAsync({
+                id: workOrderId,
+                status: 'Completed',
+            });
+        } catch (err) {
+            console.error('Failed to update work order status:', err);
+        }
     };
 
     // Filter work orders by search query
@@ -64,6 +69,34 @@ export default function StaffWorkOrdersPage() {
                 wo.serviceType.toLowerCase().includes(query)
         );
     }, [workOrders, searchQuery]);
+
+    // Show error state
+    if (isError) {
+        return (
+            <div className="flex flex-col gap-6 p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Work Orders</h1>
+                        <p className="text-muted-foreground">
+                            Manage and monitor all work orders
+                        </p>
+                    </div>
+                </div>
+                <EmptyState
+                    variant="error"
+                    icon={FileText}
+                    title="Không thể tải danh sách Work Orders"
+                    description={error instanceof Error ? error.message : 'Đã có lỗi xảy ra khi tải dữ liệu'}
+                    action={
+                        <Button variant="outline" onClick={() => window.location.reload()}>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Thử lại
+                        </Button>
+                    }
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-6 p-6">
@@ -135,7 +168,7 @@ export default function StaffWorkOrdersPage() {
             </Card>
 
             {/* Stats Cards */}
-            {workOrders && (
+            {!isLoading && workOrders && workOrders.length > 0 && (
                 <div className="grid gap-4 md:grid-cols-4">
                     <Card>
                         <CardHeader className="pb-2">
@@ -168,6 +201,24 @@ export default function StaffWorkOrdersPage() {
                         </CardHeader>
                     </Card>
                 </div>
+            )}
+
+            {/* Empty State */}
+            {!isLoading && (!workOrders || workOrders.length === 0) && (
+                <EmptyState
+                    icon={FileText}
+                    title="Chưa có Work Order"
+                    description={
+                        statusFilter !== 'all'
+                            ? `Không có work order nào với trạng thái "${statusFilter}"`
+                            : 'Work orders sẽ hiển thị ở đây khi được tạo'
+                    }
+                    action={
+                        <Button onClick={() => setStatusFilter('all')}>
+                            Xem tất cả
+                        </Button>
+                    }
+                />
             )}
 
             {/* Work Orders Table */}

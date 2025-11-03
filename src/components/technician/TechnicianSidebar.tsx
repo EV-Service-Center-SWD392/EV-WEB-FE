@@ -14,6 +14,10 @@ const menuItems: MenuItem[] = [
     label: "Dashboard",
   },
   {
+    href: "/technician/assignments",
+    label: "Công việc được giao",
+  },
+  {
     href: "/technician/workorders",
     label: "Work Orders",
   },

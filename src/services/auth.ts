@@ -24,6 +24,31 @@ type AuthResultDto = components["schemas"]["AuthResultDto"];
 export type Role = "customer" | "staff" | "technician" | "admin";
 export type User = { id: string; name: string; email: string; role: Role };
 
+/**
+ * Normalize role from BE to FE format
+ * BE may return: "Admin", "Staff", "Technician", "Customer", or "Member"
+ * FE uses: "admin", "staff", "technician", "customer"
+ */
+export function normalizeRole(role: string | null | undefined): Role {
+  if (!role) return "customer";
+
+  const normalized = role.trim().toLowerCase();
+
+  // Map "member" to "customer"
+  if (normalized === "member") {
+    return "customer";
+  }
+
+  // Validate against known roles
+  if (["admin", "staff", "technician", "customer"].includes(normalized)) {
+    return normalized as Role;
+  }
+
+  // Default fallback
+  console.warn(`Unknown role from BE: ${role}, defaulting to 'customer'`);
+  return "customer";
+}
+
 // Map mockLogin return to AuthResultDto
 function mapMockLoginToAuthResult(
   mock: Awaited<ReturnType<typeof mockLogin>>
@@ -82,15 +107,21 @@ export async function register(payload: {
   }
 
   // Map payload directly to API's RegisterDto
+  // Only include optional fields if they have values
   const apiPayload: RegisterDto = {
     email: payload.email,
     password: payload.password,
     confirmPassword: payload.password,
     firstName: payload.firstName,
     lastName: payload.lastName,
-    phoneNumber: payload.phoneNumber ?? null,
-    address: payload.address ?? null,
+    ...(payload.phoneNumber && { phoneNumber: payload.phoneNumber }),
+    ...(payload.address && { address: payload.address }),
   };
+
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.debug("[auth.ts] Register payload:", apiPayload);
+  }
 
   const { data } = await api.post<AuthResultDto>("/Auth/register", apiPayload);
   return data;
