@@ -36,7 +36,11 @@ const menuItems: MenuItem[] = [
     label: "Quản lý đặt lịch",
     icon: Calendar,
   },
-
+  {
+    href: "/admin/technician-schedule",
+    label: "Quản lý lịch Technician",
+    icon: Calendar,
+  },
   {
     href: "/admin/sparepart-management",
     label: "Quản lý phụ tùng",
