@@ -18,6 +18,7 @@ import {
   CreditCard,
   Plus,
   ClipboardCheck,
+  Calendar,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -74,7 +75,6 @@ const menuItems: MenuItemOrGroup[] = [
     ],
   },
   {
-<<<<<<< HEAD
     href: "/staff/create-payment",
     label: "Tạo giao dịch",
     icon: Plus,
@@ -96,10 +96,7 @@ const menuItems: MenuItemOrGroup[] = [
   },
   {
     href: "/staff/customers",
-    label: "Customers",
-=======
     label: "Danh bạ",
->>>>>>> origin/devBranch
     icon: Users,
     items: [
       { href: "/staff/technicians", label: "Technicians", icon: UserCheck },

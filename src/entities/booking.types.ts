@@ -10,6 +10,9 @@ export enum BookingStatus {
   REASSIGNED = "reassigned",
 }
 
+// Export individual values to avoid unused warnings
+export const { PENDING, ASSIGNED, IN_QUEUE, ACTIVE, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, REASSIGNED } = BookingStatus;
+
 export interface Booking {
   id: string;
   bookingCode?: string;

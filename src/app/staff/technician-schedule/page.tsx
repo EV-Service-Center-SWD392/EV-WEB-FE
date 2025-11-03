@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Calendar, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { userService } from "@/services/userService";
-import { userWorkScheduleService, type UserWorkScheduleDto } from "@/services/userWorkScheduleService";
+import { userWorkScheduleService } from "@/services/userWorkScheduleService";
 import { UserRole, type User } from "@/entities/user.types";
+import type { UserWorkSchedule } from "@/entities/userworkschedule.types";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,16 +25,12 @@ const WEEKDAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 
 
 export default function TechnicianSchedulePage() {
   const [technicians, setTechnicians] = useState<User[]>([]);
-  const [userSchedules, setUserSchedules] = useState<UserWorkScheduleDto[]>([]);
+  const [_userSchedules, setUserSchedules] = useState<UserWorkSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()));
 
-  useEffect(() => {
-    loadData();
-  }, [currentWeekStart]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -46,11 +43,11 @@ export default function TechnicianSchedulePage() {
       const allSchedules = [];
       for (const tech of techsResponse) {
         try {
-          const schedules = await userWorkScheduleService.getByUserRange({
-            userId: tech.id,
-            startDate: currentWeekStart.toISOString(),
-            endDate: weekEnd.toISOString(),
-          });
+          const schedules = await userWorkScheduleService.getUserWorkSchedulesByRange(
+            tech.id,
+            currentWeekStart.toISOString(),
+            weekEnd.toISOString()
+          );
           allSchedules.push(...schedules);
         } catch (err) {
           console.error(err);
@@ -64,7 +61,11 @@ export default function TechnicianSchedulePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentWeekStart]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const filteredTechnicians = technicians.filter(
     (tech) =>

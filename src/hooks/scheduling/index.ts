@@ -4,7 +4,7 @@
  */
 
 export { useCenters, useCenter } from "./useCenters";
-export { useTechnicians, useAllTechnicians, useTechnician } from "./useTechnicians";
+export { useTechnicians, useTechnician } from "./useTechnicians";
 export {
     useTodayBookings,
     useAssignableBookings,

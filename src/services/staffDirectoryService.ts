@@ -53,7 +53,7 @@ export const staffDirectoryService = {
             // First get the TECHNICIAN role ID
             const rolesResponse = await api.get(ROLES_PATH);
             const technicianRole = rolesResponse.data.data?.find(
-                (role: any) => role.name === "TECHNICIAN" && role.isActive
+                (role: { name: string; isActive: boolean; roleId: string }) => role.name === "TECHNICIAN" && role.isActive
             );
             
             if (!technicianRole) {
@@ -72,11 +72,22 @@ export const staffDirectoryService = {
             const users = usersResponse.data.data || [];
             
             // Transform users to Technician format
-            return users.map((user: any): Technician => ({
-                id: user.userId || user.id,
-                name: user.fullName || user.name,
+            return users.map((user: {
+                userId?: string;
+                id?: string;
+                fullName?: string;
+                name?: string;
+                email: string;
+                phoneNumber?: string;
+                phone?: string;
+                centerId?: string;
+                specialties?: string[];
+                isActive?: boolean;
+            }): Technician => ({
+                id: user.userId || user.id || '',
+                name: user.fullName || user.name || '',
                 email: user.email,
-                phone: user.phoneNumber || user.phone,
+                phone: user.phoneNumber || user.phone || '',
                 centerId: user.centerId,
                 specialties: user.specialties || [],
                 isActive: user.isActive ?? true
