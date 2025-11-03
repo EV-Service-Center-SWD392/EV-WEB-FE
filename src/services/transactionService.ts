@@ -11,7 +11,7 @@ type UpdateTransactionStatusDto =
  * Get all transactions
  */
 export async function getTransactions(): Promise<TransactionDto[]> {
-  const { data } = await api.get<TransactionDto[]>("/Transaction");
+  const { data } = await api.get<TransactionDto[]>("/api/Transaction");
   return data;
 }
 
@@ -21,7 +21,7 @@ export async function getTransactions(): Promise<TransactionDto[]> {
 export async function createTransaction(
   payload: CreateTransactionDto
 ): Promise<TransactionDto> {
-  const { data } = await api.post<TransactionDto>("/Transaction", payload);
+  const { data } = await api.post<TransactionDto>("/api/Transaction", payload);
   return data;
 }
 
@@ -29,7 +29,7 @@ export async function createTransaction(
  * Get transaction by id
  */
 export async function getTransactionById(id: string): Promise<TransactionDto> {
-  const { data } = await api.get<TransactionDto>(`/Transaction/${id}`);
+  const { data } = await api.get<TransactionDto>(`/api/Transaction/${id}`);
   return data;
 }
 
@@ -40,7 +40,10 @@ export async function updateTransactionStatus(
   id: string,
   payload: UpdateTransactionStatusDto
 ): Promise<TransactionDto> {
-  const { data } = await api.put<TransactionDto>(`/Transaction/${id}`, payload);
+  const { data } = await api.put<TransactionDto>(
+    `/api/Transaction/${id}`,
+    payload
+  );
   return data;
 }
 
@@ -48,7 +51,7 @@ export async function updateTransactionStatus(
  * Delete transaction
  */
 export async function deleteTransaction(id: string): Promise<boolean> {
-  const { data } = await api.delete<boolean>(`/Transaction/${id}`);
+  const { data } = await api.delete<boolean>(`/api/Transaction/${id}`);
   return data;
 }
 
@@ -59,7 +62,7 @@ export async function getTransactionsByUser(
   userId: string
 ): Promise<TransactionDto[]> {
   const { data } = await api.get<TransactionDto[]>(
-    `/Transaction/${userId}/user`
+    `/api/Transaction/${userId}/user`
   );
   return data;
 }
@@ -71,7 +74,7 @@ export async function getTransactionsByOrder(
   orderId: string
 ): Promise<TransactionDto[]> {
   const { data } = await api.get<TransactionDto[]>(
-    `/Transaction/${orderId}/order`
+    `/api/Transaction/${orderId}/order`
   );
   return data;
 }
@@ -80,7 +83,9 @@ export async function getTransactionsByOrder(
  * Cancel a transaction by orderCode
  */
 export async function cancelTransaction(orderCode: number): Promise<boolean> {
-  const { data } = await api.put<boolean>(`/Transaction/cancel/${orderCode}`);
+  const { data } = await api.put<boolean>(
+    `/api/Transaction/cancel/${orderCode}`
+  );
   return data;
 }
 
@@ -91,7 +96,7 @@ export async function getTransactionByPaymentId(
   orderCode: number
 ): Promise<TransactionDto> {
   const { data } = await api.get<TransactionDto>(
-    `/Transaction/paymentId/${orderCode}`
+    `/api/Transaction/paymentId/${orderCode}`
   );
   return data;
 }
