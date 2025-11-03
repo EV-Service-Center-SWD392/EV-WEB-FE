@@ -68,9 +68,11 @@ export const ATechSelect: React.FC<ATechSelectProps> = ({
                             <SelectItem key={tech.id} value={tech.id}>
                                 <div className="flex flex-col">
                                     <span>{tech.name}</span>
-                                    {showDetails && tech.specialties && tech.specialties.length > 0 && (
+                                    {showDetails && (
                                         <span className="text-xs text-muted-foreground">
-                                            {tech.specialties.join(", ")}
+                                            {[tech.shift && `Ca ${tech.shift}`, tech.workload && `Tải ${tech.workload?.toLowerCase()}`, tech.specialties?.length ? tech.specialties.join(", ") : null]
+                                                .filter(Boolean)
+                                                .join(" • ")}
                                         </span>
                                     )}
                                 </div>

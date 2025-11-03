@@ -29,8 +29,13 @@ const navigation = [
   },
   { 
     name: 'Đặt lịch', 
-    href: '/member/bookings', 
+    href: '/member/appointments', 
     icon: Calendar 
+  },
+  { 
+    name: 'Đơn sửa chữa', 
+    href: '/member/workorders', 
+    icon: Wrench 
   },
   { 
     name: 'Lịch sử dịch vụ', 

@@ -31,7 +31,7 @@ export type CreateAssignmentInput = z.infer<typeof createAssignmentSchema>;
 
 export const updateAssignmentSchema = z.object({
     status: z
-        .enum(["Assigned", "Started", "Completed", "Cancelled"])
+        .enum(["Pending", "Assigned", "InQueue", "Active", "Completed", "Reassigned", "Cancelled"])
         .optional(),
     startUtc: z.string().datetime().optional(),
     endUtc: z.string().datetime().optional(),

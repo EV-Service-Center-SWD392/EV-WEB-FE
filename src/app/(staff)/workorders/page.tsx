@@ -107,11 +107,15 @@ export default function StaffWorkOrdersPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Statuses</SelectItem>
-                                    <SelectItem value="Planned">Planned</SelectItem>
+                                    <SelectItem value="Draft">Draft</SelectItem>
+                                    <SelectItem value="AwaitingApproval">Awaiting Approval</SelectItem>
+                                    <SelectItem value="Approved">Approved</SelectItem>
                                     <SelectItem value="InProgress">In Progress</SelectItem>
                                     <SelectItem value="Paused">Paused</SelectItem>
                                     <SelectItem value="WaitingParts">Waiting Parts</SelectItem>
                                     <SelectItem value="QA">QA</SelectItem>
+                                    <SelectItem value="Revised">Revised</SelectItem>
+                                    <SelectItem value="Rejected">Rejected</SelectItem>
                                     <SelectItem value="Completed">Completed</SelectItem>
                                 </SelectContent>
                             </Select>

@@ -6,11 +6,13 @@ import {
   LayoutDashboard,
   FileText,
   Calendar,
+  CalendarCheck,
   Users,
   UserCheck,
   Wrench,
   BarChart3,
-  ChevronRight
+  ChevronRight,
+  PlusSquare,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -28,9 +30,19 @@ const menuItems: MenuItem[] = [
     icon: LayoutDashboard,
   },
   {
-    href: "/staff/intake",
-    label: "Quản lý phiếu tiếp nhận",
+    href: "/staff/booking-queue",
+    label: "Booking Queue",
+    icon: CalendarCheck,
+  },
+  {
+    href: "/staff/intake-list",
+    label: "Service Intakes",
     icon: FileText,
+  },
+  {
+    href: "/staff/intake/new",
+    label: "Create Intake",
+    icon: PlusSquare,
   },
   {
     href: "/staff/schedules",

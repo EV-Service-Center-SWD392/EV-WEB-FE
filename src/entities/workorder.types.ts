@@ -7,11 +7,15 @@ import { z } from 'zod';
 
 // Work Order Status Type
 export type WorkOrderStatus =
-    | "Planned"
+    | "Draft"
+    | "AwaitingApproval"
+    | "Approved"
     | "InProgress"
     | "Paused"
     | "WaitingParts"
     | "QA"
+    | "Revised"
+    | "Rejected"
     | "Completed";
 
 // Task Status Type
@@ -37,6 +41,9 @@ export interface WorkOrder {
         email?: string;
     };
     serviceType: string;
+    partsRequired?: string;
+    estimatedCost?: number;
+    approvalNotes?: string;
     status: WorkOrderStatus;
     tasks: WorkOrderTask[];
     notes?: string;
@@ -78,6 +85,9 @@ export interface WorkOrderUpdate {
     notes?: string;
     tasks?: WorkOrderTask[];
     photos?: WorkOrderPhoto[];
+    partsRequired?: string;
+    estimatedCost?: number;
+    approvalNotes?: string;
 }
 
 // Create Work Order Payload
@@ -86,6 +96,9 @@ export interface CreateWorkOrderRequest {
     technicianId: string;
     serviceType: string;
     notes?: string;
+    partsRequired?: string;
+    estimatedCost?: number;
+    status?: WorkOrderStatus;
     tasks?: Omit<WorkOrderTask, 'id' | 'workOrderId'>[];
 }
 
@@ -94,6 +107,9 @@ export interface UpdateWorkOrderRequest {
     serviceType?: string;
     notes?: string;
     status?: WorkOrderStatus;
+    partsRequired?: string;
+    estimatedCost?: number;
+    approvalNotes?: string;
 }
 
 // Create Task Payload
@@ -126,11 +142,15 @@ export interface UploadPhotoRequest {
 
 // Work Order Status Schema
 export const WorkOrderStatusSchema = z.enum([
-    "Planned",
+    "Draft",
+    "AwaitingApproval",
+    "Approved",
     "InProgress",
     "Paused",
     "WaitingParts",
     "QA",
+    "Revised",
+    "Rejected",
     "Completed"
 ]);
 
@@ -182,6 +202,9 @@ export const WorkOrderSchema = z.object({
         email: z.string().email().optional()
     }).optional(),
     serviceType: z.string().min(1, "Service type is required"),
+    partsRequired: z.string().optional(),
+    estimatedCost: z.number().positive().optional(),
+    approvalNotes: z.string().optional(),
     status: WorkOrderStatusSchema,
     tasks: z.array(WorkOrderTaskSchema),
     notes: z.string().optional(),
@@ -199,6 +222,9 @@ export const CreateWorkOrderRequestSchema = z.object({
     technicianId: z.string().min(1, "Technician is required"),
     serviceType: z.string().min(1, "Service type is required"),
     notes: z.string().optional(),
+    partsRequired: z.string().optional(),
+    estimatedCost: z.number().positive().optional(),
+    status: WorkOrderStatusSchema.optional(),
     tasks: z.array(z.object({
         title: z.string().min(1, "Task title is required"),
         description: z.string().optional(),
@@ -211,7 +237,10 @@ export const CreateWorkOrderRequestSchema = z.object({
 export const UpdateWorkOrderRequestSchema = z.object({
     serviceType: z.string().min(1).optional(),
     notes: z.string().optional(),
-    status: WorkOrderStatusSchema.optional()
+    status: WorkOrderStatusSchema.optional(),
+    partsRequired: z.string().optional(),
+    estimatedCost: z.number().positive().optional(),
+    approvalNotes: z.string().optional()
 });
 
 // Create Task Request Schema
@@ -235,8 +264,12 @@ export const UpdateTaskRequestSchema = z.object({
 // Helper function to get status color
 export function getWorkOrderStatusColor(status: WorkOrderStatus): string {
     switch (status) {
-        case "Planned":
+        case "Draft":
             return "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100";
+        case "AwaitingApproval":
+            return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100";
+        case "Approved":
+            return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
         case "InProgress":
             return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
         case "Paused":
@@ -245,6 +278,10 @@ export function getWorkOrderStatusColor(status: WorkOrderStatus): string {
             return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100";
         case "QA":
             return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100";
+        case "Revised":
+            return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100";
+        case "Rejected":
+            return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100";
         case "Completed":
             return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
         default:
@@ -287,10 +324,26 @@ export function formatDuration(minutes?: number): string {
 // Helper function to get status label
 export function getWorkOrderStatusLabel(status: WorkOrderStatus): string {
     switch (status) {
+        case "Draft":
+            return "Draft";
+        case "AwaitingApproval":
+            return "Awaiting Approval";
+        case "Approved":
+            return "Approved";
+        case "Paused":
+            return "Paused";
         case "WaitingParts":
             return "Waiting Parts";
         case "InProgress":
             return "In Progress";
+        case "QA":
+            return "Quality Assurance";
+        case "Revised":
+            return "Revised";
+        case "Rejected":
+            return "Rejected";
+        case "Completed":
+            return "Completed";
         default:
             return status;
     }

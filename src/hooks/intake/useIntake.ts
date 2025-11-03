@@ -9,6 +9,7 @@ import type {
     ServiceIntake,
     CreateIntakeRequest,
     UpdateIntakeRequest,
+    IntakeStatus,
 } from '@/entities/intake.types';
 import {
     createIntake,
@@ -16,7 +17,16 @@ import {
     getIntakeByBooking,
     updateIntake,
     finalizeIntake,
+    listIntakes,
 } from '@/services/intakeService';
+
+export function useIntakeList(filters: { status?: IntakeStatus | 'all'; search?: string } = {}) {
+    return useQuery({
+        queryKey: ['intake-list', filters],
+        queryFn: () => listIntakes(filters),
+        staleTime: 60 * 1000,
+    });
+}
 
 /**
  * Hook to fetch intake by booking ID
@@ -124,18 +134,26 @@ export function useIntakeStatus(intake: ServiceIntake | null | undefined) {
         return {
             canEdit: false,
             canFinalize: false,
-            isCompleted: false,
-            isDraft: false,
+            canVerify: false,
+            canInitializeChecklist: false,
+            isFinalized: false,
+            status: undefined,
         };
     }
 
-    const isDraft = intake.status === 'Draft';
-    const isCompleted = intake.status === 'Completed';
+    const status = intake.status;
+    const canEdit = status === 'Checked_In' || status === 'Inspecting';
+    const canInitializeChecklist = status === 'Checked_In';
+    const canVerify = status === 'Inspecting';
+    const canFinalize = status === 'Verified';
+    const isFinalized = status === 'Finalized';
 
     return {
-        canEdit: isDraft,
-        canFinalize: isDraft,
-        isCompleted,
-        isDraft,
+        canEdit,
+        canFinalize,
+        canVerify,
+        canInitializeChecklist,
+        isFinalized,
+        status,
     };
 }

@@ -119,7 +119,7 @@ export default function ManagerBookingsPage() {
       } else {
         // Create new booking
         await bookingService.createBooking(data as CreateBookingRequest);
-        toast.success("Tạo lịch đặt mới thành công");
+        toast.success("Đã tiếp nhận lịch hẹn");
       }
 
       setIsFormOpen(false);
