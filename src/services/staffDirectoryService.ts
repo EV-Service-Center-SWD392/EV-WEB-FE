@@ -9,9 +9,10 @@ import {
 import { api } from "./api";
 
 const CENTERS_PATH = "/api/centers";
-const TECHNICIANS_PATH = "/api/technicians";
+const USERS_PATH = "/api/users";
+const ROLES_PATH = "/api/roles";
 const CAPACITY_PATH = "/api/capacity";
-const USE_MOCK_DATA = true; // Set to false when connecting to real API
+const USE_MOCK_DATA = false; // Set to false when connecting to real API
 
 /**
  * Staff Directory Service
@@ -48,18 +49,72 @@ export const staffDirectoryService = {
             return getMockTechnicians(centerId);
         }
 
-        const response = await api.get<Technician[]>(TECHNICIANS_PATH, {
-            params: centerId ? { centerId } : undefined,
-        });
-        return response.data;
+        try {
+            // First get the TECHNICIAN role ID
+            const rolesResponse = await api.get(ROLES_PATH);
+            const technicianRole = rolesResponse.data.data?.find(
+                (role: any) => role.name === "TECHNICIAN" && role.isActive
+            );
+            
+            if (!technicianRole) {
+                console.warn("TECHNICIAN role not found");
+                return [];
+            }
+
+            // Then get users with TECHNICIAN role
+            const usersResponse = await api.get(USERS_PATH, {
+                params: {
+                    roleId: technicianRole.roleId,
+                    ...(centerId && { centerId })
+                }
+            });
+
+            const users = usersResponse.data.data || [];
+            
+            // Transform users to Technician format
+            return users.map((user: any): Technician => ({
+                id: user.userId || user.id,
+                name: user.fullName || user.name,
+                email: user.email,
+                phone: user.phoneNumber || user.phone,
+                centerId: user.centerId,
+                specialties: user.specialties || [],
+                isActive: user.isActive ?? true
+            }));
+        } catch (error) {
+            console.error("Error fetching technicians:", error);
+            return [];
+        }
     },
 
     /**
      * Get a single technician by ID
      */
     async getTechnicianById(id: string): Promise<Technician> {
-        const response = await api.get<Technician>(`${TECHNICIANS_PATH}/${id}`);
-        return response.data;
+        if (USE_MOCK_DATA) {
+            const allTechs = await getMockTechnicians();
+            const tech = allTechs.find(t => t.id === id);
+            if (!tech) throw new Error("Technician not found");
+            return tech;
+        }
+
+        try {
+            const response = await api.get(`${USERS_PATH}/${id}`);
+            const user = response.data.data;
+            
+            return {
+                id: user.userId || user.id,
+                name: user.fullName || user.name,
+                email: user.email,
+                phone: user.phoneNumber || user.phone,
+                centerId: user.centerId,
+                specialties: user.specialties || [],
+                isActive: user.isActive ?? true
+            };
+        } catch (error) {
+            console.error("Error fetching technician:", error);
+            throw new Error("Technician not found");
+        }
     },
 
     /**

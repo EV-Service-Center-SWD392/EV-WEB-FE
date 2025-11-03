@@ -38,6 +38,11 @@ const menuItems: MenuItem[] = [
     icon: Calendar,
   },
   {
+    href: "/technician-schedule",
+    label: "Quản lý lịch Technician",
+    icon: Calendar,
+  },
+  {
     href: "/staff/workorders",
     label: "Work Orders",
     icon: Wrench,

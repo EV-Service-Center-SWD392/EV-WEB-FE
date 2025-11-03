@@ -22,7 +22,7 @@ import {
     useCheckConflict,
     useScheduleParams,
 } from '@/hooks/scheduling';
-import { staffDirectoryService } from '@/services/staffDirectoryService';
+
 
 export const ScheduleContainer: React.FC = () => {
     // State from Zustand store
@@ -41,15 +41,16 @@ export const ScheduleContainer: React.FC = () => {
     const { data: centers = [], isLoading: isLoadingCenters } = useCenters();
     const { data: technicians = [] } = useTechnicians(centerId || '');
 
-    // Fetch capacity separately
-    const [capacity, setCapacity] = React.useState<import('@/entities/slot.types').SlotCapacity | null>(null);
-    React.useEffect(() => {
-        if (centerId && selectedDate) {
-            staffDirectoryService
-                .getCapacity(centerId, selectedDate)
-                .then(setCapacity)
-                .catch(() => setCapacity(null));
-        }
+    // Mock capacity data for now
+    const capacity = React.useMemo(() => {
+        if (!centerId) return null;
+        return {
+            date: selectedDate,
+            centerId,
+            capacity: 20,
+            occupied: 5,
+            available: 15
+        };
     }, [centerId, selectedDate]);
     const { data: workItems = [], isLoading: isLoadingWorkItems } =
         useAssignableWork(centerId || '', selectedDate);

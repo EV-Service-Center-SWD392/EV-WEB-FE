@@ -1,0 +1,146 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { TechnicianUser, technicianService } from "@/services/technicianService";
+import { roleService } from "@/services/roleService";
+import { Role } from "@/entities/role.types";
+import { toast } from "sonner";
+
+/**
+ * Custom hooks for Technician operations
+ */
+
+/**
+ * Hook to fetch all roles
+ */
+export function useRoles(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["roles"],
+    queryFn: () => roleService.getRoles(),
+    enabled,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    retry: 0, // Only call API once
+  });
+}
+
+/**
+ * Hook to find technician role ID
+ */
+export function useTechnicianRoleId() {
+  return useQuery({
+    queryKey: ["technicianRoleId"],
+    queryFn: async () => {
+      const roles = await roleService.getRoles();
+      const technicianRole = roles.find(role => 
+        role?.name?.toUpperCase() === "TECHNICIAN"
+      );
+      return technicianRole?.id || null;
+    },
+    staleTime: 1000 * 60 * 10, // Cache for 10 minutes
+    retry: 0, // Only call API once
+  });
+}
+
+/**
+ * Hook to fetch all technicians
+ */
+export function useTechnicians(enabled: boolean = true) {
+  const { data: technicianRoleId, isLoading: isLoadingRoleId } = useTechnicianRoleId();
+
+  return useQuery({
+    queryKey: ["technicians", technicianRoleId],
+    queryFn: () => {
+      if (!technicianRoleId) {
+        throw new Error("Technician role ID not found");
+      }
+      return technicianService.getTechnicians(technicianRoleId);
+    },
+    enabled: enabled && !!technicianRoleId,
+    retry: 0, // Only call API once
+  });
+}
+
+/**
+ * Hook to fetch a single technician by ID
+ */
+export function useTechnician(id: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["technician", id],
+    queryFn: () => technicianService.getUserById(id),
+    enabled: enabled && !!id,
+    retry: 0, // Only call API once
+  });
+}
+
+/**
+ * Hook to search technicians
+ */
+export function useSearchTechnicians(searchTerm: string, enabled: boolean = true) {
+  const { data: technicianRoleId } = useTechnicianRoleId();
+
+  return useQuery({
+    queryKey: ["technicians", "search", searchTerm, technicianRoleId],
+    queryFn: () => {
+      if (!technicianRoleId) {
+        throw new Error("Technician role ID not found");
+      }
+      return technicianService.searchTechnicians(technicianRoleId, searchTerm);
+    },
+    enabled: enabled && !!technicianRoleId && searchTerm.length >= 2,
+    retry: 0, // Only call API once
+  });
+}
+
+/**
+ * Hook to get available technicians for a specific date and shift
+ */
+export function useAvailableTechnicians(
+  date: string,
+  shift: string,
+  assignedTechnicianIds: string[] = [],
+  enabled: boolean = true
+) {
+  const { data: technicianRoleId } = useTechnicianRoleId();
+
+  return useQuery({
+    queryKey: [
+      "technicians",
+      "available",
+      date,
+      shift,
+      technicianRoleId,
+      assignedTechnicianIds,
+    ],
+    queryFn: () => {
+      if (!technicianRoleId) {
+        throw new Error("Technician role ID not found");
+      }
+      return technicianService.getAvailableTechnicians(
+        technicianRoleId,
+        date,
+        shift,
+        assignedTechnicianIds
+      );
+    },
+    enabled: enabled && !!technicianRoleId && !!date && !!shift,
+    retry: 0, // Only call API once
+  });
+}
+
+/**
+ * Hook to get all users (for admin purposes)
+ */
+export function useAllUsers(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["allUsers"],
+    queryFn: () => technicianService.getAllUsers(),
+    enabled,
+    retry: 0, // Only call API once
+  });
+}
+
+/**
+ * Helper hook to get technician display name
+ */
+export function useTechnicianDisplayName(technician?: TechnicianUser): string {
+  if (!technician) return "";
+  return technicianService.getTechnicianDisplayName(technician);
+}
