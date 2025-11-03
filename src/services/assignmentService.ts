@@ -214,6 +214,95 @@ class AssignmentService {
     );
   }
 
+  async reschedule(
+    id: string,
+    newPlannedStartUtc: string,
+    note?: string
+  ): Promise<Assignment> {
+    return this.requestOrMock(
+      async () => {
+        const { data } = await api.put<AssignmentApiPayload>(`${BASE_PATH}/${id}/reschedule`, {
+          newPlannedStartUtc,
+          note,
+        });
+        return mapAssignment(data);
+      },
+      async () => {
+        const index = mockAssignments.findIndex((assignment) => assignment.id === id);
+        if (index === -1) throw new Error("Assignment not found");
+
+        const existing = mockAssignments[index];
+        const updatedAssignment: Assignment = {
+          ...existing,
+          startUtc: newPlannedStartUtc,
+          note: note ?? existing.note,
+          updatedAt: new Date().toISOString(),
+        };
+
+        mockAssignments[index] = updatedAssignment;
+        return updatedAssignment;
+      },
+    );
+  }
+
+  async reassign(
+    id: string,
+    newTechnicianId: string,
+    note?: string
+  ): Promise<Assignment> {
+    return this.requestOrMock(
+      async () => {
+        const { data } = await api.put<AssignmentApiPayload>(`${BASE_PATH}/${id}/reassign`, {
+          newTechnicianId,
+          note,
+        });
+        return mapAssignment(data);
+      },
+      async () => {
+        const index = mockAssignments.findIndex((assignment) => assignment.id === id);
+        if (index === -1) throw new Error("Assignment not found");
+
+        const existing = mockAssignments[index];
+        const updatedAssignment: Assignment = {
+          ...existing,
+          technicianId: newTechnicianId,
+          status: "Reassigned",
+          note: note ?? existing.note,
+          updatedAt: new Date().toISOString(),
+        };
+
+        mockAssignments[index] = updatedAssignment;
+        return updatedAssignment;
+      },
+    );
+  }
+
+  async markNoShow(id: string, note?: string): Promise<Assignment> {
+    return this.requestOrMock(
+      async () => {
+        const { data } = await api.put<AssignmentApiPayload>(`${BASE_PATH}/${id}/noshow`, {
+          note,
+        });
+        return mapAssignment(data);
+      },
+      async () => {
+        const index = mockAssignments.findIndex((assignment) => assignment.id === id);
+        if (index === -1) throw new Error("Assignment not found");
+
+        const existing = mockAssignments[index];
+        const updatedAssignment: Assignment = {
+          ...existing,
+          status: "Cancelled",
+          note: note ? `No show: ${note}` : "No show",
+          updatedAt: new Date().toISOString(),
+        };
+
+        mockAssignments[index] = updatedAssignment;
+        return updatedAssignment;
+      },
+    );
+  }
+
   async checkConflict(
     technicianId: string,
     startUtc: string,

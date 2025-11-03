@@ -2,12 +2,11 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  Package, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  Settings,
   TrendingUp,
   LucideIcon
 } from "lucide-react";
