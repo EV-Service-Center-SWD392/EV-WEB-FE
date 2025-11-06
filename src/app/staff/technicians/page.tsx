@@ -38,7 +38,12 @@ export default function TechniciansPage() {
   const [selectedUser, setSelectedUser] = useState<TechnicianRow | null>(null);
   const [showCertificates, setShowCertificates] = useState(false);
 
-  const { data: technicians = [], isLoading, isError, refetch } = useQuery<TechnicianRow[]>({
+  const {
+    data: technicians = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<TechnicianRow[]>({
     queryKey: ["technicians-list"],
     queryFn: fetchTechnicians,
     staleTime: 30_000,
@@ -47,11 +52,17 @@ export default function TechniciansPage() {
   // Certificates query will be performed when modal opens
   type Certificate = Record<string, unknown>;
 
-  const { data: certificates = [], refetch: refetchCertificates, isFetching: certLoading } = useQuery<Certificate[]>({
+  const {
+    data: certificates = [],
+    refetch: refetchCertificates,
+    isFetching: certLoading,
+  } = useQuery<Certificate[]>({
     queryKey: ["user-certificates", selectedUser?.userId],
     queryFn: async () => {
       if (!selectedUser) return [] as Certificate[];
-      const r = await api.get(`/api/UserCertificate/user/${selectedUser.userId}`);
+      const r = await api.get(
+        `/api/UserCertificate/user/${selectedUser.userId}`
+      );
       return (r.data as Certificate[]) ?? [];
     },
     enabled: !!selectedUser && showCertificates,
@@ -98,19 +109,28 @@ export default function TechniciansPage() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td
+                  colSpan={4}
+                  className="px-4 py-6 text-center text-sm text-gray-500"
+                >
                   Loading technicians...
                 </td>
               </tr>
             ) : isError ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-sm text-red-500">
+                <td
+                  colSpan={4}
+                  className="px-4 py-6 text-center text-sm text-red-500"
+                >
                   Error loading technicians
                 </td>
               </tr>
             ) : technicians.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td
+                  colSpan={4}
+                  className="px-4 py-6 text-center text-sm text-gray-500"
+                >
                   No technicians found
                 </td>
               </tr>
@@ -118,8 +138,12 @@ export default function TechniciansPage() {
               technicians.map((t) => (
                 <tr key={t.userId} className="border-t">
                   <td className="px-4 py-3">{t.userName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{t.email ?? "-"}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{t.phoneNumber ?? "-"}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {t.email ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {t.phoneNumber ?? "-"}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <Button size="sm" onClick={() => openCertificates(t)}>
@@ -137,15 +161,30 @@ export default function TechniciansPage() {
       {/* Certificates Modal */}
       {showCertificates && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/40" onClick={closeCertificates} />
+          <div
+            className="fixed inset-0 bg-black/40"
+            onClick={closeCertificates}
+          />
           <div className="relative bg-white rounded-md shadow-xl w-[90%] max-w-2xl p-6 z-10">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Certificates for {selectedUser.userName}</h2>
+              <h2 className="text-lg font-semibold">
+                Certificates for {selectedUser.userName}
+              </h2>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => { refetchCertificates(); }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    refetchCertificates();
+                  }}
+                >
                   Refresh
                 </Button>
-                <Button variant="secondary" size="sm" onClick={closeCertificates}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={closeCertificates}
+                >
                   Close
                 </Button>
               </div>
@@ -153,16 +192,36 @@ export default function TechniciansPage() {
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">
               {certLoading ? (
-                <div className="text-sm text-gray-500">Loading certificates...</div>
+                <div className="text-sm text-gray-500">
+                  Loading certificates...
+                </div>
               ) : !certificates || certificates.length === 0 ? (
-                <div className="text-sm text-gray-500">No certificates found</div>
+                <div className="text-sm text-gray-500">
+                  No certificates found
+                </div>
               ) : (
                 <ul className="space-y-2">
                   {certificates.map((c) => (
-                    <li key={(c["id"] ? String(c["id"]) : JSON.stringify(c))} className="border rounded p-3">
-                      <div className="font-medium">{(c["title"] ?? c["name"] ?? "Certificate") as string}</div>
-                      <div className="text-sm text-gray-600">Issued: {(c["issuedAt"] ?? c["issueDate"] ?? c["createdAt"] ?? "-") as string}</div>
-                      <div className="text-sm text-gray-600">Notes: {(c["notes"] ?? c["description"] ?? "-") as string}</div>
+                    <li
+                      key={c["id"] ? String(c["id"]) : JSON.stringify(c)}
+                      className="border rounded p-3"
+                    >
+                      <div className="font-medium">
+                        {(c["title"] ?? c["name"] ?? "Certificate") as string}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Issued:{" "}
+                        {
+                          (c["issuedAt"] ??
+                            c["issueDate"] ??
+                            c["createdAt"] ??
+                            "-") as string
+                        }
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Notes:{" "}
+                        {(c["notes"] ?? c["description"] ?? "-") as string}
+                      </div>
                     </li>
                   ))}
                 </ul>
