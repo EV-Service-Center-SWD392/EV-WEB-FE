@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -554,13 +555,21 @@ export default function TechnicianScheduleAssignment() {
         {/* Header */}
         <div className="bg-white border-b border-gray-200 p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">
-                Lịch làm việc Technician
-              </h2>
-              <p className="text-xs text-gray-500 mt-1">
-                Kéo technician vào lịch • Nhấp vào ngày để phân công
-              </p>
+            <div className="flex items-center gap-3">
+              <Link href="/staff/dashboard">
+                <Button variant="ghost" size="sm" className="px-2">
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  <span className="text-sm">Quay về Dashboard</span>
+                </Button>
+              </Link>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Lịch làm việc Technician
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Kéo technician vào lịch • Nhấp vào ngày để phân công
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center space-x-3">
