@@ -2,8 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { DndContext, DragEndEvent, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { motion } from "framer-motion";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+// motion (framer-motion) not used in this component
 import {
   Search,
   Loader2,
@@ -46,8 +46,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const CENTER_NAME = "EV Service - Thủ Đức";
 
 // No props needed - using fixed center name
-type TechnicianScheduleAssignmentProps = Record<string, never>;
-
 // Droppable Day Cell Component
 function DroppableDay({
   date,
@@ -62,7 +60,7 @@ function DroppableDay({
     technician: Technician;
     shift: ShiftType;
   }>;
-  onRemoveAssignment: (id: string) => void;
+  onRemoveAssignment: (_id: string) => void;
 }) {
   const slotId = `${format(date, "yyyy-MM-dd")}-${shift}`;
   const { setNodeRef, isOver } = useDroppable({
@@ -183,6 +181,7 @@ export default function TechnicianScheduleAssignment() {
       date: Date;
       technician: Technician;
       shift: ShiftType;
+      isLocal?: boolean;
     }>
   >([]);
 
@@ -246,7 +245,7 @@ export default function TechnicianScheduleAssignment() {
         }
         
         return [];
-      } catch (error) {
+      } catch {
         return [];
       }
     },
@@ -257,30 +256,24 @@ export default function TechnicianScheduleAssignment() {
   // Transform work schedules to assignments when data changes
   React.useEffect(() => {
     if (workSchedules && technicians.length > 0) {
-      const transformedAssignments = workSchedules
-        .map((schedule: any) => {
-          // Find technician by userId from the schedule data
-          const technician = technicians.find(t => t.id === schedule.userId);
-          if (technician) {
-            return {
-              id: schedule.id,
-              date: new Date(schedule.workDate),
-              technician: {
-                ...technician,
-                name: schedule.userName // Use userName from API response
-              },
-              shift: schedule.shift as ShiftType
-            };
-          }
-          return null;
-        })
-        .filter((assignment): assignment is {
-          id: string;
-          date: Date;
-          technician: Technician;
-          shift: ShiftType;
-        } => assignment !== null);
-      
+      const transformedAssignments: Array<{ id: string; date: Date; technician: Technician; shift: ShiftType; isLocal?: boolean }> = [];
+
+      for (const schedule of workSchedules) {
+        const technician = technicians.find((t) => t.id === schedule.userId);
+        if (technician) {
+          transformedAssignments.push({
+            id: schedule.id,
+            date: new Date(schedule.workDate),
+            technician: {
+              ...technician,
+              name: schedule.userName,
+            },
+            shift: schedule.shift as ShiftType,
+            isLocal: false,
+          });
+        }
+      }
+
       setAssignments(transformedAssignments);
     }
   }, [workSchedules, technicians]);
@@ -352,7 +345,7 @@ export default function TechnicianScheduleAssignment() {
   };
 
   // Handle drag start
-  const handleDragStart = (event: any) => {
+  const handleDragStart = (event: DragStartEvent) => {
     const technicianId = event.active.id as string;
     
     // If dragging from multi-select area and technicians are selected
@@ -403,8 +396,8 @@ export default function TechnicianScheduleAssignment() {
         } else {
           toast.error("Không thể phân công kỹ thuật viên");
         }
-      } catch (error) {
-        const err = error as Error;
+      } catch (_error) {
+        const err = (_error as Error);
         toast.error(err.message || "Lỗi khi phân công kỹ thuật viên");
       }
       
@@ -459,8 +452,26 @@ export default function TechnicianScheduleAssignment() {
 
   // Handle remove assignment
   const handleRemoveAssignment = (assignmentId: string) => {
+    // Optimistic UI update: remove locally first
     setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
-    // In real app, call deleteScheduleMutation here
+
+    // Call API to delete the schedule
+    try {
+      deleteScheduleMutation.mutate(assignmentId, {
+        onSuccess: () => {
+          // refetch schedules to ensure state consistency
+          refetchSchedules();
+        },
+        onError: (_err) => {
+          // Rollback optimistic update on error
+          // (refetch will restore state from server)
+          refetchSchedules();
+        },
+      });
+    } catch {
+      // If mutation throws synchronously, refetch to restore
+      refetchSchedules();
+    }
   };
 
   // Get assignments for a specific date
@@ -527,27 +538,14 @@ export default function TechnicianScheduleAssignment() {
           shift,
           workDate: format(date, "yyyy-MM-dd'T'HH:mm:ss"),
         });
-      } catch (error) {
+      } catch {
         // Remove from UI if API call fails
         setAssignments((prev) => prev.filter(a => a.id !== newAssignment.id));
       }
     }
   };
 
-  // Custom day content with assignments
-  const DayContent = ({ date, shift }: { date: Date; shift: ShiftType }) => {
-    const dayAssignments = getAssignmentsForDate(date).filter(a => a.shift === shift);
-    return (
-      <div className="relative h-full w-full">
-        <DroppableDay
-          date={date}
-          shift={shift}
-          assignments={dayAssignments}
-          onRemoveAssignment={handleRemoveAssignment}
-        />
-      </div>
-    );
-  };
+  // (DayContent removed - using DroppableDay directly in the grid)
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
