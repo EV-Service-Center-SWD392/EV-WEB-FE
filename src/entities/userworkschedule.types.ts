@@ -97,3 +97,26 @@ export interface WorkloadInfo {
   totalHours: number;
   shifts: UserWorkSchedule[];
 }
+
+// Response from GET /api/UserWorkSchedule/technicians-schedules
+export interface TechnicianScheduleInfo {
+  userId: string;
+  userName: string;
+  email: string;
+  phoneNumber: string;
+  schedules: Array<{
+    userWorkScheduleId: string;
+    workScheduleId: string;
+    startTime: string; // ISO 8601
+    endTime: string; // ISO 8601
+    centerName: string;
+    status: string;
+    createdAt: string;
+  }>;
+}
+
+export interface TechniciansSchedulesFilters {
+  centerName?: string;
+  startDate?: string; // ISO 8601
+  endDate?: string; // ISO 8601
+}

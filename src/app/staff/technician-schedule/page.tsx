@@ -4,10 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Calendar, ChevronLeft, ChevronRight, Search, Users } from "lucide-react";
 
-import { userService } from "@/services/userService";
 import { userWorkScheduleService } from "@/services/userWorkScheduleService";
-import { UserRole, type User } from "@/entities/user.types";
-import type { UserWorkSchedule, ShiftType, BulkAssignTechniciansDto } from "@/entities/userworkschedule.types";
+import type { TechnicianScheduleInfo, ShiftType, BulkAssignTechniciansDto } from "@/entities/userworkschedule.types";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 const SHIFTS = [
@@ -25,11 +24,18 @@ const SHIFTS = [
 
 const WEEKDAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"];
 
+const SERVICE_CENTERS = [
+  { value: "all", label: "Tất cả trung tâm" },
+  { value: "EV Service - Thủ Đức", label: "EV Service - Thủ Đức" },
+  { value: "EV Service - Quận 1", label: "EV Service - Quận 1" },
+  { value: "EV Service - Tân Bình", label: "EV Service - Tân Bình" },
+];
+
 export default function TechnicianSchedulePage() {
-  const [technicians, setTechnicians] = useState<User[]>([]);
-  const [userSchedules, setUserSchedules] = useState<UserWorkSchedule[]>([]);
+  const [techniciansData, setTechniciansData] = useState<TechnicianScheduleInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCenter, setSelectedCenter] = useState<string>("all");
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()));
   const [selectedTechnicians, setSelectedTechnicians] = useState<Set<string>>(new Set());
   const [draggedTechnicians, setDraggedTechnicians] = useState<string[]>([]);
@@ -42,31 +48,21 @@ export default function TechnicianSchedulePage() {
       const weekEnd = new Date(currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
-      const techsResponse = await userService.getUsers({ role: UserRole.TECHNICIAN });
-      setTechnicians(techsResponse);
+      // Use the new API to get all technicians with schedules
+      const data = await userWorkScheduleService.getTechniciansSchedules({
+        centerName: selectedCenter === "all" ? undefined : selectedCenter,
+        startDate: currentWeekStart.toISOString(),
+        endDate: weekEnd.toISOString(),
+      });
 
-      const allSchedules = [];
-      for (const tech of techsResponse) {
-        try {
-          const schedules = await userWorkScheduleService.getUserWorkSchedulesByRange(
-            tech.id,
-            currentWeekStart.toISOString(),
-            weekEnd.toISOString()
-          );
-          allSchedules.push(...schedules);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      setUserSchedules(allSchedules);
+      setTechniciansData(data);
     } catch (error) {
       const err = error as Error;
       toast.error(err.message || "Không thể tải dữ liệu");
     } finally {
       setLoading(false);
     }
-  }, [currentWeekStart]);
+  }, [currentWeekStart, selectedCenter]);
 
   useEffect(() => {
     loadData();
@@ -84,7 +80,7 @@ export default function TechnicianSchedulePage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedTechnicians(new Set(filteredTechnicians.map(t => t.id)));
+      setSelectedTechnicians(new Set(filteredTechnicians.map(t => t.userId)));
     } else {
       setSelectedTechnicians(new Set());
     }
@@ -108,7 +104,7 @@ export default function TechnicianSchedulePage() {
 
   const handleDrop = async (e: React.DragEvent, shift: ShiftType, date: Date) => {
     e.preventDefault();
-    
+
     if (draggedTechnicians.length === 0) return;
 
     try {
@@ -120,7 +116,7 @@ export default function TechnicianSchedulePage() {
       };
 
       const result = await userWorkScheduleService.bulkAssignTechnicians(bulkAssignData);
-      
+
       if (result.successCount > 0) {
         toast.success(`Đã phân công thành công ${result.successCount} kỹ thuật viên`);
         if (result.failureCount > 0) {
@@ -144,15 +140,49 @@ export default function TechnicianSchedulePage() {
 
   const getSchedulesForSlot = (shift: ShiftType, date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return userSchedules.filter(schedule => 
-      schedule.shift === shift && 
-      schedule.workDate.startsWith(dateStr)
+    const allSchedules = techniciansData.flatMap(tech =>
+      tech.schedules.map(schedule => ({
+        ...schedule,
+        technicianId: tech.userId,
+        technicianName: tech.userName,
+      }))
     );
+    return allSchedules.filter(schedule => {
+      const scheduleDate = new Date(schedule.startTime).toISOString().split('T')[0];
+      const scheduleHour = new Date(schedule.startTime).getHours();
+
+      // Map time to shift
+      let scheduleShift: ShiftType | null = null;
+      if (scheduleHour >= 7 && scheduleHour < 12) scheduleShift = "Morning";
+      else if (scheduleHour >= 13 && scheduleHour < 19) scheduleShift = "Evening";
+      else if (scheduleHour >= 20 || scheduleHour < 6) scheduleShift = "Night";
+
+      return scheduleDate === dateStr && scheduleShift === shift;
+    });
   };
 
-  const filteredTechnicians = technicians.filter(
+  // Check if technician has availability for a specific shift and date
+  const _getTechnicianAvailability = (technicianId: string, shift: ShiftType, date: Date): boolean => {
+    const tech = techniciansData.find(t => t.userId === technicianId);
+    if (!tech) return false;
+
+    const dateStr = date.toISOString().split('T')[0];
+    return tech.schedules.some(schedule => {
+      const scheduleDate = new Date(schedule.startTime).toISOString().split('T')[0];
+      const scheduleHour = new Date(schedule.startTime).getHours();
+
+      let scheduleShift: ShiftType | null = null;
+      if (scheduleHour >= 7 && scheduleHour < 12) scheduleShift = "Morning";
+      else if (scheduleHour >= 13 && scheduleHour < 19) scheduleShift = "Evening";
+      else if (scheduleHour >= 20 || scheduleHour < 6) scheduleShift = "Night";
+
+      return scheduleDate === dateStr && scheduleShift === shift && schedule.status === "Active";
+    });
+  };
+
+  const filteredTechnicians = techniciansData.filter(
     (tech) =>
-      tech.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tech.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tech.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -172,15 +202,30 @@ export default function TechnicianSchedulePage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold">Lịch làm việc Technician</h1>
           <p className="text-muted-foreground mt-2">
-            Quản lý lịch làm việc của kỹ thuật viên
+            Xem lịch làm việc cố định của kỹ thuật viên theo tuần
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Center Filter */}
+          <Select value={selectedCenter} onValueChange={setSelectedCenter}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Chọn trung tâm" />
+            </SelectTrigger>
+            <SelectContent>
+              {SERVICE_CENTERS.map((center) => (
+                <SelectItem key={center.value} value={center.value}>
+                  {center.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Week Navigation */}
           <Button
             variant="outline"
             size="icon"
@@ -192,9 +237,17 @@ export default function TechnicianSchedulePage() {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-2 min-w-[300px] justify-center">
+          <div className="flex items-center gap-2 min-w-[250px] justify-center border rounded-md px-3 py-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">Tuần {currentWeekStart.toLocaleDateString('vi-VN')}</span>
+            <span className="font-medium text-sm">
+              {currentWeekStart.toLocaleDateString('vi-VN')} - {
+                (() => {
+                  const weekEnd = new Date(currentWeekStart);
+                  weekEnd.setDate(weekEnd.getDate() + 6);
+                  return weekEnd.toLocaleDateString('vi-VN');
+                })()
+              }
+            </span>
           </div>
           <Button
             variant="outline"
@@ -239,8 +292,8 @@ export default function TechnicianSchedulePage() {
                   </Badge>
                 )}
               </div>
-              
-              <div 
+
+              <div
                 className={`space-y-2 ${selectedTechnicians.size > 0 ? 'cursor-grab' : ''}`}
                 draggable={selectedTechnicians.size > 0}
                 onDragStart={handleDragStart}
@@ -248,25 +301,32 @@ export default function TechnicianSchedulePage() {
               >
                 {filteredTechnicians.map((tech) => (
                   <div
-                    key={tech.id}
-                    className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
-                      selectedTechnicians.has(tech.id) 
-                        ? 'bg-primary/10 border-primary' 
+                    key={tech.userId}
+                    className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${selectedTechnicians.has(tech.userId)
+                        ? 'bg-primary/10 border-primary'
                         : 'hover:bg-muted/50'
-                    } ${isDragging && selectedTechnicians.has(tech.id) ? 'opacity-50' : ''}`}
+                      } ${isDragging && selectedTechnicians.has(tech.userId) ? 'opacity-50' : ''}`}
                   >
                     <Checkbox
-                      checked={selectedTechnicians.has(tech.id)}
-                      onCheckedChange={(checked) => handleTechnicianSelect(tech.id, checked as boolean)}
+                      checked={selectedTechnicians.has(tech.userId)}
+                      onCheckedChange={(checked) => handleTechnicianSelect(tech.userId, checked as boolean)}
                     />
                     <Avatar className="h-10 w-10">
                       <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                        {tech.name.substring(0, 2).toUpperCase()}
+                        {tech.userName.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{tech.name}</p>
+                      <p className="font-medium truncate">{tech.userName}</p>
                       <p className="text-xs text-muted-foreground truncate">{tech.email}</p>
+                      {tech.phoneNumber && (
+                        <p className="text-xs text-muted-foreground">{tech.phoneNumber}</p>
+                      )}
+                      {tech.schedules.length > 0 && (
+                        <Badge variant="secondary" className="text-xs mt-1">
+                          {tech.schedules.length} lịch đã xếp
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -303,27 +363,36 @@ export default function TechnicianSchedulePage() {
                       return (
                         <div
                           key={`${shift.id}-${dayIndex}`}
-                          className={`min-h-[100px] p-2 border-2 border-dashed rounded-lg transition-colors ${
-                            isDragging ? 'border-primary bg-primary/5' : 'border-gray-200'
-                          }`}
+                          className={`min-h-[100px] p-2 border-2 border-dashed rounded-lg transition-colors ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-200'
+                            }`}
                           onDrop={(e) => handleDrop(e, shift.id as ShiftType, date)}
                           onDragOver={handleDragOver}
                         >
                           {schedules.length > 0 ? (
                             <div className="space-y-1">
                               {schedules.map((schedule) => {
-                                const tech = technicians.find(t => t.id === schedule.userId);
                                 return (
                                   <div
-                                    key={schedule.id}
-                                    className="bg-blue-100 text-blue-800 text-xs p-2 rounded border"
+                                    key={schedule.userWorkScheduleId}
+                                    className="bg-blue-100 text-blue-800 text-xs p-2 rounded border border-blue-200 hover:bg-blue-200 transition-colors"
                                   >
                                     <p className="font-medium truncate">
-                                      {tech?.name || 'Unknown'}
+                                      {schedule.technicianName}
                                     </p>
-                                    <p className="text-blue-600">
+                                    <p className="text-blue-600 text-[10px]">
                                       {schedule.centerName}
                                     </p>
+                                    <p className="text-blue-500 text-[10px]">
+                                      {new Date(schedule.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                      {' - '}
+                                      {new Date(schedule.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                    <Badge
+                                      variant={schedule.status === "Active" ? "default" : "secondary"}
+                                      className="text-[10px] px-1 py-0 mt-1"
+                                    >
+                                      {schedule.status}
+                                    </Badge>
                                   </div>
                                 );
                               })}

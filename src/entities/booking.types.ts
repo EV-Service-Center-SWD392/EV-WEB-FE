@@ -13,93 +13,63 @@ export enum BookingStatus {
 // Export individual values to avoid unused warnings
 export const { PENDING, ASSIGNED, IN_QUEUE, ACTIVE, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, REASSIGNED } = BookingStatus;
 
-export interface Booking {
+export interface BookingQueryDto {
+  page?: number;
+  pageSize?: number;
+  centerId?: string;
+  vehicleId?: string;
+  status?: "Pending" | "Approved" | "Rejected";
+  fromDate?: string; // YYYY-MM-DD
+  toDate?: string;   // YYYY-MM-DD
+}
+
+/**
+ * Response từ /api/client/Booking
+ * Includes full customer & vehicle info
+ */
+export interface BookingResponseDto {
   id: string;
   bookingCode?: string;
+
+  // Customer Info
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+
+  // Vehicle Info
+  vehicleId: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  vehicleType?: string;
+  vehicleVin?: string;
+
+  // Service Info
   serviceCenterId?: string;
   serviceCenterName?: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  vehicleType: string; // xe máy, ô tô điện, xe đạp điện
-  vehicleBrand: string; // Tesla, VinFast, etc.
-  vehicleModel?: string;
-  vehicleVin?: string;
-  serviceCenter?: string; // legacy display string
   serviceTypeId?: string;
   serviceType?: string;
+
+  // Time Slot
+  preferredDate?: string;
   preferredTime?: string;
-  technicianId?: string;
-  technicianName?: string;
-  scheduledDate: string;
-  repairParts: string; // bộ phận cần sửa
+  preferredStartUtc?: string;
+  preferredEndUtc?: string;
+
+  // Booking Details
+  repairParts?: string;
   description?: string;
-  status: BookingStatus;
-  estimatedCost?: number;
-  actualCost?: number;
+  notes?: string;
+
+  // Status
+  status: "Pending" | "Approved" | "Rejected";
+
+  // Timestamps
   createdAt: string;
-  updatedAt: string;
-  assignmentStatus?: BookingStatus;
-  notes?: string;
-}
-
-export interface CreateBookingRequest {
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  vehicleType: string;
-  vehicleBrand: string;
-  vehicleModel?: string;
-  vehicleVin?: string;
-  serviceCenterId: string;
-  serviceTypeId: string;
-  preferredTime: string; // ISO string
-  scheduledDate: string;
-  serviceCenter?: string; // legacy support
-  serviceType?: string; // legacy support
-  repairParts?: string;
-  description?: string;
-  estimatedCost?: number;
-  notes?: string;
-}
-
-export interface UpdateBookingRequest {
-  customerName?: string;
-  customerEmail?: string;
-  customerPhone?: string;
-  vehicleType?: string;
-  vehicleBrand?: string;
-  vehicleModel?: string;
-  vehicleVin?: string;
-  serviceCenterId?: string;
-  serviceTypeId?: string;
-  preferredTime?: string;
-  serviceCenter?: string;
-  serviceType?: string;
-  technicianId?: string;
-  scheduledDate?: string;
-  repairParts?: string;
-  description?: string;
-  status?: BookingStatus;
-  assignmentStatus?: BookingStatus;
-  estimatedCost?: number;
-  actualCost?: number;
-  notes?: string;
-}
-
-export interface BookingFilters {
-  customerName?: string;
-  phone?: string;
-  status?: BookingStatus;
-  assignmentStatus?: BookingStatus;
-  centerId?: string;
-  serviceType?: string;
-  serviceTypeId?: string;
-  technicianId?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  page?: number;
-  limit?: number;
-  sort?: string;
-  sortOrder?: "asc" | "desc";
+  updatedAt?: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  approvedBy?: string;
+  rejectedBy?: string;
+  rejectReason?: string;
 }

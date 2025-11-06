@@ -8,6 +8,8 @@ import {
   BulkAssignResult,
   AvailabilityCheck,
   WorkloadInfo,
+  TechnicianScheduleInfo,
+  TechniciansSchedulesFilters,
 } from "@/entities/userworkschedule.types";
 
 export interface UserWorkScheduleDto {
@@ -118,9 +120,23 @@ export const userWorkScheduleService = {
     return response.data;
   },
 
-  async getTechniciansSchedules(params: { startDate: string; endDate: string }): Promise<UserWorkSchedule[]> {
-    const queryParams = new URLSearchParams(params);
-    const response = await api.get<any[]>(`/UserWorkSchedule/technicians-schedules?${queryParams.toString()}`);
+  /**
+   * Get all technicians with their assigned work schedules
+   * GET /api/UserWorkSchedule/technicians-schedules
+   * @param filters - Optional filters for centerName, startDate, endDate
+   */
+  async getTechniciansSchedules(filters?: TechniciansSchedulesFilters): Promise<TechnicianScheduleInfo[]> {
+    const params = new URLSearchParams();
+    if (filters?.centerName) params.append("centerName", filters.centerName);
+    if (filters?.startDate) params.append("startDate", filters.startDate);
+    if (filters?.endDate) params.append("endDate", filters.endDate);
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `/api/UserWorkSchedule/technicians-schedules?${queryString}`
+      : "/api/UserWorkSchedule/technicians-schedules";
+
+    const response = await api.get<TechnicianScheduleInfo[]>(url);
     return response.data;
   },
 };

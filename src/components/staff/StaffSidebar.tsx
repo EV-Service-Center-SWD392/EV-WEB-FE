@@ -61,8 +61,8 @@ const menuItems: MenuItemOrGroup[] = [
     label: "Service & Intake",
     icon: FileText,
     items: [
-      { href: "/staff/intake-list", label: "Danh sách Intakes", icon: FileText },
-      { href: "/staff/intake/new", label: "Tạo Intake mới", icon: PlusSquare },
+      { href: "/staff/service-intake/create", label: "Bookings Chờ Intake", icon: PlusSquare },
+      { href: "/staff/service-intake", label: "Danh sách Intakes", icon: FileText },
     ],
   },
   {

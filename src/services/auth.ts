@@ -75,7 +75,7 @@ export async function login(payload: {
   }
 
   const { data } = await api.post<AuthResultDto>(
-    "/api/Auth/login",
+    "/Auth/login",
     payload as LoginDto
   );
   return data;
@@ -124,7 +124,7 @@ export async function register(payload: {
   }
 
   const { data } = await api.post<AuthResultDto>(
-    "/api/Auth/register",
+    "/Auth/register",
     apiPayload
   );
   return data;
@@ -174,7 +174,7 @@ export async function createStaff(payload: {
   };
 
   const { data } = await api.post<AuthResultDto>(
-    "/api/Auth/create-staff",
+    "/Auth/create-staff",
     apiPayload
   );
   return data;
@@ -260,7 +260,7 @@ export async function refreshToken(payload: {
   };
 
   const { data } = await api.post<AuthResultDto>(
-    "/api/Auth/refresh-token",
+    "/Auth/refresh-token",
     apiPayload
   );
   return data;
@@ -277,7 +277,7 @@ export async function revokeToken(payload: {
     refreshToken: payload.refreshToken ?? null,
   };
   const { data } = await api.post<boolean>(
-    "/api/Auth/revoke-token",
+    "/Auth/revoke-token",
     apiPayload
   );
   return data;

@@ -273,16 +273,18 @@ export async function uploadChecklistPhoto(file: File): Promise<string> {
 }
 
 /**
- * Finalize an intake (ready for work order creation)
- * PUT /api/ServiceIntake/{id}/finalize
+ * Start inspecting (transition: CHECKED_IN → INSPECTING)
+ * PUT /api/ServiceIntake/{id}
  */
-export async function finalizeIntake(intakeId: string): Promise<ServiceIntake> {
-  const { data } = await api.put<IntakeApiPayload>(`${BASE_PATH}/${intakeId}/finalize`);
+export async function startInspecting(intakeId: string): Promise<ServiceIntake> {
+  const { data } = await api.put<IntakeApiPayload>(`${BASE_PATH}/${intakeId}`, {
+    status: "Inspecting",
+  });
   return mapIntake(data);
 }
 
 /**
- * Verify an intake
+ * Verify an intake (transition: INSPECTING → VERIFIED)
  * PUT /api/ServiceIntake/{id}/verify
  */
 export async function verifyIntake(intakeId: string): Promise<ServiceIntake> {
@@ -291,7 +293,16 @@ export async function verifyIntake(intakeId: string): Promise<ServiceIntake> {
 }
 
 /**
- * Cancel an intake
+ * Finalize an intake (transition: VERIFIED → FINALIZED)
+ * PUT /api/ServiceIntake/{id}/finalize
+ */
+export async function finalizeIntake(intakeId: string): Promise<ServiceIntake> {
+  const { data } = await api.put<IntakeApiPayload>(`${BASE_PATH}/${intakeId}/finalize`);
+  return mapIntake(data);
+}
+
+/**
+ * Cancel an intake (transition: CHECKED_IN → CANCELLED)
  * PUT /api/ServiceIntake/{id}/cancel
  */
 export async function cancelIntake(intakeId: string): Promise<ServiceIntake> {
