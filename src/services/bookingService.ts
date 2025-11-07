@@ -26,8 +26,8 @@ export const bookingService = {
 
             const queryString = params.toString();
             const url = queryString
-                ? `/client/Booking?${queryString}`
-                : "/client/Booking";
+                ? `/api/client/Booking?${queryString}`
+                : "/api/client/Booking";
 
             const response = await api.get<BookingResponseDto[]>(url);
             return response.data || [];
@@ -45,7 +45,7 @@ export const bookingService = {
     async createBooking(bookingData: CreateBookingRequest): Promise<BookingResponseDto> {
         try {
             const response = await api.post<BookingResponseDto>(
-                "/client/Booking",
+                "/api/client/Booking",
                 bookingData
             );
             return response.data;
@@ -72,7 +72,7 @@ export const bookingService = {
     ): Promise<BookingResponseDto> {
         try {
             const response = await api.put<BookingResponseDto>(
-                `/client/Booking/${bookingId}`,
+                `/api/client/Booking/${bookingId}`,
                 updateData
             );
             return response.data;
@@ -89,7 +89,7 @@ export const bookingService = {
      */
     async deleteBooking(bookingId: string): Promise<void> {
         try {
-            await api.delete(`/client/Booking/${bookingId}`);
+            await api.delete(`/api/client/Booking/${bookingId}`);
         } catch (error: unknown) {
             const err = error as { response?: { data?: unknown }; message?: string };
             console.error("Failed to delete booking:", err);
@@ -119,7 +119,7 @@ export const bookingService = {
      */
     async getBookingById(id: string): Promise<BookingResponseDto | null> {
         try {
-            const response = await api.get(`/client/Booking/${id}`);
+            const response = await api.get(`/api/client/Booking/${id}`);
             return response.data || null;
         } catch (error) {
             console.error("Failed to fetch booking:", error);
@@ -133,7 +133,7 @@ export const bookingService = {
      */
     async getVehicle(): Promise<any[]> {
         try {
-            const response = await api.get("/client/Vehicle?Page=1&PageSize=10");
+            const response = await api.get("/api/client/Vehicle?Page=1&PageSize=10");
             const data = response.data;
             if (Array.isArray(data)) return data;
             if (Array.isArray(data?.items)) return data.items;
@@ -151,7 +151,7 @@ export const bookingService = {
      */
     async getCenters(): Promise<any[]> {
         try {
-            const response = await api.get("/Center");
+            const response = await api.get("/api/Center");
             const data = response.data;
             return Array.isArray(data) ? data : [];
         } catch (error) {
@@ -178,8 +178,8 @@ export const bookingService = {
 
             const queryString = params.toString();
             const url = queryString
-                ? `/BookingSchedules/client/${centerId}?${queryString}`
-                : `/BookingSchedules/client/${centerId}`;
+                ? `/api/BookingSchedules/client/${centerId}?${queryString}`
+                : `/api/BookingSchedules/client/${centerId}`;
 
             const response = await api.get(url);
             const data = response.data;
