@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import type { CreateWorkOrderRequest } from '@/entities/workorder.types';
+import type { CreateWorkOrderRequest, WorkOrderStatus } from '@/entities/workorder.types';
 
 interface WorkOrderFormProps {
     intakes?: Array<{
@@ -56,6 +56,15 @@ interface TaskInput {
     order: number;
 }
 
+type WorkOrderFormValues = {
+    intakeId: string;
+    technicianId: string;
+    serviceType: string;
+    partsRequired?: string;
+    estimatedCost?: number;
+    notes?: string;
+};
+
 export function WorkOrderForm({
     intakes = [],
     technicians = [],
@@ -73,42 +82,75 @@ export function WorkOrderForm({
         defaultTechnicianId || ''
     );
 
+    React.useEffect(() => {
+        if (defaultIntakeId) {
+            setSelectedIntakeId(defaultIntakeId);
+        }
+    }, [defaultIntakeId]);
+
+    React.useEffect(() => {
+        if (defaultTechnicianId) {
+            setSelectedTechnicianId(defaultTechnicianId);
+        }
+    }, [defaultTechnicianId]);
+
+    React.useEffect(() => {
+        if (!selectedIntakeId && intakes.length === 1) {
+            setSelectedIntakeId(intakes[0].id);
+        }
+    }, [intakes, selectedIntakeId]);
+
+    React.useEffect(() => {
+        if (!selectedTechnicianId && technicians.length === 1) {
+            setSelectedTechnicianId(technicians[0].id);
+        }
+    }, [selectedTechnicianId, technicians]);
+
     const {
         register,
         handleSubmit,
         formState: { errors },
         setValue,
-    } = useForm<{
-        intakeId: string;
-        technicianId: string;
-        serviceType: string;
-        notes?: string;
-    }>({
+    } = useForm<WorkOrderFormValues>({
         defaultValues: {
             intakeId: defaultIntakeId || '',
             technicianId: defaultTechnicianId || '',
             serviceType: '',
+            partsRequired: '',
+            estimatedCost: undefined,
             notes: '',
         },
     });
 
-    const handleFormSubmit = async (data: {
-        intakeId: string;
-        technicianId: string;
-        serviceType: string;
-        notes?: string;
-    }) => {
-        await onSubmitAction({
-            ...data,
-            tasks: tasks.length > 0 ? tasks.map(t => ({
-                ...t,
-                status: 'NotStarted' as const,
-                actualMinutes: undefined,
-                technicianNote: undefined,
-                completedAt: undefined,
-            })) : undefined,
-        });
-    };
+    React.useEffect(() => {
+        register('intakeId', { required: 'Vui lòng chọn phiếu tiếp nhận' });
+        register('technicianId', { required: 'Vui lòng chọn kỹ thuật viên' });
+    }, [register]);
+
+    const submitWorkOrder = React.useCallback(
+        async (data: WorkOrderFormValues, status: WorkOrderStatus) => {
+            await onSubmitAction({
+                ...data,
+                partsRequired: data.partsRequired?.trim() ? data.partsRequired : undefined,
+                estimatedCost: data.estimatedCost ? Number(data.estimatedCost) : undefined,
+                status,
+                tasks:
+                    tasks.length > 0
+                        ? tasks.map((t) => ({
+                              ...t,
+                              status: 'NotStarted' as const,
+                              actualMinutes: undefined,
+                              technicianNote: undefined,
+                              completedAt: undefined,
+                          }))
+                        : undefined,
+            });
+        },
+        [onSubmitAction, tasks]
+    );
+
+    const submitDraft = handleSubmit((data) => submitWorkOrder(data, 'Draft'));
+    const submitForApproval = handleSubmit((data) => submitWorkOrder(data, 'AwaitingApproval'));
 
     const addTask = () => {
         setTasks([
@@ -139,11 +181,11 @@ export function WorkOrderForm({
     };
 
     React.useEffect(() => {
-        setValue('intakeId', selectedIntakeId);
+        setValue('intakeId', selectedIntakeId, { shouldValidate: true });
     }, [selectedIntakeId, setValue]);
 
     React.useEffect(() => {
-        setValue('technicianId', selectedTechnicianId);
+        setValue('technicianId', selectedTechnicianId, { shouldValidate: true });
     }, [selectedTechnicianId, setValue]);
 
     return (
@@ -155,7 +197,7 @@ export function WorkOrderForm({
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+                <form onSubmit={submitDraft} className="space-y-6">
                     {/* Service Intake Selection */}
                     <div className="space-y-2">
                         <Label htmlFor="intakeId">
@@ -228,6 +270,35 @@ export function WorkOrderForm({
                         />
                         {errors.serviceType && (
                             <p className="text-sm text-red-500">{errors.serviceType.message}</p>
+                        )}
+                    </div>
+
+                    {/* Parts & Materials */}
+                    <div className="space-y-2">
+                        <Label htmlFor="partsRequired">Parts / Materials</Label>
+                        <Textarea
+                            id="partsRequired"
+                            placeholder="List required parts or materials..."
+                            rows={2}
+                            {...register('partsRequired')}
+                            disabled={isLoading}
+                        />
+                    </div>
+
+                    {/* Estimated Cost */}
+                    <div className="space-y-2">
+                        <Label htmlFor="estimatedCost">Estimated Cost (VND)</Label>
+                        <Input
+                            id="estimatedCost"
+                            type="number"
+                            min="0"
+                            step="1000"
+                            placeholder="Ví dụ: 2500000"
+                            {...register('estimatedCost', { valueAsNumber: true })}
+                            disabled={isLoading}
+                        />
+                        {errors.estimatedCost && (
+                            <p className="text-sm text-red-500">{String(errors.estimatedCost.message)}</p>
                         )}
                     </div>
 
@@ -356,9 +427,21 @@ export function WorkOrderForm({
                                 Cancel
                             </Button>
                         )}
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            disabled={isLoading}
+                            onClick={async (event) => {
+                                event.preventDefault();
+                                await submitForApproval();
+                            }}
+                        >
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Submit for approval
+                        </Button>
                         <Button type="submit" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create Work Order
+                            Save Draft
                         </Button>
                     </div>
                 </form>

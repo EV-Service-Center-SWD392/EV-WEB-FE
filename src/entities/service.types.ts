@@ -1,23 +1,16 @@
-export interface Service {
-  serviceId: string;
+export interface ServiceType {
+  id: string;
   name: string;
-  description: string;
-  duration: number;
-  basePrice: number;
-  createdAt: string;
-  updatedAt: string;
+  description?: string;
+  durationMinutes?: number;
+  category?: string;
+  isActive?: boolean;
 }
 
-export interface SparePart {
+export interface ServiceCatalogOption {
   id: string;
-  vehicleModel: string; // or modelId?
-  inventoryId: string;
-  typeId: string;
   name: string;
-  unitPrice: number;
-  manufacturer: string;
-  status: string; // e.g., 'Available', 'OutOfStock'
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  group?: string;
+  description?: string;
+  durationMinutes?: number;
 }

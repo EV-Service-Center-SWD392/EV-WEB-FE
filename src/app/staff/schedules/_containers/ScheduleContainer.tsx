@@ -7,6 +7,7 @@
 'use client';
 
 import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import type { CreateAssignmentDTO, Assignment } from '@/entities/assignment.types';
@@ -22,9 +23,17 @@ import {
     useCheckConflict,
     useScheduleParams,
 } from '@/hooks/scheduling';
-import { staffDirectoryService } from '@/services/staffDirectoryService';
+import type { AssignableWorkItem } from '@/hooks/scheduling/useAssignableWork';
+
+type TechnicianFiltersState = {
+    shift: "all" | "Morning" | "Afternoon" | "Evening";
+    specialty: "all" | string;
+    workload: "all" | "Light" | "Balanced" | "Heavy";
+};
 
 export const ScheduleContainer: React.FC = () => {
+    const queryClient = useQueryClient();
+
     // State from Zustand store
     const { centerId, selectedDate, setCenterId, setSelectedDate } =
         useScheduleParams();
@@ -36,20 +45,51 @@ export const ScheduleContainer: React.FC = () => {
         React.useState<Assignment | null>(null);
     const [pendingAssignment, setPendingAssignment] =
         React.useState<CreateAssignmentDTO | null>(null);
+    const [technicianFilters, setTechnicianFilters] =
+        React.useState<TechnicianFiltersState>({
+            shift: "all",
+            specialty: "all",
+            workload: "all",
+        });
 
     // Data hooks
     const { data: centers = [], isLoading: isLoadingCenters } = useCenters();
-    const { data: technicians = [] } = useTechnicians(centerId || '');
+    const { data: technicians = [] } = useTechnicians();
+    const filteredTechnicians = React.useMemo(() => {
+        return technicians.filter((tech) => {
+            if (!tech.isActive) return false;
+            if (
+                technicianFilters.shift !== "all" &&
+                tech.shift !== technicianFilters.shift
+            ) {
+                return false;
+            }
+            if (
+                technicianFilters.workload !== "all" &&
+                tech.workload !== technicianFilters.workload
+            ) {
+                return false;
+            }
+            if (
+                technicianFilters.specialty !== "all" &&
+                !tech.specialties?.includes(technicianFilters.specialty)
+            ) {
+                return false;
+            }
+            return true;
+        });
+    }, [technicians, technicianFilters]);
 
-    // Fetch capacity separately
-    const [capacity, setCapacity] = React.useState<import('@/entities/slot.types').SlotCapacity | null>(null);
-    React.useEffect(() => {
-        if (centerId && selectedDate) {
-            staffDirectoryService
-                .getCapacity(centerId, selectedDate)
-                .then(setCapacity)
-                .catch(() => setCapacity(null));
-        }
+    // Mock capacity data for now
+    const capacity = React.useMemo(() => {
+        if (!centerId) return null;
+        return {
+            date: selectedDate,
+            centerId,
+            capacity: 20,
+            occupied: 5,
+            available: 15
+        };
     }, [centerId, selectedDate]);
     const { data: workItems = [], isLoading: isLoadingWorkItems } =
         useAssignableWork(centerId || '', selectedDate);
@@ -99,6 +139,13 @@ export const ScheduleContainer: React.FC = () => {
 
             // No conflict - proceed with assignment
             await createAssignment.mutateAsync(dto);
+            // TODO: Update booking status when backend provides endpoint
+            // if (dto.bookingId) {
+            //     await bookingService.updateBooking(dto.bookingId, {
+            //         technicianId: dto.technicianId,
+            //         assignmentStatus: BookingStatus.ASSIGNED,
+            //     });
+            // }
             toast.success('Phân công thành công!');
             setSelectedWorkId(''); // Reset selection
         } catch (error) {
@@ -113,6 +160,13 @@ export const ScheduleContainer: React.FC = () => {
         try {
             // Force assign despite conflict
             await createAssignment.mutateAsync(pendingAssignment);
+            // TODO: Update booking status when backend provides endpoint
+            // if (pendingAssignment.bookingId) {
+            //     await bookingService.updateBooking(pendingAssignment.bookingId, {
+            //         technicianId: pendingAssignment.technicianId,
+            //         assignmentStatus: BookingStatus.ASSIGNED,
+            //     });
+            // }
             toast.success('Phân công thành công (có xung đột)');
             setSelectedWorkId('');
             setPendingAssignment(null);
@@ -129,8 +183,63 @@ export const ScheduleContainer: React.FC = () => {
     };
 
     const handleRefresh = () => {
-        // Refresh logic - hooks will auto-refetch based on queryClient invalidation
-        toast.info('Đang làm mới dữ liệu...');
+        queryClient.invalidateQueries({ queryKey: ["assignable-work"] });
+        queryClient.invalidateQueries({ queryKey: ["assignable-bookings-work"] });
+        queryClient.invalidateQueries({ queryKey: ["assignments"] });
+        toast.success('Đã làm mới hàng chờ và phân công');
+    };
+
+    const handleConfirmWorkItem = async (workItem: AssignableWorkItem | undefined) => {
+        if (!workItem || workItem.type !== 'booking') {
+            toast.info('Chỉ có thể xác nhận cho các booking.');
+            return;
+        }
+
+        try {
+            // TODO: Backend endpoint needed to confirm booking
+            // await bookingService.updateBooking(workItem.id, {
+            //     status: BookingStatus.CONFIRMED,
+            //     assignmentStatus: BookingStatus.IN_QUEUE,
+            // });
+            toast.success('Đã xác nhận lịch hẹn cho khách hàng (TODO: Backend needed)');
+            queryClient.invalidateQueries({ queryKey: ["assignable-work"] });
+            queryClient.invalidateQueries({ queryKey: ["assignable-bookings-work"] });
+            setSelectedWorkId('');
+        } catch (error) {
+            toast.error('Không thể xác nhận lịch hẹn');
+            console.error(error);
+        }
+    };
+
+    const handleRescheduleWorkItem = async (workItem: AssignableWorkItem | undefined) => {
+        if (!workItem || workItem.type !== 'booking') {
+            toast.info('Vui lòng chọn booking để dời lịch.');
+            return;
+        }
+
+        try {
+            const baseDate = workItem.scheduledTime
+                ? new Date(workItem.scheduledTime)
+                : new Date(`${selectedDate}T09:00:00Z`);
+
+            baseDate.setHours(baseDate.getHours() + 2);
+
+            // TODO: Backend endpoint needed to reschedule booking
+            // await bookingService.updateBooking(workItem.id, {
+            //     scheduledDate: baseDate.toISOString(),
+            //     status: BookingStatus.PENDING,
+            //     assignmentStatus: BookingStatus.PENDING,
+            // });
+            toast.success(
+                `Đã dời lịch sang ${baseDate.toLocaleString('vi-VN')} (TODO: Backend needed)`
+            );
+            queryClient.invalidateQueries({ queryKey: ["assignable-work"] });
+            queryClient.invalidateQueries({ queryKey: ["assignable-bookings-work"] });
+            setSelectedWorkId('');
+        } catch (error) {
+            toast.error('Không thể dời lịch hẹn');
+            console.error(error);
+        }
     };
 
     // Find technician name for conflict dialog
@@ -144,16 +253,21 @@ export const ScheduleContainer: React.FC = () => {
             <ScheduleBoard
                 centers={centers}
                 technicians={technicians}
+                filteredTechnicians={filteredTechnicians}
                 capacity={capacity}
                 workItems={workItems}
                 assignments={assignments}
                 selectedCenterId={centerId}
                 selectedDate={selectedDate}
                 selectedWorkId={selectedWorkId}
+                technicianFilters={technicianFilters}
                 onCenterChange={handleCenterChange}
                 onDateChange={handleDateChange}
                 onSelectWork={handleSelectWork}
                 onAssign={handleAssign}
+                onTechnicianFiltersChange={(filters) => setTechnicianFilters(filters)}
+                onConfirmWorkItem={handleConfirmWorkItem}
+                onRescheduleWorkItem={handleRescheduleWorkItem}
                 onRefresh={handleRefresh}
                 isLoadingCenters={isLoadingCenters}
                 isLoadingWorkItems={isLoadingWorkItems}

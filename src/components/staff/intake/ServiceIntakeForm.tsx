@@ -8,7 +8,8 @@
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ImagePlus, X } from 'lucide-react';
+import { ImagePlus, Loader2, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { intakeFormSchema, type IntakeFormInput } from '@/entities/schemas/intake.schema';
 import type { ServiceIntake } from '@/entities/intake.types';
+import { uploadIntakePhoto } from '@/services/intakeService';
 
 interface ServiceIntakeFormProps {
     intake?: ServiceIntake;
@@ -34,6 +36,7 @@ export function ServiceIntakeForm({
     const [photos, setPhotos] = React.useState<string[]>(
         intake?.photos?.map((p) => p.url) ?? []
     );
+    const [isUploadingPhotos, setIsUploadingPhotos] = React.useState(false);
 
     const {
         register,
@@ -43,8 +46,10 @@ export function ServiceIntakeForm({
     } = useForm<IntakeFormInput>({
         resolver: zodResolver(intakeFormSchema),
         defaultValues: {
+            licensePlate: intake?.licensePlate ?? '',
             odometer: intake?.odometer ?? undefined,
-            batterySoC: intake?.batterySoC ?? undefined,
+            batterySoC: intake?.batteryPercent ?? undefined,
+            arrivalNotes: intake?.arrivalNotes ?? '',
             notes: intake?.notes ?? '',
             photos: photos,
         },
@@ -54,16 +59,23 @@ export function ServiceIntakeForm({
         await onSubmitAction({ ...data, photos });
     };
 
-    const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (!files || files.length === 0) return;
 
-        // TODO: Implement actual upload to server
-        // For now, create object URLs for preview
-        const newPhotos = Array.from(files).map((file) => URL.createObjectURL(file));
-        const updatedPhotos = [...photos, ...newPhotos];
-        setPhotos(updatedPhotos);
-        setValue('photos', updatedPhotos);
+        setIsUploadingPhotos(true);
+        try {
+            const uploadedUrls = await Promise.all(Array.from(files).map((file) => uploadIntakePhoto(file)));
+            const updatedPhotos = [...photos, ...uploadedUrls];
+            setPhotos(updatedPhotos);
+            setValue('photos', updatedPhotos);
+        } catch (error) {
+            console.error('Upload intake photos failed', error);
+            toast.error('Không thể tải ảnh lên, vui lòng thử lại.');
+        } finally {
+            setIsUploadingPhotos(false);
+            event.target.value = '';
+        }
     };
 
     const handleRemovePhoto = (index: number) => {
@@ -82,6 +94,25 @@ export function ServiceIntakeForm({
             </CardHeader>
             <CardContent>
                 <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+                    {/* License Plate */}
+                    <div className="space-y-2">
+                        <Label htmlFor="licensePlate">
+                            Biển số xe <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                            id="licensePlate"
+                            placeholder="VD: 51A-12345"
+                            {...register('licensePlate')}
+                            disabled={readOnly || isLoading}
+                            aria-invalid={!!errors.licensePlate}
+                            aria-describedby={errors.licensePlate ? 'license-error' : undefined}
+                        />
+                        {errors.licensePlate && (
+                            <p id="license-error" className="text-sm text-red-600">
+                                {errors.licensePlate.message as string}
+                            </p>
+                        )}
+                    </div>
                     {/* Odometer */}
                     <div className="space-y-2">
                         <Label htmlFor="odometer">
@@ -128,6 +159,29 @@ export function ServiceIntakeForm({
                         )}
                     </div>
 
+                    {/* Arrival Notes */}
+                    <div className="space-y-2">
+                        <Label htmlFor="arrivalNotes">
+                            Ghi chú khi tiếp nhận
+                            <span className="text-muted-foreground ml-1">(Optional)</span>
+                        </Label>
+                        <textarea
+                            id="arrivalNotes"
+                            rows={3}
+                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="Ví dụ: khách báo xe có cảnh báo pin, xuất hiện tiếng ồn nhỏ..."
+                            {...register('arrivalNotes')}
+                            disabled={readOnly || isLoading}
+                            aria-invalid={!!errors.arrivalNotes}
+                            aria-describedby={errors.arrivalNotes ? 'arrival-error' : undefined}
+                        />
+                        {errors.arrivalNotes && (
+                            <p id="arrival-error" className="text-sm text-red-600">
+                                {errors.arrivalNotes.message as string}
+                            </p>
+                        )}
+                    </div>
+
                     <Separator />
 
                     {/* Notes */}
@@ -162,11 +216,20 @@ export function ServiceIntakeForm({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    disabled={isLoading}
+                                    disabled={isLoading || isUploadingPhotos}
                                     onClick={() => document.getElementById('photo-upload')?.click()}
                                 >
-                                    <ImagePlus className="w-4 h-4 mr-2" />
-                                    Add Photos
+                                    {isUploadingPhotos ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Đang tải ảnh...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ImagePlus className="w-4 h-4 mr-2" />
+                                            Thêm ảnh
+                                        </>
+                                    )}
                                 </Button>
                                 <input
                                     id="photo-upload"
@@ -175,7 +238,7 @@ export function ServiceIntakeForm({
                                     multiple
                                     className="hidden"
                                     onChange={handlePhotoUpload}
-                                    disabled={isLoading}
+                                    disabled={isLoading || isUploadingPhotos}
                                 />
                                 <span className="text-sm text-muted-foreground">
                                     {photos.length} photo{photos.length !== 1 ? 's' : ''} uploaded

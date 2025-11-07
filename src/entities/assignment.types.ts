@@ -1,6 +1,15 @@
 export type UUID = string;
 
-export type AssignmentStatus = 'Assigned' | 'Started' | 'Completed' | 'Cancelled';
+export type AssignmentStatus =
+    | 'Pending'
+    | 'Assigned'
+    | 'InQueue'
+    | 'In_Queue'
+    | 'Active'
+    | 'Completed'
+    | 'Reassigned'
+    | 'Cancelled'
+    | 'CancelledByCustomer';
 
 export interface Assignment {
     id: UUID;

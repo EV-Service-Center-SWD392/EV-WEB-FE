@@ -21,4 +21,6 @@ export interface Technician {
     centerId?: string;
     specialties?: string[];
     isActive: boolean;
+    shift?: "Morning" | "Afternoon" | "Evening";
+    workload?: "Light" | "Balanced" | "Heavy";
 }

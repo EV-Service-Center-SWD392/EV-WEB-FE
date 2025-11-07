@@ -8,12 +8,18 @@ import { z } from 'zod';
 // Service Intake Schemas
 
 export const createIntakeSchema = z.object({
+    licensePlate: z
+        .string()
+        .trim()
+        .max(20, 'Biển số tối đa 20 ký tự')
+        .optional(),
     odometer: z.number().min(0, 'Odometer must be positive').optional(),
     batterySoC: z
         .number()
         .min(0, 'Battery SoC must be between 0-100')
         .max(100, 'Battery SoC must be between 0-100')
         .optional(),
+    arrivalNotes: z.string().max(300, 'Ghi chú tối đa 300 ký tự').optional(),
     notes: z
         .string()
         .max(500, 'Notes must be 500 characters or less')
@@ -22,7 +28,7 @@ export const createIntakeSchema = z.object({
 });
 
 export const updateIntakeSchema = createIntakeSchema.extend({
-    status: z.enum(['Draft', 'Completed']).optional(),
+    status: z.enum(['Checked_In', 'Inspecting', 'Verified', 'Finalized', 'Cancelled']).optional(),
 });
 
 export type CreateIntakeInput = z.infer<typeof createIntakeSchema>;
@@ -50,6 +56,13 @@ export type SaveChecklistResponsesInput = z.infer<typeof saveChecklistResponsesS
 // Form Schemas (for react-hook-form)
 
 export const intakeFormSchema = z.object({
+    licensePlate: z
+        .string()
+        .trim()
+        .toUpperCase()
+        .max(20, 'Biển số tối đa 20 ký tự')
+        .optional()
+        .or(z.literal('')),
     odometer: z
         .number()
         .min(0, 'Odometer must be positive')
@@ -61,6 +74,7 @@ export const intakeFormSchema = z.object({
         .max(100, 'Battery SoC must be between 0-100')
         .optional()
         .or(z.literal('')),
+    arrivalNotes: z.string().max(300, 'Ghi chú tối đa 300 ký tự').optional(),
     notes: z.string().max(500, 'Notes must be 500 characters or less').optional(),
     photos: z.array(z.string()).optional(),
 });

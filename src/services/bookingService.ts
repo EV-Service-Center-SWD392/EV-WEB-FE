@@ -1,202 +1,202 @@
-import { BookingStatus, BookingRecord } from "@/entities/booking.types";
+import { api } from "@/services/api";
 import type {
-  BookingFilters,
-  UpdateBookingRequest,
+    BookingQueryDto,
+    BookingResponseDto,
+    CreateBookingRequest,
 } from "@/entities/booking.types";
-import axios from "axios";
 
-// Helper: prefer globalThis.window checks to avoid SSR errors
-function safeGetAccessToken(): string | null {
-  try {
-    if (globalThis.window === undefined) return null;
-    return globalThis.localStorage.getItem("access_token");
-  } catch {
-    return null;
-  }
-}
+const BASE_PATH = "/api/bookings";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+/**
+ * BookingService
+ * Handles CRUD operations for bookings
+ */
+export const bookingService = {
+    async getClientBookings(query?: BookingQueryDto): Promise<BookingResponseDto[]> {
+        try {
+            const params = new URLSearchParams();
 
-export class BookingService {
-  private readonly apiBase = API_BASE;
+            if (query?.page) params.append("page", query.page.toString());
+            if (query?.pageSize) params.append("pageSize", query.pageSize.toString());
+            if (query?.centerId) params.append("centerId", query.centerId);
+            if (query?.vehicleId) params.append("vehicleId", query.vehicleId);
+            if (query?.status) params.append("status", query.status);
+            if (query?.fromDate) params.append("fromDate", query.fromDate);
+            if (query?.toDate) params.append("toDate", query.toDate);
 
-  private delay(ms = 300) {
-    return new Promise((res) => setTimeout(res, ms));
-  }
+            const queryString = params.toString();
+            const url = queryString
+                ? `/client/Booking?${queryString}`
+                : "/client/Booking";
 
-  // Return auth headers if a token exists; safe for SSR
-  private getAuthHeaders(): Record<string, string> {
-    const token = safeGetAccessToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
-
-  // List bookings (remote only)
-  async getBookings(filters: BookingFilters = {}): Promise<BookingRecord[]> {
-    if (this.apiBase) {
-      try {
-        const url = `${this.apiBase.replace(/\/$/, "")}/client/Booking`;
-        const res = await axios.get(url, {
-          params: filters as any,
-          headers: {
-            Accept: "application/json",
-            ...this.getAuthHeaders(),
-          },
-          timeout: 5000,
-        });
-        const data = res.data;
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(data?.items)) return data.items;
-        if (Array.isArray(data?.rows)) return data.rows;
-      } catch (err) {
-        console.debug("bookingService.getBookings remote failed", err);
-      }
-    }
-    return [];
-  }
-
-  async getBookingById(id: string): Promise<BookingRecord | null> {
-    if (this.apiBase) {
-      try {
-        const url = `${this.apiBase.replace(/\/$/, "")}/client/Booking/${encodeURIComponent(id)}`;
-        const res = await axios.get(url, {
-          headers: { Accept: "application/json", ...this.getAuthHeaders() },
-          timeout: 5000,
-        });
-        return res.data || null;
-      } catch {
-        // remote failed
-      }
-    }
-    return null;
-  }
-
-  // Create booking: remote only
-  async createBooking(data: any): Promise<any> {
-    if (this.apiBase) {
-      try {
-        const payload = {
-          bookingDate:
-            data.bookingDate || data.scheduledDate || new Date().toISOString(),
-          slot: Number(data.slot ?? data.slotId ?? 0),
-          vehicleId: data.vehicleId || data.vehicle?.vehicleId || "",
-          notes: data.notes || data.description || "",
-          centerId:
-            data.centerId || data.serviceCenterId || data.serviceCenter || "",
-        };
-        const url = `${this.apiBase.replace(/\/$/, "")}/client/Booking`;
-        const res = await axios.post(url, payload, {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            ...this.getAuthHeaders(),
-          },
-          timeout: 5000,
-        });
-        return res.data;
-      } catch (err) {
-        console.debug("bookingService.createBooking remote failed", err);
-      }
-    }
-    return null;
-  }
-
-  async getMyBookings(): Promise<BookingRecord[]> {
-    return this.getBookings();
-  }
-
-  async getCenters(): Promise<any[]> {
-    if (!this.apiBase) return [];
-    try {
-      const url = `${this.apiBase.replace(/\/$/, "")}/Center`;
-      const res = await axios.get(url, {
-        headers: {
-          "ngrok-skip-browser-warning": "true",
-          Accept: "application/json",
-          ...this.getAuthHeaders(),
-        },
-        timeout: 5000,
-      });
-      const data = res.data;
-      return Array.isArray(data) ? data : [];
-    } catch {
-      return [];
-    }
-  }
-
-  async getVehicle(): Promise<any[]> {
-    if (!this.apiBase) return [];
-    try {
-      const url = `${this.apiBase.replace(/\/$/, "")}/client/Vehicle?Page=1&PageSize=10`;
-      const res = await axios.get(url, {
-        headers: { Accept: "application/json", ...this.getAuthHeaders() },
-        timeout: 5000,
-      });
-      const data = res.data;
-      if (Array.isArray(data)) return data;
-      if (Array.isArray(data?.items)) return data.items;
-      if (Array.isArray(data?.rows)) return data.rows;
-      return [];
-    } catch (err) {
-      return [];
-    }
-  }
-
-  async getBookingSchedule(
-    centerId: string,
-    startDate?: string,
-    endDate?: string
-  ): Promise<any[]> {
-    if (!centerId) return [];
-
-    // Build query string if dates provided
-    const qs =
-      startDate && endDate
-        ? `?StartDate=${encodeURIComponent(startDate)}&EndDate=${encodeURIComponent(endDate)}`
-        : "";
-
-    if (this.apiBase) {
-      try {
-        const url = `${this.apiBase.replace(/\/$/, "")}/BookingSchedules/client/${encodeURIComponent(centerId)}${qs}`;
-        const res = await axios.get(url, {
-          headers: { Accept: "application/json", ...this.getAuthHeaders() },
-          timeout: 5000,
-        });
-        const data = res.data;
-        // If API returns nested structure, flatten to a consistent array of slot objects
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(data?.items)) return data.items;
-        // If API returns center -> schedules structure, attempt to extract slots
-        if (data?.schedules && Array.isArray(data.schedules)) {
-          const flat: any[] = [];
-          data.schedules.forEach((d: any) => {
-            const date = d.currentDate;
-            const slots = Array.isArray(d.slots) ? d.slots : [];
-            slots.forEach((slot: any, idx: number) => {
-              flat.push({
-                slotId:
-                  slot.slotId ?? `${centerId}_${date}_${slot.slot ?? idx}`,
-                centerId: data.centerId || centerId,
-                startUtc: `${date}T${slot.startutc || slot.startUtc || "00:00"}:00Z`,
-                endUtc: `${date}T${slot.endutc || slot.endUtc || "00:00"}:00Z`,
-                capacity: slot.capacity,
-                note: slot.note,
-                status: slot.status,
-                isActive: slot.isActive,
-                isBookable: slot.isBookable,
-                raw: slot,
-              });
-            });
-          });
-          return flat;
+            const response = await api.get<BookingResponseDto[]>(url);
+            return response.data || [];
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown }; message?: string };
+            console.error("Failed to fetch client bookings:", err);
+            throw new Error(err.message || "Failed to fetch client bookings");
         }
+    },
 
-        return Array.isArray(data) ? data : [];
-      } catch (err) {
-        console.debug("bookingService.getBookingSchedule remote failed", err);
-      }
-    }
-    return [];
-  }
-}
+    /**
+     * Create a new booking
+     * POST /client/Booking
+     */
+    async createBooking(bookingData: CreateBookingRequest): Promise<BookingResponseDto> {
+        try {
+            const response = await api.post<BookingResponseDto>(
+                "/client/Booking",
+                bookingData
+            );
+            return response.data;
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown }; message?: string };
+            console.error("Failed to create booking:", err);
+            throw new Error(err.message || "Failed to create booking");
+        }
+    },
 
-export const bookingService = new BookingService();
+    /**
+     * Update booking details
+     * PUT /client/Booking/{id}
+     */
+    async updateBooking(
+        bookingId: string,
+        updateData: {
+            technicianId?: string;
+            assignmentStatus?: string;
+            status?: string;
+            scheduledDate?: string;
+            notes?: string;
+        }
+    ): Promise<BookingResponseDto> {
+        try {
+            const response = await api.put<BookingResponseDto>(
+                `/client/Booking/${bookingId}`,
+                updateData
+            );
+            return response.data;
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown }; message?: string };
+            console.error("Failed to update booking:", err);
+            throw new Error(err.message || "Failed to update booking");
+        }
+    },
+
+    /**
+     * Delete a booking
+     * DELETE /client/Booking/{id}
+     */
+    async deleteBooking(bookingId: string): Promise<void> {
+        try {
+            await api.delete(`/client/Booking/${bookingId}`);
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: unknown }; message?: string };
+            console.error("Failed to delete booking:", err);
+            throw new Error(err.message || "Failed to delete booking");
+        }
+    },
+
+    // ============ Helper methods for member booking flow ============
+
+    /**
+     * Alias for getClientBookings - backward compatibility
+     */
+    async getBookings(query?: BookingQueryDto): Promise<BookingResponseDto[]> {
+        return this.getClientBookings(query);
+    },
+
+    /**
+     * Get all vehicles for current user
+     * GET /client/Vehicle
+     */
+    async getVehicle(): Promise<any[]> {
+        try {
+            const response = await api.get("/client/Vehicle?Page=1&PageSize=10");
+            const data = response.data;
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data?.items)) return data.items;
+            if (Array.isArray(data?.rows)) return data.rows;
+            return [];
+        } catch (error) {
+            console.error("Failed to fetch vehicles:", error);
+            return [];
+        }
+    },
+
+    /**
+     * Get all service centers
+     * GET /Center
+     */
+    async getCenters(): Promise<any[]> {
+        try {
+            const response = await api.get("/Center");
+            const data = response.data;
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error("Failed to fetch centers:", error);
+            return [];
+        }
+    },
+
+    /**
+     * Get booking schedule for a center
+     * GET /BookingSchedules/client/{centerId}
+     */
+    async getBookingSchedule(
+        centerId: string,
+        startDate?: string,
+        endDate?: string
+    ): Promise<any[]> {
+        if (!centerId) return [];
+
+        try {
+            const params = new URLSearchParams();
+            if (startDate) params.append("StartDate", startDate);
+            if (endDate) params.append("EndDate", endDate);
+
+            const queryString = params.toString();
+            const url = queryString
+                ? `/BookingSchedules/client/${centerId}?${queryString}`
+                : `/BookingSchedules/client/${centerId}`;
+
+            const response = await api.get(url);
+            const data = response.data;
+
+            // If API returns flat array of slots
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data?.items)) return data.items;
+
+            // If API returns nested structure with schedules
+            if (data?.schedules && Array.isArray(data.schedules)) {
+                const flat: any[] = [];
+                data.schedules.forEach((d: any) => {
+                    const date = d.currentDate;
+                    const slots = Array.isArray(d.slots) ? d.slots : [];
+                    slots.forEach((slot: any, idx: number) => {
+                        flat.push({
+                            slotId: slot.slotId ?? `${centerId}_${date}_${slot.slot ?? idx}`,
+                            centerId: data.centerId || centerId,
+                            startUtc: `${date}T${slot.startutc || slot.startUtc || "00:00"}:00Z`,
+                            endUtc: `${date}T${slot.endutc || slot.endUtc || "00:00"}:00Z`,
+                            capacity: slot.capacity,
+                            note: slot.note,
+                            status: slot.status,
+                            isActive: slot.isActive,
+                            isBookable: slot.isBookable,
+                            raw: slot,
+                        });
+                    });
+                });
+                return flat;
+            }
+
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error("Failed to fetch booking schedule:", error);
+            return [];
+        }
+    },
+};
+
+export default bookingService;

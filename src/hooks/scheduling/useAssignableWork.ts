@@ -31,32 +31,36 @@ export function useAssignableWork(
     return useQuery({
         queryKey: ["assignable-work", centerId, date],
         queryFn: async () => {
-            const items: AssignableWorkItem[] = [];
+            const [{ bookingService }, { getMockAssignableWork }] = await Promise.all([
+                import("@/services/bookingService"),
+                import("@/lib/mockData/schedulingMockData"),
+            ]);
 
-            // TODO: Fetch service requests when the endpoint is available
-            // const requests = await serviceRequestService.getRequests({ 
-            //   centerId, 
-            //   date,
-            //   status: 'validated' 
-            // });
+            const [bookings, mockRequests] = await Promise.all([
+                bookingService.getClientBookings({}),
+                getMockAssignableWork(centerId!, date),
+            ]);
 
-            // For now, we'll use a mock or empty array
-            // When service request feature is implemented, uncomment and adapt:
-            // requests.forEach(req => {
-            //   items.push({
-            //     id: req.id,
-            //     type: 'request',
-            //     customerName: req.customerName,
-            //     customerPhone: req.customerPhone,
-            //     vehicleInfo: `${req.vehicleBrand} ${req.vehicleModel}`,
-            //     services: req.services.join(', '),
-            //     timeWindow: req.preferredTimeWindow,
-            //     status: req.status,
-            //     priority: req.priority,
-            //   });
-            // });
+            const bookingItems = bookings
+                .filter((booking) => {
+                    const bookingDate = new Date(booking.preferredDate ?? booking.createdAt)
+                        .toISOString()
+                        .split("T")[0];
+                    const matchesDate = bookingDate === date;
+                    const matchesCenter =
+                        !centerId || booking.serviceCenterId === centerId;
+                    return matchesDate && matchesCenter;
+                })
+                .map(transformBookingToWorkItem);
 
-            return items;
+            const requestItems = mockRequests
+                .filter((item) => item.type === "request")
+                .map((item) => ({
+                    ...item,
+                    status: item.status ?? "Validated",
+                }));
+
+            return [...bookingItems, ...requestItems];
         },
         enabled: !!centerId && !!date,
         staleTime: 2 * 60 * 1000,
@@ -68,18 +72,47 @@ export function useAssignableWork(
  * Transform bookings to assignable work items
  */
 export function transformBookingToWorkItem(booking: Booking): AssignableWorkItem {
+    const services = [booking.serviceType, booking.repairParts]
+        .filter(Boolean)
+        .join(" • ");
+
     return {
         id: booking.id,
         type: "booking",
         customerName: booking.customerName,
         customerPhone: booking.customerPhone,
         customerEmail: booking.customerEmail,
-        vehicleInfo: `${booking.vehicleBrand} (${booking.vehicleType})`,
-        services: booking.repairParts,
-        scheduledTime: booking.scheduledDate,
-        status: booking.status,
-        suggestedTechId: booking.technicianId,
+        vehicleInfo: `${booking.vehicleBrand} (${booking.vehicleType ?? 'N/A'})`,
+        services,
+        scheduledTime: booking.preferredDate ?? booking.createdAt,
+        status: mapBookingStatus(booking.status as BookingStatus),
+        suggestedTechId: undefined, // BookingResponseDto doesn't have technicianId
     };
+}
+
+function mapBookingStatus(status: BookingStatus): string {
+    switch (status) {
+        case BookingStatus.PENDING:
+            return "Pending";
+        case BookingStatus.ASSIGNED:
+            return "Assigned";
+        case BookingStatus.IN_QUEUE:
+            return "In Queue";
+        case BookingStatus.ACTIVE:
+            return "Active";
+        case BookingStatus.CONFIRMED:
+            return "Assigned";
+        case BookingStatus.IN_PROGRESS:
+            return "Active";
+        case BookingStatus.COMPLETED:
+            return "Completed";
+        case BookingStatus.CANCELLED:
+            return "Cancelled";
+        case BookingStatus.REASSIGNED:
+            return "Reassigned";
+        default:
+            return status;
+    }
 }
 
 /**
@@ -95,16 +128,18 @@ export function useAssignableBookingsAsWork(
             // Import bookingService dynamically to avoid circular deps
             const { bookingService } = await import("@/services/bookingService");
 
-            const bookings = await bookingService.getBookings({});
+            const bookings = await bookingService.getClientBookings({});
 
             return bookings
-                .filter((booking) => {
-                    const bookingDate = new Date(booking.scheduledDate)
+                .filter((booking: any) => {
+                    const bookingDate = new Date(booking.preferredDate ?? booking.createdAt)
                         .toISOString()
                         .split("T")[0];
                     const matchesDate = bookingDate === date;
-                    const matchesCenter = !centerId || booking.serviceCenter === centerId;
-                    const isAssignable = booking.status === BookingStatus.CONFIRMED;
+                    const matchesCenter = !centerId || booking.serviceCenterId === centerId;
+                    const isAssignable =
+                        booking.status === "Approved" ||
+                        booking.status === BookingStatus.CONFIRMED;
 
                     return matchesDate && matchesCenter && isAssignable;
                 })

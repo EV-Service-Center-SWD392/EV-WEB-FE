@@ -300,3 +300,66 @@ export async function getCenterWorkOrderStats(centerId: string): Promise<{
     const response = await api.get(`/api/centers/${centerId}/workorders/stats`);
     return response.data;
 }
+
+// ============================================
+// Work Order Workflow (for Service Center workflow)
+// ============================================
+
+/**
+ * Submit work order for customer approval
+ * POST /api/workorders/{id}/submit
+ * Changes status from DRAFT to PENDING_CUSTOMER_DECISION
+ */
+export async function submitWorkOrder(id: string): Promise<WorkOrder> {
+    const response = await api.post<WorkOrder>(`/api/workorders/${id}/submit`);
+    return response.data;
+}
+
+/**
+ * Customer approves work order
+ * PUT /api/workorders/{id}/approve
+ * Changes status to APPROVED
+ */
+export async function approveWorkOrder(
+    id: string,
+    approvalNotes?: string
+): Promise<WorkOrder> {
+    const response = await api.put<WorkOrder>(`/api/workorders/${id}/approve`, {
+        approvalNotes,
+    });
+    return response.data;
+}
+
+/**
+ * Customer rejects work order
+ * PUT /api/workorders/{id}/reject
+ * Changes status to REJECTED
+ */
+export async function rejectWorkOrder(
+    id: string,
+    rejectionReason?: string
+): Promise<WorkOrder> {
+    const response = await api.put<WorkOrder>(`/api/workorders/${id}/reject`, {
+        rejectionReason,
+    });
+    return response.data;
+}
+
+/**
+ * Technician revises rejected work order
+ * POST /api/workorders/{id}/revise
+ * Changes status back to DRAFT for editing
+ */
+export async function reviseWorkOrder(id: string): Promise<WorkOrder> {
+    const response = await api.post<WorkOrder>(`/api/workorders/${id}/revise`);
+    return response.data;
+}
+
+/**
+ * Get work orders for current customer
+ * GET /api/workorders/my
+ */
+export async function getMyWorkOrders(): Promise<WorkOrder[]> {
+    const response = await api.get<WorkOrder[]>('/api/workorders/my');
+    return response.data;
+}

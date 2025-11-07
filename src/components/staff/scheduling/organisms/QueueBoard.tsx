@@ -148,12 +148,27 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <QueueList
-                            tickets={activeTickets}
-                            onReorder={onReorder}
-                            onMarkNoShow={onMarkNoShow}
-                            isLoading={isLoadingQueue}
-                        />
+                        {activeTickets.length === 0 && !isLoadingQueue ? (
+                            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-4 py-10 text-center text-muted-foreground">
+                                <p className="text-sm font-medium text-foreground">Chưa có khách hàng trong hàng chờ</p>
+                                <p className="text-xs">
+                                    Ghi nhận khách walk-in hoặc chuyển đổi booking khi khách đã đến trung tâm.
+                                </p>
+                                {onAddToQueue && (
+                                    <Button size="sm" onClick={onAddToQueue}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Thêm khách walk-in
+                                    </Button>
+                                )}
+                            </div>
+                        ) : (
+                            <QueueList
+                                tickets={activeTickets}
+                                onReorder={onReorder}
+                                onMarkNoShow={onMarkNoShow}
+                                isLoading={isLoadingQueue}
+                            />
+                        )}
                     </CardContent>
                 </Card>
             ) : (
