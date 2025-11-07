@@ -10,9 +10,6 @@ export enum BookingStatus {
   REASSIGNED = "reassigned",
 }
 
-// Export individual values to avoid unused warnings
-export const { PENDING, ASSIGNED, IN_QUEUE, ACTIVE, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, REASSIGNED } = BookingStatus;
-
 export interface BookingFilters {
   customerName?: string;
   phone?: string;
@@ -27,7 +24,7 @@ export interface BookingFilters {
 export interface Booking {
   id: string;
   bookingCode?: string;
-  
+
   // Customer Info
   customerId?: string;
   customerName: string;
@@ -88,16 +85,16 @@ export interface CreateBookingRequest {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  vehicleType: string;
+  vehicleType?: string;
   vehicleBrand: string;
-  vehicleModel?: string;
+  vehicleModel: string;
   vehicleVin?: string;
-  serviceCenterId: string;
+  serviceCenterId?: string;
   serviceCenter?: string;
-  serviceTypeId: string;
+  serviceTypeId?: string;
   serviceType?: string;
-  preferredTime: string;
-  scheduledDate: string;
+  preferredTime?: string;
+  scheduledDate?: string;
   repairParts?: string;
   description?: string;
   estimatedCost?: number;
@@ -195,58 +192,4 @@ export interface BookingResponseDto {
   approvedBy?: string;
   rejectedBy?: string;
   rejectReason?: string;
-}
-
-/**
- * Filters for booking search/filtering
- */
-export interface BookingFilters {
-  customerName?: string;
-  phone?: string;
-  status?: BookingStatus;
-  serviceType?: string;
-}
-
-/**
- * Main Booking interface (alias for BookingResponseDto)
- */
-export type Booking = BookingResponseDto;
-
-/**
- * Request payload for creating a new booking
- */
-export interface CreateBookingRequest {
-  customerId?: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  vehicleId?: string;
-  vehicleBrand: string;
-  vehicleModel: string;
-  vehicleType?: string;
-  vehicleVin?: string;
-  serviceCenterId?: string;
-  serviceCenter?: string;
-  serviceTypeId?: string;
-  serviceType?: string;
-  preferredDate?: string;
-  preferredTime?: string;
-  scheduledDate?: string;
-  preferredStartUtc?: string;
-  preferredEndUtc?: string;
-  repairParts?: string;
-  description?: string;
-  notes?: string;
-  estimatedCost?: number;
-}
-
-/**
- * Request payload for updating an existing booking
- */
-export interface UpdateBookingRequest extends Partial<CreateBookingRequest> {
-  id?: string;
-  status?: "Pending" | "Approved" | "Rejected";
-  rejectReason?: string;
-  technicianId?: string;
-  actualCost?: number;
 }

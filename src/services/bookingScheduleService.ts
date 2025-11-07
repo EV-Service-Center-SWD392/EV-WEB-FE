@@ -145,7 +145,7 @@ export const bookingScheduleService = {
             // Then get center info separately
             const { data: centerData, error: centerError } = await supabase
                 .from('centertuantm')
-                .select('centername')
+                .select('name')
                 .eq('centerid', slot.centerId)
                 .single();
 
@@ -157,7 +157,7 @@ export const bookingScheduleService = {
 
             return {
                 ...slot,
-                centerName: centerData?.centername || undefined,
+                centerName: centerData?.name || undefined,
             };
         } catch (error) {
             console.error('[BookingScheduleService] Failed to fetch enriched slot:', error);

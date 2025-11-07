@@ -43,8 +43,8 @@ function TechnicianCardV2({
     return (
         <div
             className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${isSelected
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
                 }`}
             onClick={() => onSelect(technician)}
         >
@@ -120,6 +120,17 @@ export default function AssignTechnicianModal({
                     endTime: ensureFullTimeFormat(booking.slot.endUtc),
                 };
 
+                console.warn("🔍 DEBUG - Full booking object:", booking);
+                console.warn("📋 EXTRACTED BOOKING INFO:", {
+                    centerId: bookingInfo.centerId,
+                    centerName: bookingInfo.centerName,
+                    bookingDate: bookingInfo.bookingDate,
+                    startTime: bookingInfo.startTime,
+                    endTime: bookingInfo.endTime,
+                    slotStartUtc: booking.slot.startUtc,
+                    slotEndUtc: booking.slot.endUtc
+                });
+
                 // Validate booking info
                 if (!bookingInfo.centerId || !bookingInfo.centerName) {
                     setError("Thông tin center không đầy đủ");
@@ -133,7 +144,13 @@ export default function AssignTechnicianModal({
                 setTechnicians(data);
 
                 if (data.length === 0) {
-                    setError("Không có kỹ thuật viên khả dụng trong khung giờ này.");
+                    setError(
+                        "Không có kỹ thuật viên khả dụng trong khung giờ này.\n\n" +
+                        "Vui lòng kiểm tra:\n" +
+                        "• Đã có technician trong hệ thống chưa?\n" +
+                        "• Technician đã được assign work schedule chưa?\n" +
+                        "• Work schedule có trùng với center và time slot không?"
+                    );
                 }
             } catch (err) {
                 console.error("Error fetching available technicians:", err);

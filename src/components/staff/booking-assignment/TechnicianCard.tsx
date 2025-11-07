@@ -2,7 +2,6 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { User, Clock, CheckCircle } from "lucide-react";
 import { AvailableTechnician } from "@/services/technicianAvailabilityService";
 import { format, parseISO } from "date-fns";
@@ -27,31 +26,14 @@ export default function TechnicianCard({
         }
     };
 
-    const workloadPercentage = technician.totalSlots > 0
-        ? ((technician.totalSlots - technician.availableSlots) / technician.totalSlots) * 100
-        : 0;
-
-    const getWorkloadColor = () => {
-        if (workloadPercentage >= 80) return "text-red-600";
-        if (workloadPercentage >= 60) return "text-orange-600";
-        return "text-green-600";
-    };
-
-    const getWorkloadBadge = () => {
-        if (technician.availableSlots === 0) {
-            return <Badge variant="destructive">Đầy lịch</Badge>;
-        }
-        if (workloadPercentage >= 80) {
-            return <Badge className="bg-orange-500">Gần đầy</Badge>;
-        }
-        return <Badge className="bg-green-500">Còn trống</Badge>;
-    };
+    const availableSchedules = technician.matchingSchedules.length;
+    const hasAvailability = availableSchedules > 0;
 
     return (
         <Card
             className={`cursor-pointer transition-all hover:shadow-md ${isSelected
-                    ? "ring-2 ring-blue-500 bg-blue-50 border-blue-500"
-                    : "hover:border-gray-400"
+                ? "ring-2 ring-blue-500 bg-blue-50 border-blue-500"
+                : "hover:border-gray-400"
                 }`}
             onClick={() => onSelect(technician)}
         >
@@ -65,49 +47,48 @@ export default function TechnicianCard({
                                 <User className="h-5 w-5" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-base">{technician.technicianName}</h3>
-                                <p className="text-xs text-gray-500">ID: {technician.technicianId.slice(0, 8)}</p>
+                                <h3 className="font-semibold text-base">{technician.userName}</h3>
+                                <p className="text-xs text-gray-500">ID: {technician.userId.slice(0, 8)}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            {getWorkloadBadge()}
+                            {hasAvailability ? (
+                                <Badge className="bg-green-500">Có lịch</Badge>
+                            ) : (
+                                <Badge variant="destructive">Không có lịch</Badge>
+                            )}
                             {isSelected && <CheckCircle className="h-5 w-5 text-blue-600" />}
                         </div>
                     </div>
 
-                    {/* Workload Info */}
+                    {/* Availability Info */}
                     <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Công việc:</span>
-                            <span className={`font-semibold ${getWorkloadColor()}`}>
-                                {technician.totalSlots - technician.availableSlots}/{technician.totalSlots} slots
+                            <span className="text-gray-600">Lịch làm việc khả dụng:</span>
+                            <span className="font-semibold text-green-600">
+                                {availableSchedules} ca
                             </span>
-                        </div>
-                        <Progress value={workloadPercentage} className="h-2" />
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span>Còn trống: <strong>{technician.availableSlots} slots</strong></span>
-                            <span>{Math.round(workloadPercentage)}% đã sử dụng</span>
                         </div>
                     </div>
 
                     {/* Working Hours */}
-                    <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        <span>
-                            Giờ làm việc: <strong>{formatTime(technician.startUtc)} - {formatTime(technician.endUtc)}</strong>
-                        </span>
-                    </div>
-
-                    {/* Warning for high workload */}
-                    {workloadPercentage >= 80 && technician.availableSlots > 0 && (
-                        <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded flex items-center gap-1">
-                            ⚠️ Lưu ý: Kỹ thuật viên có tải công việc cao, có thể xảy ra trзадержки
+                    {technician.matchingSchedules.length > 0 && (
+                        <div className="space-y-1">
+                            {technician.matchingSchedules.map((schedule, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                    <Clock className="h-4 w-4 text-gray-400" />
+                                    <span>
+                                        {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     )}
 
-                    {technician.availableSlots === 0 && (
+                    {/* Warning for no availability */}
+                    {!hasAvailability && (
                         <div className="text-xs text-red-600 bg-red-50 p-2 rounded flex items-center gap-1">
-                            ❌ Kỹ thuật viên đã đầy lịch trong khung giờ này
+                            ❌ Kỹ thuật viên không có lịch làm việc trong khung giờ này
                         </div>
                     )}
 
@@ -119,7 +100,7 @@ export default function TechnicianCard({
                             e.stopPropagation();
                             onSelect(technician);
                         }}
-                        disabled={technician.availableSlots === 0}
+                        disabled={!hasAvailability}
                     >
                         {isSelected ? "Đã chọn" : "Chọn kỹ thuật viên"}
                     </Button>

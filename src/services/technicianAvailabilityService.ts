@@ -79,6 +79,13 @@ export const technicianAvailabilityService = {
         bookingInfo: BookingInfo
     ): Promise<AvailableTechnician[]> {
         try {
+            console.warn("🔍 BOOKING INFO:", {
+                centerName: bookingInfo.centerName,
+                bookingDate: bookingInfo.bookingDate,
+                startTime: bookingInfo.startTime,
+                endTime: bookingInfo.endTime,
+            });
+
             // STEP 1: Get all technicians with work schedules
             const allTechnicians = await getAllTechniciansWithSchedules();
 
@@ -95,10 +102,31 @@ export const technicianAvailabilityService = {
 
             if (techniciansWithSchedule.length === 0) {
                 console.warn("⚠️ No technicians found with matching schedule");
-                return [];
-            }
+                console.warn("📋 Debug info:");
+                console.warn("  - Looking for center:", bookingInfo.centerName);
+                console.warn("  - Looking for date:", bookingInfo.bookingDate);
+                console.warn("  - Looking for time:", `${bookingInfo.startTime} - ${bookingInfo.endTime}`);
 
-            // STEP 3: Try to get existing assignments to check for conflicts
+                if (allTechnicians.length > 0 && allTechnicians[0]?.schedules?.length > 0) {
+                    const sampleSchedule = allTechnicians[0].schedules[0];
+                    console.warn("  - Sample schedule from first tech:", {
+                        centerName: sampleSchedule.centerName,
+                        startTime: sampleSchedule.startTime,
+                        endTime: sampleSchedule.endTime,
+                        status: sampleSchedule.status
+                    });
+
+                    // Show all schedules from first tech for debugging
+                    console.warn("  - All schedules from first tech:", allTechnicians[0].schedules.map(s => ({
+                        center: s.centerName,
+                        date: extractDate(s.startTime),
+                        time: `${extractTime(s.startTime)} - ${extractTime(s.endTime)}`,
+                        status: s.status
+                    })));
+                }
+
+                return [];
+            }            // STEP 3: Try to get existing assignments to check for conflicts
             // This is wrapped in try-catch to handle backend issues gracefully
             let availableTechnicians = techniciansWithSchedule;
 
@@ -159,21 +187,64 @@ export const technicianAvailabilityService = {
 async function getAllTechniciansWithSchedules(): Promise<
     TechnicianWithSchedules[]
 > {
-    const response = await api.get<{
-        isSuccess: boolean;
-        message?: string;
-        data?: TechnicianWithSchedules[];
-    }>("/api/UserWorkSchedule/technicians-schedules");
+    try {
+        const response = await api.get<{
+            isSuccess?: boolean;
+            message?: string;
+            data?: TechnicianWithSchedules[];
+        }>("/api/UserWorkSchedule/technicians-schedules");
 
-    // Check response format
-    if (!response.data.isSuccess) {
-        throw new Error(response.data.message || "Failed to fetch technicians");
+        console.warn("📡 API Response:", {
+            status: response.status,
+            hasIsSuccess: 'isSuccess' in (response.data || {}),
+            isSuccess: response.data?.isSuccess,
+            dataLength: response.data?.data?.length,
+            message: response.data?.message,
+            fullData: response.data,
+        });
+
+        // Handle both formats: { isSuccess, data } and direct array
+        let technicians: TechnicianWithSchedules[] = [];
+
+        if (response.data) {
+            // Format 1: { isSuccess: true, data: [...] }
+            if ('isSuccess' in response.data) {
+                if (!response.data.isSuccess) {
+                    const errorMsg = response.data.message || "API returned isSuccess: false";
+                    console.error("❌ API Error:", errorMsg);
+                    throw new Error(errorMsg);
+                }
+                technicians = response.data.data || [];
+            }
+            // Format 2: Direct array
+            else if (Array.isArray(response.data)) {
+                technicians = response.data;
+            }
+            // Format 3: { data: [...] } without isSuccess
+            else if ('data' in response.data && Array.isArray(response.data.data)) {
+                technicians = response.data.data;
+            }
+        }
+
+        if (technicians.length === 0) {
+            console.warn("⚠️ No technicians found in database. Please ensure:");
+            console.warn("   1. Technicians exist in the system");
+            console.warn("   2. Technicians have work schedules assigned");
+            console.warn("   3. Work schedules are active");
+        } else {
+            console.warn(`✅ Fetched ${technicians.length} technicians`);
+        }
+
+        return technicians;
+    } catch (error) {
+        console.error("❌ Failed to fetch technicians:", {
+            error,
+            message: error instanceof Error ? error.message : "Unknown error",
+            response: (error as { response?: { data?: unknown } })?.response?.data,
+        });
+        throw new Error("Failed to fetch technicians");
     }
-
-    return response.data.data || [];
-}
-
-/**
+}/**
  * Get existing assignments for a center and date
  * API: GET /api/Assignment/range
  * 
@@ -207,25 +278,22 @@ function filterTechniciansBySchedule(
     technicians: TechnicianWithSchedules[],
     bookingInfo: BookingInfo
 ): Array<TechnicianWithSchedules & { matchingSchedules: WorkSchedule[] }> {
+    console.warn("🔍 Filtering technicians by schedule...");
+    console.warn("  Total technicians to check:", technicians.length);
+
     return technicians
         .map((tech) => {
             // Check if technician has at least one matching schedule
             const matchingSchedules = tech.schedules.filter((schedule) => {
                 // 1. Check center match
-                if (schedule.centerName !== bookingInfo.centerName) {
-                    return false;
-                }
+                const centerMatch = schedule.centerName === bookingInfo.centerName;
 
                 // 2. Check date match
                 const scheduleDate = extractDate(schedule.startTime);
-                if (scheduleDate !== bookingInfo.bookingDate) {
-                    return false;
-                }
+                const dateMatch = scheduleDate === bookingInfo.bookingDate;
 
                 // 3. Check status
-                if (schedule.status !== "Active") {
-                    return false;
-                }
+                const statusMatch = schedule.status === "Active";
 
                 // 4. Check time overlap
                 const scheduleStart = new Date(
@@ -245,8 +313,22 @@ function filterTechniciansBySchedule(
                 const hasOverlap =
                     scheduleStart <= bookingEnd && scheduleEnd >= bookingStart;
 
-                return hasOverlap;
+                // Debug log for each schedule check
+                if (!centerMatch || !dateMatch || !statusMatch || !hasOverlap) {
+                    console.warn(`  ❌ Schedule mismatch for ${tech.userName}:`, {
+                        centerMatch: centerMatch ? '✅' : `❌ (schedule: "${schedule.centerName}" !== booking: "${bookingInfo.centerName}")`,
+                        dateMatch: dateMatch ? '✅' : `❌ (schedule: "${scheduleDate}" !== booking: "${bookingInfo.bookingDate}")`,
+                        statusMatch: statusMatch ? '✅' : `❌ (status: "${schedule.status}" !== "Active")`,
+                        hasOverlap: hasOverlap ? '✅' : `❌ (schedule: ${extractTime(schedule.startTime)}-${extractTime(schedule.endTime)} vs booking: ${bookingInfo.startTime}-${bookingInfo.endTime})`
+                    });
+                }
+
+                return centerMatch && dateMatch && statusMatch && hasOverlap;
             });
+
+            if (matchingSchedules.length > 0) {
+                console.warn(`  ✅ Found ${matchingSchedules.length} matching schedule(s) for ${tech.userName}`);
+            }
 
             return {
                 ...tech,
