@@ -42,8 +42,13 @@ export const AssignableWorkList: React.FC<AssignableWorkListProps> = ({
 
     if (workItems.length === 0) {
         return (
-            <div className="text-center py-8 text-muted-foreground">
-                <p className="text-sm">Không có công việc cần phân công</p>
+            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 bg-muted/30 px-4 py-10 text-center text-muted-foreground">
+                <p className="text-sm font-medium text-foreground">
+                    Không có công việc nào chờ phân công
+                </p>
+                <p className="text-xs">
+                    Kiểm tra lại bộ lọc hoặc chuyển sang tab Hàng chờ để tạo ticket walk-in.
+                </p>
             </div>
         );
     }

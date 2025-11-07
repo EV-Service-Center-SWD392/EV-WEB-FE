@@ -19,10 +19,17 @@ import { SlotCapacityBar } from '../molecules/SlotCapacityBar';
 import { AssignableWorkList } from '../molecules/AssignableWorkList';
 import { AssignmentQuickForm } from '../molecules/AssignmentQuickForm';
 
+type TechnicianFilters = {
+    shift: "all" | "Morning" | "Afternoon" | "Evening";
+    specialty: "all" | string;
+    workload: "all" | "Light" | "Balanced" | "Heavy";
+};
+
 export interface ScheduleBoardProps {
     // Data
     centers: Center[];
     technicians: Technician[];
+    filteredTechnicians?: Technician[];
     capacity: SlotCapacity | null;
     workItems: AssignableWorkItem[];
     assignments: Assignment[];
@@ -31,12 +38,16 @@ export interface ScheduleBoardProps {
     selectedCenterId: string | null;
     selectedDate: string;
     selectedWorkId?: string;
+    technicianFilters?: TechnicianFilters;
 
     // Handlers
     onCenterChange: (_centerId: string) => void;
     onDateChange: (_date: string) => void;
     onSelectWork: (_workId: string) => void;
     onAssign: (_dto: CreateAssignmentDTO) => void;
+    onTechnicianFiltersChange?: (_filters: TechnicianFilters) => void;
+    onConfirmWorkItem?: (_item: AssignableWorkItem) => void;
+    onRescheduleWorkItem?: (_item: AssignableWorkItem) => void;
     onRefresh?: () => void;
 
     // Loading states
@@ -48,25 +59,32 @@ export interface ScheduleBoardProps {
 export const ScheduleBoard: React.FC<ScheduleBoardProps> = ({
     centers,
     technicians,
+    filteredTechnicians,
     capacity,
     workItems,
     assignments,
     selectedCenterId,
     selectedDate,
     selectedWorkId,
+    technicianFilters,
     onCenterChange,
     onDateChange,
     onSelectWork,
     onAssign,
+    onTechnicianFiltersChange,
     onRefresh,
     isLoadingCenters = false,
     isLoadingWorkItems = false,
     isSubmitting = false,
 }) => {
+    void technicianFilters;
+    void onTechnicianFiltersChange;
+
     const selectedWork = workItems.find((w) => w.id === selectedWorkId);
 
     // Map 'request' to 'serviceRequest' for type compatibility
     const workItemType = selectedWork?.type === 'request' ? 'serviceRequest' : selectedWork?.type || 'booking';
+    const techniciansToShow = filteredTechnicians && filteredTechnicians.length > 0 ? filteredTechnicians : technicians;
 
     return (
         <div className="space-y-6">
@@ -124,6 +142,11 @@ export const ScheduleBoard: React.FC<ScheduleBoardProps> = ({
                 </CardContent>
             </Card>
 
+            <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+                <span className="font-semibold text-primary">Gợi ý:</span> Phân công kỹ thuật viên trước giờ hẹn, sau đó tiếp nhận
+                khách tại quầy để tạo intake và checklist.
+            </div>
+
             {/* Main Content Grid */}
             {selectedCenterId ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -163,7 +186,7 @@ export const ScheduleBoard: React.FC<ScheduleBoardProps> = ({
                                     <AssignmentQuickForm
                                         workItemId={selectedWork.id}
                                         workItemType={workItemType as 'booking' | 'serviceRequest'}
-                                        technicians={technicians}
+                                        technicians={techniciansToShow}
                                         selectedDate={selectedDate}
                                         onSubmit={onAssign}
                                         onCancel={() => onSelectWork('')}

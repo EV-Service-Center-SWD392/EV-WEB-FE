@@ -1,6 +1,6 @@
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
 
-import { BookingStatus, type Booking } from "@/entities/booking.types";
+import { BookingStatus, type Booking, type BookingResponseDto } from "@/entities/booking.types";
 import { bookingService } from "@/services/bookingService";
 
 /**
@@ -10,22 +10,22 @@ import { bookingService } from "@/services/bookingService";
 export function useTodayBookings(
     centerId: string | null,
     date: string
-): UseQueryResult<Booking[], Error> {
+): UseQueryResult<BookingResponseDto[], Error> {
     return useQuery({
         queryKey: ["bookings", "today", centerId, date],
         queryFn: async () => {
             // Fetch bookings with filters
-            const bookings = await bookingService.getBookings({
+            const bookings = await bookingService.getClientBookings({
                 // Assuming bookingService supports these filters
                 // Adjust based on actual bookingService implementation
             });
 
             // Filter by date and center on client side if API doesn't support it
             return bookings.filter((booking) => {
-                const bookingDate = new Date(booking.scheduledDate).toISOString().split("T")[0];
+                const bookingDate = new Date(booking.preferredDate ?? booking.createdAt).toISOString().split("T")[0];
                 const matchesDate = bookingDate === date;
                 // Filter by service center if needed
-                const matchesCenter = !centerId || booking.serviceCenter === centerId;
+                const matchesCenter = !centerId || booking.serviceCenterName === centerId;
                 return matchesDate && matchesCenter;
             });
         },
@@ -42,23 +42,21 @@ export function useTodayBookings(
 export function useAssignableBookings(
     centerId: string | null,
     date: string
-): UseQueryResult<Booking[], Error> {
+): UseQueryResult<BookingResponseDto[], Error> {
     return useQuery({
         queryKey: ["bookings", "assignable", centerId, date],
         queryFn: async () => {
-            const bookings = await bookingService.getBookings({});
+            const bookings = await bookingService.getClientBookings({});
 
             // Filter by date, center, and assignable statuses
             return bookings.filter((booking) => {
-                const bookingDate = new Date(booking.scheduledDate).toISOString().split("T")[0];
+                const bookingDate = new Date(booking.preferredDate ?? booking.createdAt).toISOString().split("T")[0];
                 const isToday = bookingDate === date;
 
-                // Only bookings that are Confirmed can be assigned
-                // (PENDING bookings are not ready, IN_PROGRESS/COMPLETED/CANCELLED are done)
-                const isAssignable =
-                    booking.status === BookingStatus.CONFIRMED;
+                // Only bookings that are Approved can be assigned
+                const isAssignable = booking.status === "Approved";
 
-                const matchesCenter = !centerId || booking.serviceCenter === centerId;
+                const matchesCenter = !centerId || booking.serviceCenterName === centerId;
 
                 return isToday && isAssignable && matchesCenter;
             });

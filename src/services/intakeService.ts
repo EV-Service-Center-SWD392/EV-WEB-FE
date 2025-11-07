@@ -1,188 +1,224 @@
 /**
- * Service Intake API Service
- * Handles all API calls for Service Intake & EV Checklist
+ * Service Intake API Client
+ * API Documentation: http://localhost:5020/api/ServiceIntake
+ * 
+ * Workflow:
+ * CHECKED_IN → INSPECTING → VERIFIED → FINALIZED
+ *            ↓                      
+ *         CANCELLED (only from CHECKED_IN or INSPECTING)
  */
 
 import type {
-    ServiceIntake,
-    ChecklistItem,
-    ChecklistResponse,
-    CreateIntakeRequest,
-    UpdateIntakeRequest,
-    SaveChecklistResponsesRequest,
-    IntakeWithResponses,
-} from '@/entities/intake.types';
+  ChecklistItem,
+  ChecklistResponse,
+  CreateIntakeRequest,
+  IntakeStatus,
+  IntakeWithResponses,
+  SaveChecklistResponsesRequest,
+  ServiceIntake,
+  UpdateIntakeRequest,
+} from "@/entities/intake.types";
 
-import { api } from './api';
+import { api } from "./api";
+
+// API Endpoints - matching backend ServiceIntakeController
+const BASE_PATH = "/api/ServiceIntake";
+const CHECKLIST_ITEMS_PATH = "/api/checklist-items";
+const UPLOAD_INTAKE_PHOTO_PATH = "/api/uploads/intake-photos";
+const UPLOAD_CHECKLIST_PHOTO_PATH = "/api/uploads/checklist-photos";
+
+// API response type
+type IntakeApiResponse = {
+  id: string;
+  centerId?: string;
+  vehicleId?: string;
+  technicianId?: string;
+  assignmentId?: string | null;
+  bookingId?: string | null;
+  odometer?: number | null;
+  batteryPercent?: number | null;
+  status: string;
+  createdAt: string;
+  updatedAt?: string | null;
+};
+
+// Status mapping from backend to frontend
+const statusMap: Record<string, IntakeStatus> = {
+  "CHECKED_IN": "CHECKED_IN",
+  "INSPECTING": "INSPECTING",
+  "VERIFIED": "VERIFIED",
+  "FINALIZED": "FINALIZED",
+  "CANCELLED": "CANCELLED",
+  // Fallback for lowercase
+  "checked_in": "CHECKED_IN",
+  "inspecting": "INSPECTING",
+  "verified": "VERIFIED",
+  "finalized": "FINALIZED",
+  "cancelled": "CANCELLED",
+};
+
+const normalizeStatus = (status?: string): IntakeStatus => {
+  if (!status) return "CHECKED_IN";
+  return statusMap[status] || status as IntakeStatus;
+};
+
+const mapIntakeResponse = (data: IntakeApiResponse): ServiceIntake => {
+  return {
+    id: data.id,
+    centerId: data.centerId,
+    vehicleId: data.vehicleId,
+    technicianId: data.technicianId,
+    assignmentId: data.assignmentId,
+    bookingId: data.bookingId,
+    odometer: data.odometer,
+    batteryPercent: data.batteryPercent,
+    status: normalizeStatus(data.status),
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+  };
+};
 
 /**
- * Create a new service intake for a booking
- * POST /api/bookings/{bookingId}/intakes
+ * List all service intakes with optional filters
+ * GET /api/ServiceIntake?centerId={centerId}&date={date}&status={status}&technicianId={technicianId}
  */
-export async function createIntake(
-    bookingId: string,
-    data: CreateIntakeRequest
-): Promise<ServiceIntake> {
-    const response = await api.post<ServiceIntake>(
-        `/api/bookings/${bookingId}/intakes`,
-        data
-    );
-    return response.data;
+export async function listIntakes(filters: {
+  centerId?: string;
+  date?: string; // Format: YYYY-MM-DD
+  status?: string;
+  technicianId?: string;
+} = {}): Promise<ServiceIntake[]> {
+  const params = new URLSearchParams();
+  if (filters.centerId) params.append('centerId', filters.centerId);
+  if (filters.date) params.append('date', filters.date);
+  if (filters.status) params.append('status', filters.status);
+  if (filters.technicianId) params.append('technicianId', filters.technicianId);
+
+  const { data } = await api.get<IntakeApiResponse[]>(BASE_PATH, { params });
+  return Array.isArray(data) ? data.map(mapIntakeResponse) : [];
 }
 
 /**
- * Get intake detail by ID
- * GET /api/intakes/{intakeId}
+ * Create a new intake for an existing booking
+ * POST /api/ServiceIntake
+ */
+export async function createIntake(request: CreateIntakeRequest): Promise<ServiceIntake> {
+  const { data } = await api.post<IntakeApiResponse>(BASE_PATH, request);
+  return mapIntakeResponse(data);
+}
+
+/**
+ * Get intake by ID
+ * GET /api/ServiceIntake/{id}
  */
 export async function getIntake(intakeId: string): Promise<ServiceIntake> {
-    const response = await api.get<ServiceIntake>(`/api/intakes/${intakeId}`);
-    return response.data;
+  const { data } = await api.get<IntakeApiResponse>(`${BASE_PATH}/${intakeId}`);
+  return mapIntakeResponse(data);
 }
 
 /**
- * Get intake by booking ID
- * GET /api/bookings/{bookingId}/intakes
+ * Update an existing intake (updates odometer and/or batteryPercent)
+ * PUT /api/ServiceIntake/{id}
+ * Auto transitions from CHECKED_IN → INSPECTING on first update
  */
-export async function getIntakeByBooking(
-    bookingId: string
-): Promise<ServiceIntake | null> {
-    try {
-        const response = await api.get<ServiceIntake>(
-            `/api/bookings/${bookingId}/intakes`
-        );
-        return response.data;
-    } catch (error: unknown) {
-        if (error && typeof error === 'object' && 'response' in error) {
-            const axiosError = error as { response?: { status?: number } };
-            if (axiosError.response?.status === 404) {
-                return null;
-            }
-        }
-        throw error;
-    }
+export async function updateIntake(intakeId: string, request: UpdateIntakeRequest): Promise<ServiceIntake> {
+  const { data } = await api.put<IntakeApiResponse>(`${BASE_PATH}/${intakeId}`, request);
+  return mapIntakeResponse(data);
 }
 
 /**
- * Update an existing intake
- * PUT /api/intakes/{intakeId}
+ * Verify an intake (transition: INSPECTING → VERIFIED)
+ * PUT /api/ServiceIntake/{id}/verify
  */
-export async function updateIntake(
-    intakeId: string,
-    data: UpdateIntakeRequest
-): Promise<ServiceIntake> {
-    const response = await api.put<ServiceIntake>(
-        `/api/intakes/${intakeId}`,
-        data
-    );
-    return response.data;
+export async function verifyIntake(intakeId: string): Promise<ServiceIntake> {
+  const { data } = await api.put<IntakeApiResponse>(`${BASE_PATH}/${intakeId}/verify`);
+  return mapIntakeResponse(data);
 }
 
 /**
- * Get all active checklist items
+ * Finalize an intake (transition: VERIFIED → FINALIZED)
+ * PUT /api/ServiceIntake/{id}/finalize
+ */
+export async function finalizeIntake(intakeId: string): Promise<ServiceIntake> {
+  const { data } = await api.put<IntakeApiResponse>(`${BASE_PATH}/${intakeId}/finalize`);
+  return mapIntakeResponse(data);
+}
+
+/**
+ * Cancel an intake (transition: CHECKED_IN/INSPECTING → CANCELLED)
+ * PUT /api/ServiceIntake/{id}/cancel
+ */
+export async function cancelIntake(intakeId: string): Promise<{ success: boolean; message: string }> {
+  const { data } = await api.put<{ success: boolean; message: string }>(`${BASE_PATH}/${intakeId}/cancel`);
+  return data;
+}
+
+/**
+ * Get all checklist items (template)
  * GET /api/checklist-items
  */
 export async function getChecklistItems(): Promise<ChecklistItem[]> {
-    const response = await api.get<ChecklistItem[]>('/api/checklist-items');
-    return response.data;
+  const { data } = await api.get<ChecklistItem[]>(CHECKLIST_ITEMS_PATH);
+  return data;
 }
 
 /**
  * Get checklist responses for an intake
- * GET /api/intakes/{intakeId}/responses
+ * GET /api/ServiceIntake/{id}/responses
  */
-export async function getChecklistResponses(
-    intakeId: string
-): Promise<ChecklistResponse[]> {
-    const response = await api.get<ChecklistResponse[]>(
-        `/api/intakes/${intakeId}/responses`
-    );
-    return response.data;
+export async function getChecklistResponses(intakeId: string): Promise<ChecklistResponse[]> {
+  const { data } = await api.get<ChecklistResponse[]>(`${BASE_PATH}/${intakeId}/responses`);
+  return data;
 }
 
 /**
- * Save checklist responses (create or update)
- * POST /api/intakes/{intakeId}/responses
+ * Save checklist responses
+ * POST /api/ServiceIntake/{id}/responses
  */
 export async function saveChecklistResponses(
-    intakeId: string,
-    data: SaveChecklistResponsesRequest
+  intakeId: string,
+  data: SaveChecklistResponsesRequest,
 ): Promise<ChecklistResponse[]> {
-    const response = await api.post<ChecklistResponse[]>(
-        `/api/intakes/${intakeId}/responses`,
-        data
-    );
-    return response.data;
+  const { data: response } = await api.post<ChecklistResponse[]>(`${BASE_PATH}/${intakeId}/responses`, data);
+  return response;
 }
 
-/**
- * Get intake with checklist responses (composite)
- * Combines intake + responses in one call
- */
-export async function getIntakeWithResponses(
-    intakeId: string
-): Promise<IntakeWithResponses> {
-    const [intake, responses, checklist] = await Promise.all([
-        getIntake(intakeId),
-        getChecklistResponses(intakeId),
-        getChecklistItems(),
-    ]);
+export async function getIntakeWithResponses(intakeId: string): Promise<IntakeWithResponses> {
+  const [intake, responses, checklist] = await Promise.all([
+    getIntake(intakeId),
+    getChecklistResponses(intakeId),
+    getChecklistItems(),
+  ]);
 
-    return {
-        ...intake,
-        responses,
-        checklist,
-    };
+  return {
+    ...intake,
+    responses,
+    checklist,
+  };
 }
 
-/**
- * Upload photo for intake
- * POST /api/uploads/intake-photos
- */
 export async function uploadIntakePhoto(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', file);
+  const formData = new FormData();
+  formData.append("file", file);
 
-    const response = await api.post<{ url: string }>(
-        '/api/uploads/intake-photos',
-        formData,
-        {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        }
-    );
+  const { data } = await api.post<{ url: string }>(UPLOAD_INTAKE_PHOTO_PATH, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
-    return response.data.url;
+  return data.url;
 }
 
-/**
- * Upload photo for checklist response
- * POST /api/uploads/checklist-photos
- */
 export async function uploadChecklistPhoto(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', file);
+  const formData = new FormData();
+  formData.append("file", file);
 
-    const response = await api.post<{ url: string }>(
-        '/api/uploads/checklist-photos',
-        formData,
-        {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        }
-    );
+  const { data } = await api.post<{ url: string }>(UPLOAD_CHECKLIST_PHOTO_PATH, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
-    return response.data.url;
-}
-
-/**
- * Finalize intake (mark as Completed)
- * PATCH /api/intakes/{intakeId}/finalize
- */
-export async function finalizeIntake(intakeId: string): Promise<ServiceIntake> {
-    const response = await api.patch<ServiceIntake>(
-        `/api/intakes/${intakeId}/finalize`
-    );
-    return response.data;
+  return data.url;
 }

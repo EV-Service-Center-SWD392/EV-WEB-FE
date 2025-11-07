@@ -29,10 +29,11 @@ import {
   useUpdateWorkOrderStatus,
 } from '@/hooks/workorders/useWorkOrders';
 import type { WorkOrderStatus } from '@/entities/workorder.types';
+import { useAuthStore } from '@/stores/auth';
 
 export default function TechnicianWorkOrdersPage() {
-  // TODO: Get actual technician ID from auth context
-  const technicianId = 'tech-123'; // Placeholder
+  const { user } = useAuthStore();
+  const technicianId = user?.role === 'technician' ? user.id : '';
   const [statusFilter, setStatusFilter] = React.useState<
     WorkOrderStatus | 'all'
   >('all');
@@ -41,7 +42,7 @@ export default function TechnicianWorkOrdersPage() {
   const { data: workOrders, isLoading } = useWorkOrdersByTechnician(
     technicianId,
     statusFilter === 'all' ? undefined : statusFilter,
-    30000
+    technicianId ? 30000 : undefined
   );
 
   const updateStatusMutation = useUpdateWorkOrderStatus();
@@ -63,7 +64,7 @@ export default function TechnicianWorkOrdersPage() {
   const handleComplete = async (workOrderId: string) => {
     await updateStatusMutation.mutateAsync({
       id: workOrderId,
-      status: 'QA',
+      status: 'Completed',
     });
   };
 
@@ -80,13 +81,18 @@ export default function TechnicianWorkOrdersPage() {
     return {
       total: workOrders.length,
       inProgress: workOrders.filter((wo) => wo.status === 'InProgress').length,
-      planned: workOrders.filter((wo) => wo.status === 'Planned').length,
+      awaitingApproval: workOrders.filter((wo) => wo.status === 'AwaitingApproval').length,
       completed: workOrders.filter((wo) => wo.status === 'Completed').length,
     };
   }, [workOrders]);
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      {!technicianId && (
+        <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
+          Vui lòng đăng nhập tài khoản kỹ thuật viên để xem work order được phân công.
+        </div>
+      )}
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">My Work Orders</h1>
@@ -121,12 +127,12 @@ export default function TechnicianWorkOrdersPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription>Planned</CardDescription>
+            <CardDescription>Awaiting Approval</CardDescription>
             <Package className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              {stats.planned}
+              {stats.awaitingApproval}
             </div>
           </CardContent>
         </Card>
@@ -163,11 +169,15 @@ export default function TechnicianWorkOrdersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Planned">Planned</SelectItem>
+                <SelectItem value="Draft">Draft</SelectItem>
+                <SelectItem value="AwaitingApproval">Awaiting Approval</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
                 <SelectItem value="InProgress">In Progress</SelectItem>
                 <SelectItem value="Paused">Paused</SelectItem>
                 <SelectItem value="WaitingParts">Waiting Parts</SelectItem>
                 <SelectItem value="QA">QA</SelectItem>
+                <SelectItem value="Revised">Revised</SelectItem>
+                <SelectItem value="Rejected">Rejected</SelectItem>
                 <SelectItem value="Completed">Completed</SelectItem>
               </SelectContent>
             </Select>

@@ -10,13 +10,14 @@ import { motion } from 'framer-motion';
 import {
     Clock,
     Wrench,
-    Package,
     ShieldCheck,
     CheckCircle,
     Pause,
+    ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { WorkOrderStatus, WorkOrder } from '@/entities/workorder.types';
+import { getWorkOrderStatusLabel } from '@/entities/workorder.types';
 
 interface WorkOrderProgressTrackerProps {
     workOrder: WorkOrder;
@@ -33,22 +34,28 @@ interface StepConfig {
 
 const steps: StepConfig[] = [
     {
-        status: 'Planned',
-        label: 'Planned',
+        status: 'Draft',
+        label: 'Draft',
         icon: Clock,
-        description: 'Work order created',
+        description: 'Work order captured',
+    },
+    {
+        status: 'AwaitingApproval',
+        label: 'Awaiting Approval',
+        icon: ClipboardList,
+        description: 'Waiting for customer decision',
+    },
+    {
+        status: 'Approved',
+        label: 'Approved',
+        icon: ShieldCheck,
+        description: 'Customer approved work',
     },
     {
         status: 'InProgress',
         label: 'In Progress',
         icon: Wrench,
         description: 'Technician working',
-    },
-    {
-        status: 'WaitingParts',
-        label: 'Waiting Parts',
-        icon: Package,
-        description: 'Parts needed',
     },
     {
         status: 'QA',
@@ -65,11 +72,14 @@ const steps: StepConfig[] = [
 ];
 
 function getStatusIndex(status: WorkOrderStatus): number {
-    // Handle special case for Paused
-    if (status === 'Paused') {
-        return 1; // Same position as InProgress
+    if (status === 'Paused' || status === 'WaitingParts') {
+        return steps.findIndex((step) => step.status === 'InProgress');
     }
-    return steps.findIndex((step) => step.status === status);
+    if (status === 'Revised' || status === 'Rejected') {
+        return steps.findIndex((step) => step.status === 'AwaitingApproval');
+    }
+    const idx = steps.findIndex((step) => step.status === status);
+    return idx === -1 ? steps.length - 1 : idx;
 }
 
 function getStepState(
@@ -101,7 +111,7 @@ export function WorkOrderProgressTracker({
     showTimestamps = true,
 }: WorkOrderProgressTrackerProps) {
     const currentIndex = getStatusIndex(workOrder.status);
-    const isPaused = workOrder.status === 'Paused';
+    const isPaused = workOrder.status === 'Paused' || workOrder.status === 'WaitingParts';
 
     return (
         <div className={cn('w-full', className)}>
@@ -130,7 +140,7 @@ export function WorkOrderProgressTracker({
                         // Get timestamp for this step
                         let timestamp = '';
                         if (showTimestamps) {
-                            if (step.status === 'Planned') {
+                            if (step.status === 'Draft') {
                                 timestamp = formatTimestamp(workOrder.createdAt);
                             } else if (step.status === 'InProgress') {
                                 timestamp = formatTimestamp(workOrder.startedAt);
@@ -172,7 +182,7 @@ export function WorkOrderProgressTracker({
                                             'animate-pulse': isActive && !isPaused,
                                         })}
                                     />
-                                </motion.div>
+                            </motion.div>
 
                                 {/* Paused Indicator */}
                                 {isPaused && step.status === 'InProgress' && (
@@ -272,8 +282,12 @@ export function WorkOrderProgressBadge({
 
     const getStatusColor = (s: WorkOrderStatus): string => {
         switch (s) {
-            case 'Planned':
+            case 'Draft':
                 return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+            case 'AwaitingApproval':
+                return 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300';
+            case 'Approved':
+                return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300';
             case 'InProgress':
                 return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
             case 'Paused':
@@ -282,6 +296,10 @@ export function WorkOrderProgressBadge({
                 return 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300';
             case 'QA':
                 return 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300';
+            case 'Revised':
+                return 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300';
+            case 'Rejected':
+                return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
             case 'Completed':
                 return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
             default:
@@ -298,7 +316,7 @@ export function WorkOrderProgressBadge({
             )}
         >
             <Icon className="h-3 w-3" />
-            {step?.label || status}
+            {step?.label || getWorkOrderStatusLabel(status)}
         </div>
     );
 }

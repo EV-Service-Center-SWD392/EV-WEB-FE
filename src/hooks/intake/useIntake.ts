@@ -1,5 +1,6 @@
 /**
  * Custom hooks for Service Intake management
+ * Updated to match API spec: http://localhost:5020/api/ServiceIntake
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,20 +14,26 @@ import type {
 import {
     createIntake,
     getIntake,
-    getIntakeByBooking,
     updateIntake,
+    verifyIntake,
     finalizeIntake,
+    cancelIntake,
+    listIntakes,
 } from '@/services/intakeService';
 
 /**
- * Hook to fetch intake by booking ID
- * Returns null if no intake exists yet
+ * Hook to list intakes with filters
  */
-export function useIntake(bookingId: string) {
+export function useIntakeList(filters: {
+    centerId?: string;
+    date?: string;
+    status?: string;
+    technicianId?: string;
+} = {}) {
     return useQuery({
-        queryKey: ['intake', 'booking', bookingId],
-        queryFn: () => getIntakeByBooking(bookingId),
-        enabled: !!bookingId,
+        queryKey: ['intake-list', filters],
+        queryFn: () => listIntakes(filters),
+        staleTime: 60 * 1000,
     });
 }
 
@@ -48,28 +55,21 @@ export function useCreateIntake() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({
-            bookingId,
-            data,
-        }: {
-            bookingId: string;
-            data: CreateIntakeRequest;
-        }) => createIntake(bookingId, data),
-        onSuccess: (data, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: ['intake', 'booking', variables.bookingId],
-            });
+        mutationFn: (data: CreateIntakeRequest) => createIntake(data),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['intake-list'] });
             queryClient.setQueryData(['intake', data.id], data);
-            toast.success('Service intake created successfully');
+            toast.success('✅ Service intake created successfully');
         },
         onError: (error: Error) => {
-            toast.error(`Failed to create intake: ${error.message}`);
+            toast.error(`❌ Failed to create intake: ${error.message}`);
         },
     });
 }
 
 /**
  * Hook to update an existing intake
+ * Auto transitions from CHECKED_IN → INSPECTING on first update
  */
 export function useUpdateIntake() {
     const queryClient = useQueryClient();
@@ -84,19 +84,36 @@ export function useUpdateIntake() {
         }) => updateIntake(intakeId, data),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['intake', data.id] });
-            queryClient.invalidateQueries({
-                queryKey: ['intake', 'booking', data.bookingId],
-            });
-            toast.success('Intake updated successfully');
+            queryClient.invalidateQueries({ queryKey: ['intake-list'] });
+            toast.success('✅ Intake updated successfully');
         },
         onError: (error: Error) => {
-            toast.error(`Failed to update intake: ${error.message}`);
+            toast.error(`❌ Failed to update intake: ${error.message}`);
         },
     });
 }
 
 /**
- * Hook to finalize an intake (mark as Completed)
+ * Hook to verify an intake (INSPECTING → VERIFIED)
+ */
+export function useVerifyIntake() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (intakeId: string) => verifyIntake(intakeId),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['intake', data.id] });
+            queryClient.invalidateQueries({ queryKey: ['intake-list'] });
+            toast.success('✅ Intake verified successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(`❌ Failed to verify intake: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to finalize an intake (VERIFIED → FINALIZED)
  */
 export function useFinalizeIntake() {
     const queryClient = useQueryClient();
@@ -105,13 +122,30 @@ export function useFinalizeIntake() {
         mutationFn: (intakeId: string) => finalizeIntake(intakeId),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['intake', data.id] });
-            queryClient.invalidateQueries({
-                queryKey: ['intake', 'booking', data.bookingId],
-            });
-            toast.success('Intake finalized successfully');
+            queryClient.invalidateQueries({ queryKey: ['intake-list'] });
+            toast.success('✅ Intake finalized successfully');
         },
         onError: (error: Error) => {
-            toast.error(`Failed to finalize intake: ${error.message}`);
+            toast.error(`❌ Failed to finalize intake: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to cancel an intake (CHECKED_IN/INSPECTING → CANCELLED)
+ */
+export function useCancelIntake() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (intakeId: string) => cancelIntake(intakeId),
+        onSuccess: (_data, intakeId) => {
+            queryClient.invalidateQueries({ queryKey: ['intake', intakeId] });
+            queryClient.invalidateQueries({ queryKey: ['intake-list'] });
+            toast.success('✅ Intake cancelled successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(`❌ Failed to cancel intake: ${error.message}`);
         },
     });
 }
@@ -122,20 +156,31 @@ export function useFinalizeIntake() {
 export function useIntakeStatus(intake: ServiceIntake | null | undefined) {
     if (!intake) {
         return {
-            canEdit: false,
+            canUpdate: false,
+            canVerify: false,
             canFinalize: false,
-            isCompleted: false,
-            isDraft: false,
+            canCancel: false,
+            isFinalized: false,
+            isCancelled: false,
+            status: undefined,
         };
     }
 
-    const isDraft = intake.status === 'Draft';
-    const isCompleted = intake.status === 'Completed';
+    const status = intake.status;
+    const canUpdate = status === 'CHECKED_IN' || status === 'INSPECTING';
+    const canVerify = status === 'INSPECTING';
+    const canFinalize = status === 'VERIFIED';
+    const canCancel = status === 'CHECKED_IN' || status === 'INSPECTING';
+    const isFinalized = status === 'FINALIZED';
+    const isCancelled = status === 'CANCELLED';
 
     return {
-        canEdit: isDraft,
-        canFinalize: isDraft,
-        isCompleted,
-        isDraft,
+        canUpdate,
+        canVerify,
+        canFinalize,
+        canCancel,
+        isFinalized,
+        isCancelled,
+        status,
     };
 }

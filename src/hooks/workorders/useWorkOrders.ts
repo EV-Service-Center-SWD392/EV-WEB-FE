@@ -168,11 +168,15 @@ export function useUpdateWorkOrderStatus() {
 
             // Show status-specific success message
             const statusMessages: Record<WorkOrderStatus, string> = {
-                Planned: 'Work order planned',
+                Draft: 'Work order saved as draft',
+                AwaitingApproval: 'Work order submitted for approval',
+                Approved: 'Work order approved',
                 InProgress: 'Work order started',
                 Paused: 'Work order paused',
                 WaitingParts: 'Work order waiting for parts',
                 QA: 'Work order sent to QA',
+                Revised: 'Work order marked for revision',
+                Rejected: 'Work order rejected',
                 Completed: 'Work order completed',
             };
 

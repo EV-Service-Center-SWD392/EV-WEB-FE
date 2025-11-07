@@ -44,7 +44,7 @@ export default function CTASection() {
                   <Link href="/member/dashboard">Vào Dashboard</Link>
                 </Button>
                 <Button asChild variant="outline" size="lg">
-                  <Link href="/member/dashboard">Đặt lịch bảo trì</Link>
+                  <Link href="/member/appointments">Đặt lịch bảo trì</Link>
                 </Button>
               </div>
             </>

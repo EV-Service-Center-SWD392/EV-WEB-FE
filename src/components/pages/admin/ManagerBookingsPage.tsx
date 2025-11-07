@@ -33,7 +33,9 @@ export default function ManagerBookingsPage() {
   const loadBookings = async () => {
     try {
       setIsLoading(true);
-      const data = await bookingService.getBookings(filters);
+      // Note: getClientBookings doesn't support all filter fields
+      // Filtering by customerName, phone, serviceType needs to be done client-side
+      const data = await bookingService.getClientBookings();
       setBookings(data);
       setFilteredBookings(data);
     } catch (error) {
@@ -47,8 +49,32 @@ export default function ManagerBookingsPage() {
   const handleSearch = async () => {
     try {
       setIsLoading(true);
-      const data = await bookingService.getBookings(filters);
-      setFilteredBookings(data);
+      // Client-side filtering since API doesn't support these filter fields
+      let filtered = bookings;
+      
+      if (filters.customerName) {
+        filtered = filtered.filter(b => 
+          b.customerName.toLowerCase().includes(filters.customerName!.toLowerCase())
+        );
+      }
+      
+      if (filters.phone) {
+        filtered = filtered.filter(b => 
+          b.customerPhone.includes(filters.phone!)
+        );
+      }
+      
+      if (filters.status) {
+        filtered = filtered.filter(b => b.status === filters.status);
+      }
+      
+      if (filters.serviceType) {
+        filtered = filtered.filter(b => 
+          b.serviceType?.toLowerCase().includes(filters.serviceType!.toLowerCase())
+        );
+      }
+      
+      setFilteredBookings(filtered);
       toast.success("Tìm kiếm hoàn tất");
     } catch (error) {
       console.error("Error searching bookings:", error);
@@ -119,7 +145,7 @@ export default function ManagerBookingsPage() {
       } else {
         // Create new booking
         await bookingService.createBooking(data as CreateBookingRequest);
-        toast.success("Tạo lịch đặt mới thành công");
+        toast.success("Đã tiếp nhận lịch hẹn");
       }
 
       setIsFormOpen(false);

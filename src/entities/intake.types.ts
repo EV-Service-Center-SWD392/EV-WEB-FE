@@ -1,9 +1,15 @@
 /**
  * Service Intake & EV Checklist Types
- * Based on SWD_ThanhThao_Rule.txt - Section B3
+ * Updated to match API specification
+ * API Documentation: Service Intake API - http://localhost:5020/api/ServiceIntake
  */
 
-export type IntakeStatus = 'Draft' | 'Completed';
+export type IntakeStatus =
+    | 'CHECKED_IN'
+    | 'INSPECTING'
+    | 'VERIFIED'
+    | 'FINALIZED'
+    | 'CANCELLED';
 
 export type ChecklistItemType = 'Bool' | 'Number' | 'Text';
 
@@ -18,14 +24,34 @@ export type SeverityLevel = 'Low' | 'Medium' | 'High';
 
 export interface ServiceIntake {
     id: string;
-    bookingId: string;
-    odometer?: number;
-    batterySoC?: number;
-    photos?: IntakePhoto[];
-    notes?: string;
+    centerId?: string;
+    vehicleId?: string;
+    technicianId?: string;
+    assignmentId?: string | null;
+    bookingId?: string | null;
+    odometer?: number | null;
+    batteryPercent?: number | null;
     status: IntakeStatus;
     createdAt: string;
-    updatedAt?: string;
+    updatedAt?: string | null;
+    // Extended fields for UI display (may not come from API)
+    bookingCode?: string;
+    serviceCenterName?: string;
+    walkIn?: boolean;
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    vehicleBrand?: string;
+    vehicleModel?: string;
+    vehicleType?: string;
+    licensePlate?: string;
+    photos?: IntakePhoto[];
+    notes?: string;
+    arrivalNotes?: string;
+    scheduledDate?: string;
+    checklistInitializedAt?: string;
+    verifiedBy?: string;
+    verifiedAt?: string;
 }
 
 export interface IntakePhoto {
@@ -67,18 +93,14 @@ export interface ChecklistResponseWithItem extends ChecklistResponse {
 // Request/Response DTOs
 
 export interface CreateIntakeRequest {
-    odometer?: number;
-    batterySoC?: number;
-    notes?: string;
-    photos?: string[]; // URLs
+    bookingId: string; // Required - Guid of approved booking
+    odometer?: number | null; // Optional - km reading
+    batteryPercent?: number | null; // Optional - battery percentage 0-100
 }
 
 export interface UpdateIntakeRequest {
-    odometer?: number;
-    batterySoC?: number;
-    notes?: string;
-    photos?: string[];
-    status?: IntakeStatus;
+    odometer?: number | null;
+    batteryPercent?: number | null; // 0-100
 }
 
 export interface SaveChecklistResponsesRequest {

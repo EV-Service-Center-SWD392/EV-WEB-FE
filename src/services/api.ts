@@ -65,6 +65,14 @@ api.interceptors.response.use(
     try {
       if (typeof window !== "undefined") {
         const resp = (err && err.response && err.response.data) || null;
+
+        // Log detailed error for debugging
+        console.error("[api] Error response:", {
+          status: err?.response?.status,
+          data: resp,
+          url: err?.config?.url,
+        });
+
         const message = resp?.message || err.message || "Lỗi mạng";
         toast.error(message);
       }

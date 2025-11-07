@@ -1,6 +1,8 @@
 "use client";
 
-import { 
+import Link from "next/link";
+
+import {
   Car, 
   Calendar, 
   Clock, 
@@ -25,10 +27,20 @@ export default function MemberDashboardPage() {
             Chào mừng bạn trở lại! Quản lý xe và dịch vụ của bạn.
           </p>
         </div>
-        <Button>
-          <Calendar className="mr-2 h-4 w-4" />
-          Đặt lịch mới
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild>
+            <Link href="/member/appointments">
+              <Calendar className="mr-2 h-4 w-4" />
+              Đặt lịch mới
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/member/workorders">
+              <FileText className="mr-2 h-4 w-4" />
+              Đơn sửa chữa
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

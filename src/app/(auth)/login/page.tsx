@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { login, type Role } from "@/services/auth";
+import { login, normalizeRole } from "@/services/auth";
 import { useAuthStore } from "@/stores/auth";
 import { LoadingButton } from "@/components/ui/LoadingSpinner";
 import { components } from "@/services/schema";
@@ -44,13 +44,16 @@ export default function LoginPage() {
   const [err, setErr] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // ✅ SỬA LOGIC REDIRECT: Member ở lại homepage, nhân viên vào dashboard
+  // ✅ LOGIC REDIRECT: Điều hướng dựa trên role
   const getRoleBasedRedirect = (role: string): string => {
     // Nếu có next URL thì ưu tiên next
     if (next) return next;
 
+    // Normalize role (lowercase và trim)
+    const normalizedRole = role.trim().toLowerCase();
+
     // Logic redirect theo role
-    switch (role.toLocaleLowerCase()) {
+    switch (normalizedRole) {
       case "admin":
         return "/admin/dashboard";
       case "staff":
@@ -58,8 +61,10 @@ export default function LoginPage() {
       case "technician":
         return "/technician/dashboard";
       case "customer":
-        return "/"; // ✅ Member ở lại homepage thay vì dashboard
+      case "member": // BE có thể trả "Member" hoặc "Customer"
+        return "/"; // Member/Customer ở homepage, có thể tự navigate đến /member/dashboard
       default:
+        console.warn(`Unknown role: ${role}, redirecting to homepage`);
         return "/";
     }
   };
@@ -72,12 +77,12 @@ export default function LoginPage() {
 
       // AuthResultDto shape: { userId, email, fullName, role, accessToken, refreshToken, expiresAt }
       const auth = res as AuthResult;
-      console.log("auth: ", auth);
+
       const user = {
         id: auth.userId ?? "",
         name: auth.fullName ?? auth.email ?? "",
         email: auth.email ?? "",
-        role: (auth.role as Role) ?? ("customer" as Role),
+        role: normalizeRole(auth.role), // Use helper to normalize role from BE
       };
 
       setAuth(user, auth.accessToken ?? null);

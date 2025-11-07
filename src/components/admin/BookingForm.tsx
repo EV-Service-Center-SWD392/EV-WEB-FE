@@ -17,6 +17,10 @@ import {
   type CreateBookingRequest,
   type UpdateBookingRequest,
 } from "@/entities/booking.types";
+import type { Center } from "@/entities/slot.types";
+import type { ServiceCatalogOption } from "@/entities/service.types";
+import { staffDirectoryService } from "@/services/staffDirectoryService";
+import { serviceCatalogService } from "@/services/serviceCatalogService";
 
 interface BookingFormProps {
   booking?: Booking | null;
@@ -41,15 +45,21 @@ const vehicleBrands = [
   "Hyundai",
 ];
 
-const serviceCenters = [
-  "Trung tâm Quận 1",
-  "Trung tâm Quận 2",
-  "Trung tâm Quận 3",
-  "Trung tâm Quận 5",
-  "Trung tâm Quận 7",
-  "Trung tâm Quận 9",
-  "Trung tâm Thủ Đức",
-];
+const toInputDateTimeLocal = (value?: string) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+};
+
+const toIsoString = (value?: string) => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString();
+};
+
 
 export function BookingForm({
   booking,
@@ -80,8 +90,11 @@ export function BookingForm({
     customerPhone: "",
     vehicleType: "",
     vehicleBrand: "",
-    serviceCenter: "",
+    vehicleModel: "",
+    serviceCenterId: "",
+    serviceTypeId: "",
     technicianId: "",
+    preferredTime: "",
     scheduledDate: "",
     repairParts: "",
     description: "",
@@ -91,6 +104,29 @@ export function BookingForm({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [centers, setCenters] = useState<Center[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<ServiceCatalogOption[]>([]);
+  const [isMetaLoading, setIsMetaLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    async function loadMetadata() {
+      try {
+        setIsMetaLoading(true);
+        const [centerData, serviceTypeData] = await Promise.all([
+          staffDirectoryService.getCenters(),
+          serviceCatalogService.getServiceTypes(),
+        ]);
+        setCenters(centerData);
+        setServiceTypes(serviceTypeData);
+      } catch (error) {
+        console.error("Failed to load booking metadata", error);
+      } finally {
+        setIsMetaLoading(false);
+      }
+    }
+
+    void loadMetadata();
+  }, []);
 
   useEffect(() => {
     if (booking) {
@@ -98,14 +134,17 @@ export function BookingForm({
         customerName: booking.customerName,
         customerEmail: booking.customerEmail,
         customerPhone: booking.customerPhone,
-        vehicleType: booking.vehicleType,
+        vehicleType: booking.vehicleType || "",
         vehicleBrand: booking.vehicleBrand,
-        serviceCenter: booking.serviceCenter,
+        vehicleModel: booking.vehicleModel || "",
+        serviceCenterId: booking.serviceCenterId || "",
+        serviceTypeId: booking.serviceTypeId || "",
         technicianId: booking.technicianId || "",
-        scheduledDate: booking.scheduledDate.split("T")[0], // Format for date input
-        repairParts: booking.repairParts,
+        preferredTime: toInputDateTimeLocal(booking.preferredTime ?? booking.scheduledDate),
+        scheduledDate: toInputDateTimeLocal(booking.scheduledDate),
+        repairParts: booking.repairParts || "",
         description: booking.description || "",
-        status: booking.status,
+        status: (booking.status as BookingStatus) || BookingStatus.PENDING,
         estimatedCost: booking.estimatedCost?.toString() || "",
         actualCost: booking.actualCost?.toString() || "",
       });
@@ -116,8 +155,11 @@ export function BookingForm({
         customerPhone: "",
         vehicleType: "",
         vehicleBrand: "",
-        serviceCenter: "",
+        vehicleModel: "",
+        serviceCenterId: "",
+        serviceTypeId: "",
         technicianId: "",
+        preferredTime: "",
         scheduledDate: "",
         repairParts: "",
         description: "",
@@ -128,6 +170,55 @@ export function BookingForm({
     }
     setErrors({});
   }, [booking, isOpen]);
+
+  useEffect(() => {
+    if (!booking) return;
+    setFormData((prev) => {
+      if (prev.serviceCenterId || (!booking.serviceCenter && !booking.serviceCenterName)) {
+        return prev;
+      }
+      const match = centers.find((center) => {
+        const name = booking.serviceCenterName ?? booking.serviceCenter;
+        return name ? center.name === name : false;
+      });
+      if (!match) return prev;
+      return { ...prev, serviceCenterId: match.id };
+    });
+  }, [booking, centers]);
+
+  useEffect(() => {
+    if (!booking) return;
+    setFormData((prev) => {
+      if (prev.serviceTypeId || !booking.serviceType) {
+        return prev;
+      }
+      const match = serviceTypes.find((svc) => svc.name === booking.serviceType);
+      if (!match) return prev;
+      return { ...prev, serviceTypeId: match.id };
+    });
+  }, [booking, serviceTypes]);
+
+  useEffect(() => {
+    if (booking) return;
+    setFormData((prev) => {
+      let updated = false;
+      let draft = prev;
+
+      if (!prev.serviceCenterId && centers.length === 1) {
+        draft = draft === prev ? { ...prev } : draft;
+        draft.serviceCenterId = centers[0].id;
+        updated = true;
+      }
+
+      if (!prev.serviceTypeId && serviceTypes.length === 1) {
+        draft = draft === prev ? { ...prev } : draft;
+        draft.serviceTypeId = serviceTypes[0].id;
+        updated = true;
+      }
+
+      return updated ? ({ ...draft }) : prev;
+    });
+  }, [booking, centers, serviceTypes]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -156,12 +247,16 @@ export function BookingForm({
       newErrors.vehicleBrand = "Hãng xe là bắt buộc";
     }
 
-    if (!formData.serviceCenter) {
-      newErrors.serviceCenter = "Trung tâm dịch vụ là bắt buộc";
+    if (!formData.serviceCenterId) {
+      newErrors.serviceCenterId = "Trung tâm dịch vụ là bắt buộc";
     }
 
-    if (!formData.scheduledDate) {
-      newErrors.scheduledDate = "Ngày hẹn là bắt buộc";
+    if (!formData.serviceTypeId) {
+      newErrors.serviceTypeId = "Loại dịch vụ là bắt buộc";
+    }
+
+    if (!formData.preferredTime) {
+      newErrors.preferredTime = "Thời gian mong muốn là bắt buộc";
     }
 
     if (!formData.repairParts.trim()) {
@@ -188,43 +283,56 @@ export function BookingForm({
     }
 
     try {
+      const centerName = centers.find((center) => center.id === formData.serviceCenterId)?.name;
+      const serviceTypeName = serviceTypes.find((item) => item.id === formData.serviceTypeId)?.name;
+      const preferredTimeIso = toIsoString(formData.preferredTime) ?? toIsoString(formData.scheduledDate);
+      const scheduledDateIso = toIsoString(formData.scheduledDate) ?? preferredTimeIso ?? new Date().toISOString();
+
       if (booking) {
-        // Update booking
+        // Convert BookingStatus enum back to API status
+        let apiStatus: "Pending" | "Approved" | "Rejected" | undefined;
+        if (formData.status === BookingStatus.PENDING) apiStatus = "Pending";
+        else if (formData.status === BookingStatus.CONFIRMED) apiStatus = "Approved";
+        else if (formData.status === BookingStatus.CANCELLED) apiStatus = "Rejected";
+
         const updateData: UpdateBookingRequest = {
           customerName: formData.customerName,
           customerEmail: formData.customerEmail,
           customerPhone: formData.customerPhone,
           vehicleType: formData.vehicleType,
           vehicleBrand: formData.vehicleBrand,
-          serviceCenter: formData.serviceCenter,
+          vehicleModel: formData.vehicleModel,
+          serviceCenterId: formData.serviceCenterId || undefined,
+          serviceCenter: centerName,
+          serviceTypeId: formData.serviceTypeId || undefined,
+          serviceType: serviceTypeName,
           technicianId: formData.technicianId || undefined,
-          scheduledDate: new Date(formData.scheduledDate).toISOString(),
-          repairParts: formData.repairParts,
+          preferredTime: preferredTimeIso,
+          scheduledDate: scheduledDateIso,
+          repairParts: formData.repairParts || undefined,
           description: formData.description || undefined,
-          status: formData.status,
-          estimatedCost: formData.estimatedCost
-            ? Number(formData.estimatedCost)
-            : undefined,
-          actualCost: formData.actualCost
-            ? Number(formData.actualCost)
-            : undefined,
+          status: apiStatus,
+          estimatedCost: formData.estimatedCost ? Number(formData.estimatedCost) : undefined,
+          actualCost: formData.actualCost ? Number(formData.actualCost) : undefined,
         };
         await onSubmit(updateData);
       } else {
-        // Create new booking
         const createData: CreateBookingRequest = {
           customerName: formData.customerName,
           customerEmail: formData.customerEmail,
           customerPhone: formData.customerPhone,
           vehicleType: formData.vehicleType,
           vehicleBrand: formData.vehicleBrand,
-          serviceCenter: formData.serviceCenter,
-          scheduledDate: new Date(formData.scheduledDate).toISOString(),
-          repairParts: formData.repairParts,
+          vehicleModel: formData.vehicleModel,
+          serviceCenterId: formData.serviceCenterId,
+          serviceTypeId: formData.serviceTypeId,
+          preferredTime: preferredTimeIso ?? new Date().toISOString(),
+          scheduledDate: scheduledDateIso,
+          serviceCenter: centerName,
+          serviceType: serviceTypeName,
+          repairParts: formData.repairParts || undefined,
           description: formData.description || undefined,
-          estimatedCost: formData.estimatedCost
-            ? Number(formData.estimatedCost)
-            : undefined,
+          estimatedCost: formData.estimatedCost ? Number(formData.estimatedCost) : undefined,
         };
         await onSubmit(createData);
       }
@@ -367,56 +475,145 @@ export function BookingForm({
                 </p>
               )}
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Dòng xe (không bắt buộc)
+              </label>
+              <Input
+                type="text"
+                value={formData.vehicleModel}
+                onChange={(e) =>
+                  setFormData({ ...formData, vehicleModel: e.target.value })
+                }
+                placeholder="Ví dụ: VF8, Model 3"
+              />
+            </div>
           </div>
 
           {/* Service Information */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Trung tâm dịch vụ <span className="text-red-500">*</span>
-            </label>
-            <Select
-              value={formData.serviceCenter}
-              onValueChange={(value) =>
-                setFormData({ ...formData, serviceCenter: value })
-              }
-            >
-              <SelectTrigger
-                className={errors.serviceCenter ? "border-red-300" : ""}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Trung tâm dịch vụ <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={formData.serviceCenterId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, serviceCenterId: value })
+                }
+                disabled={isMetaLoading}
               >
-                <SelectValue placeholder="Chọn trung tâm dịch vụ" />
-              </SelectTrigger>
-              <SelectContent>
-                {serviceCenters.map((center) => (
-                  <SelectItem key={center} value={center}>
-                    {center}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.serviceCenter && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.serviceCenter}
-              </p>
-            )}
+                <SelectTrigger
+                  className={errors.serviceCenterId ? "border-red-300" : ""}
+                >
+                  <SelectValue placeholder="Chọn trung tâm dịch vụ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {centers.length === 0 ? (
+                    <div className="px-2 py-3 text-sm text-muted-foreground">
+                      Không có trung tâm khả dụng
+                    </div>
+                  ) : (
+                    centers.map((center) => (
+                      <SelectItem key={center.id} value={center.id}>
+                        <div className="flex flex-col">
+                          <span>{center.name}</span>
+                          {center.address && (
+                            <span className="text-xs text-muted-foreground">
+                              {center.address}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.serviceCenterId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.serviceCenterId}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Loại dịch vụ <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={formData.serviceTypeId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, serviceTypeId: value })
+                }
+                disabled={isMetaLoading}
+              >
+                <SelectTrigger
+                  className={errors.serviceTypeId ? "border-red-300" : ""}
+                >
+                  <SelectValue placeholder="Chọn loại dịch vụ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceTypes.length === 0 ? (
+                    <div className="px-2 py-3 text-sm text-muted-foreground">
+                      Không có dịch vụ khả dụng
+                    </div>
+                  ) : (
+                    serviceTypes.map((service) => (
+                      <SelectItem key={service.id} value={service.id}>
+                        <div className="flex flex-col">
+                          <span>{service.name}</span>
+                          {service.description && (
+                            <span className="text-xs text-muted-foreground">
+                              {service.description}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.serviceTypeId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.serviceTypeId}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ngày hẹn <span className="text-red-500">*</span>
-            </label>
-            <Input
-              type="datetime-local"
-              value={formData.scheduledDate}
-              onChange={(e) =>
-                setFormData({ ...formData, scheduledDate: e.target.value })
-              }
-              className={errors.scheduledDate ? "border-red-300" : ""}
-            />
-            {errors.scheduledDate && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.scheduledDate}
-              </p>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Thời gian mong muốn của khách <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="datetime-local"
+                value={formData.preferredTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, preferredTime: e.target.value })
+                }
+                className={errors.preferredTime ? "border-red-300" : ""}
+              />
+              {errors.preferredTime && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.preferredTime}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Lịch hẹn dự kiến (Staff có thể điều chỉnh)
+              </label>
+              <Input
+                type="datetime-local"
+                value={formData.scheduledDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, scheduledDate: e.target.value })
+                }
+              />
+            </div>
           </div>
 
           <div>
@@ -516,6 +713,15 @@ export function BookingForm({
                   <SelectItem value={BookingStatus.PENDING}>
                     Chờ xác nhận
                   </SelectItem>
+                  <SelectItem value={BookingStatus.ASSIGNED}>
+                    Đã phân công kỹ thuật viên
+                  </SelectItem>
+                  <SelectItem value={BookingStatus.IN_QUEUE}>
+                    Trong hàng chờ
+                  </SelectItem>
+                  <SelectItem value={BookingStatus.ACTIVE}>
+                    Đang chuẩn bị
+                  </SelectItem>
                   <SelectItem value={BookingStatus.CONFIRMED}>
                     Đã xác nhận
                   </SelectItem>
@@ -524,6 +730,9 @@ export function BookingForm({
                   </SelectItem>
                   <SelectItem value={BookingStatus.COMPLETED}>
                     Hoàn thành
+                  </SelectItem>
+                  <SelectItem value={BookingStatus.REASSIGNED}>
+                    Đã phân công lại
                   </SelectItem>
                   <SelectItem value={BookingStatus.CANCELLED}>
                     Đã hủy
