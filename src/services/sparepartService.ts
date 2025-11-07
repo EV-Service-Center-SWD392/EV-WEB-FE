@@ -12,8 +12,8 @@ import type {
 
 import { api } from "./api";
 
-const SPAREPART_PATH = "/api/sparepart";
-const SPAREPART_TYPE_PATH = "/api/spareparttype";
+const SPAREPART_PATH = "/api/Sparepart";
+const SPAREPART_TYPE_PATH = "/api/SparepartType";
 
 /**
  * Sparepart Service

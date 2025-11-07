@@ -6,7 +6,7 @@ import type {
 
 import { api } from "./api";
 
-const FORECAST_PATH = "/api/sparepartforecast";
+const FORECAST_PATH = "/api/SparepartForecast";
 
 /**
  * Sparepart Forecast Service

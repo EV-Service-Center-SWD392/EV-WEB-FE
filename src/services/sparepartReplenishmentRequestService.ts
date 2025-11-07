@@ -6,7 +6,22 @@ import type {
 
 import { api } from "./api";
 
-const REPLENISHMENT_PATH = "/api/sparepartreplenishmentrequest";
+const REPLENISHMENT_PATH = "/api/SparepartReplenishmentRequest";
+
+export interface PaginationParams {
+  pageNumber?: number;
+  pageSize?: number;
+  sort?: string;
+  order?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
 
 /**
  * Sparepart Replenishment Request Service
@@ -14,10 +29,18 @@ const REPLENISHMENT_PATH = "/api/sparepartreplenishmentrequest";
  */
 export const sparepartReplenishmentRequestService = {
   /**
-   * Get all requests
+   * Get all requests with pagination
    */
-  async getAllRequests(): Promise<SparepartReplenishmentRequestDto[]> {
-    const response = await api.get<SparepartReplenishmentRequestDto[]>(REPLENISHMENT_PATH);
+  async getAllRequests(params?: PaginationParams): Promise<SparepartReplenishmentRequestDto[]> {
+    const response = await api.get<SparepartReplenishmentRequestDto[]>(REPLENISHMENT_PATH, { params });
+    return response.data;
+  },
+
+  /**
+   * Get paginated requests
+   */
+  async getPaginatedRequests(params?: PaginationParams): Promise<PaginatedResponse<SparepartReplenishmentRequestDto>> {
+    const response = await api.get<PaginatedResponse<SparepartReplenishmentRequestDto>>(REPLENISHMENT_PATH, { params });
     return response.data;
   },
 
@@ -88,16 +111,47 @@ export const sparepartReplenishmentRequestService = {
    * Approve a request
    */
   async approveRequest(id: string, approvedBy: string): Promise<SparepartReplenishmentRequestDto> {
-    const response = await api.put<SparepartReplenishmentRequestDto>(`${REPLENISHMENT_PATH}/${id}/approve`, { approvedBy });
-    return response.data;
+    // First get the current request to preserve required fields
+    const currentRequest = await this.getRequestById(id);
+    
+    const updateData: UpdateSparepartReplenishmentRequestDto = {
+      sparepartId: currentRequest.sparepartId,
+      centerId: currentRequest.centerId,
+      requestedQuantity: currentRequest.requestedQuantity || currentRequest.suggestedQuantity || 1,
+      requestedBy: currentRequest.requestedBy || 'system',
+      approvedBy: approvedBy,
+      priority: currentRequest.priority || 'Medium',
+      status: 'Approved',
+      approvalDate: new Date().toISOString(),
+      notes: currentRequest.notes,
+      supplierId: currentRequest.supplierId,
+      estimatedCost: currentRequest.estimatedCost,
+    };
+    
+    return this.updateRequest(id, updateData);
   },
 
   /**
    * Reject a request
    */
   async rejectRequest(id: string, rejectedBy: string, reason: string): Promise<SparepartReplenishmentRequestDto> {
-    const response = await api.put<SparepartReplenishmentRequestDto>(`${REPLENISHMENT_PATH}/${id}/reject`, { rejectedBy, reason });
-    return response.data;
+    // First get the current request to preserve required fields
+    const currentRequest = await this.getRequestById(id);
+    
+    const updateData: UpdateSparepartReplenishmentRequestDto = {
+      sparepartId: currentRequest.sparepartId,
+      centerId: currentRequest.centerId,
+      requestedQuantity: currentRequest.requestedQuantity || currentRequest.suggestedQuantity || 1,
+      requestedBy: currentRequest.requestedBy || 'system',
+      approvedBy: rejectedBy,
+      priority: currentRequest.priority || 'Medium',
+      status: 'Rejected',
+      notes: reason,
+      supplierId: currentRequest.supplierId,
+      estimatedCost: currentRequest.estimatedCost,
+    };
+    
+    return this.updateRequest(id, updateData);
   },
 
   /**

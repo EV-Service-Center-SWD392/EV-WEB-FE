@@ -131,10 +131,12 @@ class UserCertificateService {
 
   /**
    * Technician requests/submits a new certificate with image
-   * POST /api/UserCertificate/request
-   * Sends FormData with Name, Description, and ImageFile
+   * This is a two-step process:
+   * 1. Create the certificate (POST /api/Certificate)
+   * 2. Assign it to the current user (POST /api/UserCertificate/assign)
    */
-  async requestCertificate(data: RequestCertificateDto): Promise<ApiResponse<void>> {
+  async requestCertificate(data: RequestCertificateDto, userId: string): Promise<ApiResponse<void>> {
+    // Step 1: Create the certificate
     const formData = new FormData();
     formData.append('Name', data.name);
     
@@ -146,8 +148,8 @@ class UserCertificateService {
       formData.append('ImageFile', data.imageFile);
     }
 
-    const response = await api.post<ApiResponse<void>>(
-      '/api/UserCertificate/request',
+    const certificateResponse = await api.post<{ certificateId: string }>(
+      '/api/Certificate',
       formData,
       {
         headers: {
@@ -155,6 +157,18 @@ class UserCertificateService {
         },
       }
     );
+
+    // Step 2: Assign the certificate to the user
+    const assignData: AssignCertificateDto = {
+      userId: userId,
+      certificateId: certificateResponse.data.certificateId,
+    };
+
+    const response = await api.post<ApiResponse<void>>(
+      '/api/UserCertificate/assign',
+      assignData
+    );
+    
     return response.data;
   }
 }
