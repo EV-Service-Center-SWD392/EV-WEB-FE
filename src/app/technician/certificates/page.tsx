@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,10 +64,14 @@ export default function TechnicianCertificatesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadCertificates = async () => {
-    if (!user?.id) return;
-
     try {
       setLoading(true);
+      
+      if (!user?.id) {
+        console.log("No user ID found");
+        return;
+      }
+
       const data = await userCertificateService.getUserCertificates(user.id);
       setCertificates(data);
     } catch (error) {
@@ -77,6 +81,11 @@ export default function TechnicianCertificatesPage() {
       setLoading(false);
     }
   };
+
+  // Load certificates when component mounts or user changes
+  useEffect(() => {
+    loadCertificates();
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,9 +124,14 @@ export default function TechnicianCertificatesPage() {
       return;
     }
 
+    if (!user?.id) {
+      toast.error("Không tìm thấy thông tin người dùng");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      await userCertificateService.requestCertificate(newCertificate);
+      await userCertificateService.requestCertificate(newCertificate, user.id);
       toast.success("Gửi yêu cầu chứng chỉ thành công! Vui lòng đợi phê duyệt.");
       setSubmitDialogOpen(false);
       setNewCertificate({ name: "", description: "", imageFile: undefined });

@@ -869,6 +869,18 @@
         }
       }
     },
+    "/api/BookingStatusLogs/customer/notification/seen-all": {
+      "patch": {
+        "tags": [
+          "BookingStatusLogs"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Center/{id}": {
       "get": {
         "tags": [
@@ -1011,24 +1023,39 @@
         "tags": [
           "Certificate"
         ],
-        "summary": "Create a new certificate",
-        "description": "Required fields to create a certificate:\r\n- name: string (Required) - Certificate name (e.g., \"Chứng chỉ bảo dưỡng Tesla Model 3\")\r\n- description: string (Optional) - Detailed description of the certificate\r\n\r\nStatus and timestamps are automatically set by the system:\r\n- status: Defaults to \"ACTIVE\"\r\n- isActive: Defaults to true\r\n- createdAt/updatedAt: Set automatically\r\n\r\nSample request:\r\n```json\r\n{\r\n  \"name\": \"Chứng chỉ bảo dưỡng VinFast VF8\",\r\n  \"description\": \"Chứng chỉ chuyên về bảo dưỡng và sửa chữa xe VinFast VF8\"\r\n}\r\n```",
+        "summary": "Create a new certificate with optional image upload",
+        "description": "Required fields to create a certificate:\r\n- name: string (Required) - Certificate name (e.g., \"Chứng chỉ bảo dưỡng Tesla Model 3\")\r\n- description: string (Optional) - Detailed description of the certificate\r\n- imageFile: IFormFile (Optional) - Certificate image file\r\n\r\nStatus and timestamps are automatically set by the system:\r\n- status: Defaults to \"ACTIVE\"\r\n- isActive: Defaults to true\r\n- createdAt/updatedAt: Set automatically\r\n- image: Cloudinary URL if image uploaded\r\n\r\nUse multipart/form-data for image upload.",
         "requestBody": {
-          "description": "Certificate creation data",
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CreateCertificateDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCertificateDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCertificateDto"
+                "required": [
+                  "Name"
+                ],
+                "type": "object",
+                "properties": {
+                  "Name": {
+                    "type": "string"
+                  },
+                  "Description": {
+                    "type": "string"
+                  },
+                  "ImageFile": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "encoding": {
+                "Name": {
+                  "style": "form"
+                },
+                "Description": {
+                  "style": "form"
+                },
+                "ImageFile": {
+                  "style": "form"
+                }
               }
             }
           }
@@ -1083,8 +1110,8 @@
         "tags": [
           "Certificate"
         ],
-        "summary": "Update an existing certificate",
-        "description": "Fields that can be updated:\r\n- name: string (Optional) - New certificate name\r\n- description: string (Optional) - New description\r\n- status: string (Optional) - New status (\"ACTIVE\", \"INACTIVE\")\r\n- isActive: boolean (Optional) - Active flag\r\n\r\nOnly provide fields you want to update. Null/empty fields will be ignored.\r\nupdatedAt timestamp is automatically set.\r\n\r\nSample request:\r\n```json\r\n{\r\n  \"name\": \"Chứng chỉ bảo dưỡng VinFast VF8 - Cập nhật 2025\",\r\n  \"description\": \"Phiên bản cập nhật với quy trình mới\",\r\n  \"status\": \"ACTIVE\"\r\n}\r\n```\r\n\r\nSample URL: PUT /api/Certificate/16bc380d-5e7d-4c73-954c-81662e9f2678",
+        "summary": "Update an existing certificate with optional image upload",
+        "description": "Fields that can be updated:\r\n- name: string (Optional) - New certificate name\r\n- description: string (Optional) - New description\r\n- status: string (Optional) - New status (\"ACTIVE\", \"INACTIVE\")\r\n- isActive: boolean (Optional) - Active flag\r\n- imageFile: IFormFile (Optional) - New certificate image\r\n\r\nOnly provide fields you want to update. Null/empty fields will be ignored.\r\nupdatedAt timestamp is automatically set.\r\n\r\nUse multipart/form-data for image upload.\r\nSample URL: PUT /api/Certificate/16bc380d-5e7d-4c73-954c-81662e9f2678",
         "parameters": [
           {
             "name": "id",
@@ -1098,21 +1125,45 @@
           }
         ],
         "requestBody": {
-          "description": "Certificate update data",
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateCertificateDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCertificateDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCertificateDto"
+                "type": "object",
+                "properties": {
+                  "Name": {
+                    "type": "string"
+                  },
+                  "Description": {
+                    "type": "string"
+                  },
+                  "Status": {
+                    "type": "string"
+                  },
+                  "IsActive": {
+                    "type": "boolean"
+                  },
+                  "ImageFile": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "encoding": {
+                "Name": {
+                  "style": "form"
+                },
+                "Description": {
+                  "style": "form"
+                },
+                "Status": {
+                  "style": "form"
+                },
+                "IsActive": {
+                  "style": "form"
+                },
+                "ImageFile": {
+                  "style": "form"
+                }
               }
             }
           }
@@ -5653,10 +5704,6 @@
           "certificateId": {
             "type": "string",
             "format": "uuid"
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -6564,6 +6611,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "image": {
+            "type": "string",
+            "nullable": true
+          },
           "createdat": {
             "type": "string",
             "format": "date-time",
@@ -6835,27 +6886,6 @@
           "status": {
             "maxLength": 50,
             "minLength": 0,
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "CreateCertificateDto": {
-        "required": [
-          "name"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "status": {
             "type": "string",
             "nullable": true
           }
@@ -9042,27 +9072,6 @@
             "minLength": 0,
             "type": "string",
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "UpdateCertificateDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
-          },
-          "isActive": {
-            "type": "boolean"
           }
         },
         "additionalProperties": false

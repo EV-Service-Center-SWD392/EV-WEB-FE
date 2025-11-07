@@ -102,14 +102,21 @@ export interface UpdateSparepartForecastDto {
 
 export interface SparepartReplenishmentRequestDto {
   id: string;
-  centerId: string;
   sparepartId: string;
+  centerId: string;
   forecastId?: string;
+  requestedQuantity?: number;
   suggestedQuantity?: number;
+  requestedBy?: string;
   approvedBy?: string;
-  approvedAt?: string;
-  notes?: string;
+  supplierId?: string;
+  estimatedCost?: number;
+  priority?: string;
   status?: string;
+  notes?: string;
+  approvalDate?: string;
+  approvedAt?: string;
+  expectedDeliveryDate?: string;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -124,12 +131,18 @@ export interface CreateSparepartReplenishmentRequestDto {
 }
 
 export interface UpdateSparepartReplenishmentRequestDto {
-  centerId: string;
   sparepartId: string;
-  forecastId?: string;
-  suggestedQuantity?: number;
+  centerId: string;
+  requestedQuantity: number;
+  requestedBy: string;
+  approvedBy?: string;
+  supplierId?: string;
+  estimatedCost?: number;
+  priority: string;
+  status: string;
   notes?: string;
-  status?: string;
+  approvalDate?: string;
+  expectedDeliveryDate?: string;
 }
 
 export interface SparepartUsageHistoryDto {

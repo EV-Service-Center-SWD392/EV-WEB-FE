@@ -12,7 +12,10 @@ import {
   Package,
   Bot,
   FileText,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,10 +39,24 @@ interface ReplenishmentRequestsProps {
 export function ReplenishmentRequests({ requests, spareparts, onUpdate }: ReplenishmentRequestsProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   const filteredRequests = selectedStatus === "all" 
     ? requests 
     : requests.filter(r => r.status?.toLowerCase() === selectedStatus.toLowerCase());
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredRequests.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedRequests = filteredRequests.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStatus]);
 
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -84,20 +101,45 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
   };
 
   const handleApproveRequest = async (requestId: string) => {
+    if (processingIds.has(requestId)) return;
+    
+    setProcessingIds(prev => new Set(prev).add(requestId));
     try {
+      // TODO: Get actual user ID from auth context
       await sparepartReplenishmentRequestService.approveRequest(requestId, "admin_user");
       onUpdate();
     } catch (error) {
       console.error("Error approving request:", error);
+      alert("Lỗi khi duyệt yêu cầu. Vui lòng thử lại.");
+    } finally {
+      setProcessingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
     }
   };
 
   const handleRejectRequest = async (requestId: string) => {
+    if (processingIds.has(requestId)) return;
+    
+    const reason = prompt("Nhập lý do từ chối:");
+    if (!reason) return;
+
+    setProcessingIds(prev => new Set(prev).add(requestId));
     try {
-      await sparepartReplenishmentRequestService.rejectRequest(requestId, "admin_user", "Không cần thiết");
+      // TODO: Get actual user ID from auth context
+      await sparepartReplenishmentRequestService.rejectRequest(requestId, "admin_user", reason);
       onUpdate();
     } catch (error) {
       console.error("Error rejecting request:", error);
+      alert("Lỗi khi từ chối yêu cầu. Vui lòng thử lại.");
+    } finally {
+      setProcessingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
     }
   };
 
@@ -319,9 +361,9 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRequests.length === 0 ? (
+              {paginatedRequests.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <div className="flex flex-col items-center gap-4">
                       <TrendingUp className="h-12 w-12 text-gray-300" />
                       <div>
@@ -340,10 +382,10 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredRequests.map((request, index) => (
+                paginatedRequests.map((request, index) => (
                   <TableRow key={request.id}>
                     <TableCell className="font-medium text-gray-900">
-                      {index + 1}
+                      {startIndex + index + 1}
                     </TableCell>
                     <TableCell>
                       <div className="font-medium text-gray-900">
@@ -391,17 +433,27 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
                               variant="outline"
                               size="sm"
                               onClick={() => handleApproveRequest(request.id)}
+                              disabled={processingIds.has(request.id)}
                               className="text-green-600 hover:text-green-700 hover:bg-green-50"
                             >
-                              <Check className="h-4 w-4" />
+                              {processingIds.has(request.id) ? (
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleRejectRequest(request.id)}
+                              disabled={processingIds.has(request.id)}
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
-                              <X className="h-4 w-4" />
+                              {processingIds.has(request.id) ? (
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <X className="h-4 w-4" />
+                              )}
                             </Button>
                           </>
                         )}
@@ -415,6 +467,76 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination Controls */}
+          {filteredRequests.length > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-700">
+                  Hiển thị <span className="font-medium">{startIndex + 1}</span> đến{' '}
+                  <span className="font-medium">{Math.min(endIndex, filteredRequests.length)}</span> trong{' '}
+                  <span className="font-medium">{filteredRequests.length}</span> yêu cầu
+                </div>
+                
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value={5}>5 / trang</option>
+                  <option value={10}>10 / trang</option>
+                  <option value={20}>20 / trang</option>
+                  <option value={50}>50 / trang</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-gray-700">
+                    Trang <span className="font-medium">{currentPage}</span> /{' '}
+                    <span className="font-medium">{totalPages}</span>
+                  </span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
