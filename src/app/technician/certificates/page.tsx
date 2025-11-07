@@ -385,7 +385,7 @@ export default function TechnicianCertificatesPage() {
                       <div>
                         <p className="text-gray-900 font-medium">Chưa có chứng chỉ nào</p>
                         <p className="text-sm text-gray-500 mt-1">
-                          Nhấn "Gửi chứng chỉ mới" để thêm chứng chỉ đầu tiên
+                          Nhấn &quot;Gửi chứng chỉ mới&quot; để thêm chứng chỉ đầu tiên
                         </p>
                       </div>
                     </div>

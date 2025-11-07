@@ -41,7 +41,6 @@ import {
   XCircle,
   Clock,
   UserPlus,
-  TrendingUp,
   FileCheck,
   Lock,
   ChevronDown,
@@ -67,7 +66,6 @@ import { toast } from "sonner";
 export default function StaffTechnicianCertificatesPage() {
   // User management states
   const [users, setUsers] = useState<Technician[]>([]);
-  const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [emailFilter, setEmailFilter] = useState("");
   
@@ -84,7 +82,6 @@ export default function StaffTechnicianCertificatesPage() {
   // Dialogs
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
   const [viewingCertificateImage, setViewingCertificateImage] = useState<string | null>(null);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   
@@ -272,11 +269,10 @@ export default function StaffTechnicianCertificatesPage() {
   const filteredUsers = users.filter((user) => {
     const matchesName = user.userName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesEmail = user.email?.toLowerCase().includes(emailFilter.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
     const matchesStatus = statusFilter === "all" || 
       (statusFilter === "active" ? user.isActive : !user.isActive);
     
-    return matchesName && matchesEmail && matchesRole && matchesStatus;
+    return matchesName && matchesEmail && matchesStatus;
   });
 
   // Calculate stats
@@ -696,13 +692,6 @@ export default function StaffTechnicianCertificatesPage() {
                     <TableCell>{holdersCount} KTV</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditingCertificate(cert)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"
