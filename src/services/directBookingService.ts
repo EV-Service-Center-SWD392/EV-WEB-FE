@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { BookingResponseDto } from '@/entities/booking.types';
+import { bookingScheduleService, type BookingScheduleSlot } from './bookingScheduleService';
 
 /**
  * Raw database row type from bookinghuykt table
@@ -269,6 +270,75 @@ export const directBookingService = {
      */
     async getPendingBookings(): Promise<BookingResponseDto[]> {
         return this.getBookingsByStatus('Pending');
+    },
+
+    /**
+     * Lấy booking với thông tin slot đầy đủ từ bookingschedule
+     * Thêm thông tin: slot time, capacity, day of week, center
+     */
+    async getBookingsWithSlotInfo(filters?: {
+        status?: string;
+        centerId?: string;
+        fromDate?: string;
+        toDate?: string;
+    }): Promise<Array<BookingResponseDto & { slotInfo?: BookingScheduleSlot }>> {
+        try {
+            // Get bookings first
+            const bookings = await this.getAllBookings(filters);
+
+            // Enrich with slot information
+            const enrichedBookings = await Promise.all(
+                bookings.map(async (booking) => {
+                    if (booking.slotId) {
+                        const slotInfo = await bookingScheduleService.getSlotById(booking.slotId);
+                        return {
+                            ...booking,
+                            slotInfo: slotInfo || undefined,
+                        };
+                    }
+                    return booking;
+                })
+            );
+
+            return enrichedBookings;
+        } catch (error) {
+            console.error('[DirectBookingService] Failed to fetch bookings with slot info:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Lấy approved bookings với slot info (cho technician assignment)
+     */
+    async getApprovedBookingsWithSlots(): Promise<Array<BookingResponseDto & { slotInfo?: BookingScheduleSlot & { centerName?: string } }>> {
+        try {
+            const bookings = await this.getBookingsWithSlotInfo({ status: 'Approved' });
+
+            // Enrich with center information
+            const enrichedBookings = await Promise.all(
+                bookings.map(async (booking) => {
+                    if (booking.slotInfo) {
+                        // Get enriched slot with center name
+                        const enrichedSlot = await bookingScheduleService.getEnrichedSlotById(booking.slotInfo.slotId);
+                        if (enrichedSlot) {
+                            return {
+                                ...booking,
+                                slotInfo: {
+                                    ...booking.slotInfo,
+                                    centerName: enrichedSlot.centerName,
+                                },
+                            };
+                        }
+                    }
+                    return booking;
+                })
+            );
+
+            return enrichedBookings;
+        } catch (error) {
+            console.error('[DirectBookingService] Failed to fetch approved bookings with slots:', error);
+            throw error;
+        }
     },
 };
 

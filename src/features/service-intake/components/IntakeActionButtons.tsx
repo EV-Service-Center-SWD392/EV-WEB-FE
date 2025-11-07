@@ -24,10 +24,11 @@ import {
 import type { ServiceIntake } from "@/entities/intake.types";
 import { INTAKE_ACTIONS, type IntakeActionType } from "../types";
 import {
-    startInspecting,
+    updateIntake,
     verifyIntake,
     finalizeIntake,
     cancelIntake,
+    getIntake,
 } from "@/services/intakeService";
 
 interface IntakeActionButtonsProps {
@@ -69,7 +70,8 @@ export function IntakeActionButtons({
 
             switch (actionType) {
                 case "start-inspecting":
-                    updatedIntake = await startInspecting(intake.id);
+                    // Use updateIntake which auto-transitions CHECKED_IN → INSPECTING
+                    updatedIntake = await updateIntake(intake.id, {});
                     toast.success("Đã bắt đầu kiểm tra xe");
                     break;
                 case "verify":
@@ -81,7 +83,9 @@ export function IntakeActionButtons({
                     toast.success("Đã hoàn tất intake");
                     break;
                 case "cancel":
-                    updatedIntake = await cancelIntake(intake.id);
+                    // Cancel returns { success, message }, need to fetch updated intake
+                    await cancelIntake(intake.id);
+                    updatedIntake = await getIntake(intake.id);
                     toast.success("Đã hủy intake");
                     break;
                 default:

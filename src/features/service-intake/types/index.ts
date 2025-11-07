@@ -35,40 +35,40 @@ export interface StatusWorkflow {
  * State machine configuration
  */
 export const INTAKE_STATUS_WORKFLOW: Record<IntakeStatus, StatusWorkflow> = {
-    Checked_In: {
-        status: "Checked_In",
+    CHECKED_IN: {
+        status: "CHECKED_IN",
         label: "Đã Check-in",
         color: "text-blue-700",
         bgColor: "bg-blue-100",
         description: "Xe đã đến trung tâm, chờ kiểm tra",
-        allowedTransitions: ["Inspecting", "Cancelled"],
+        allowedTransitions: ["INSPECTING", "CANCELLED"],
     },
-    Inspecting: {
-        status: "Inspecting",
+    INSPECTING: {
+        status: "INSPECTING",
         label: "Đang Kiểm Tra",
         color: "text-yellow-700",
         bgColor: "bg-yellow-100",
         description: "Kỹ thuật viên đang thực hiện kiểm tra",
-        allowedTransitions: ["Verified"],
+        allowedTransitions: ["VERIFIED"],
     },
-    Verified: {
-        status: "Verified",
+    VERIFIED: {
+        status: "VERIFIED",
         label: "Đã Xác Minh",
         color: "text-purple-700",
         bgColor: "bg-purple-100",
         description: "Đã xác minh checklist, sẵn sàng hoàn tất",
-        allowedTransitions: ["Finalized"],
+        allowedTransitions: ["FINALIZED"],
     },
-    Finalized: {
-        status: "Finalized",
+    FINALIZED: {
+        status: "FINALIZED",
         label: "Hoàn Tất",
         color: "text-green-700",
         bgColor: "bg-green-100",
         description: "Intake hoàn tất, có thể tạo Work Order",
         allowedTransitions: [],
     },
-    Cancelled: {
-        status: "Cancelled",
+    CANCELLED: {
+        status: "CANCELLED",
         label: "Đã Hủy",
         color: "text-red-700",
         bgColor: "bg-red-100",
@@ -107,7 +107,7 @@ export const INTAKE_ACTIONS: Record<IntakeActionType, IntakeAction> = {
         variant: "default",
         requiresConfirmation: true,
         confirmationMessage: "Bắt đầu kiểm tra xe này?",
-        allowedFromStates: ["Checked_In"],
+        allowedFromStates: ["CHECKED_IN"],
     },
     verify: {
         type: "verify",
@@ -115,7 +115,7 @@ export const INTAKE_ACTIONS: Record<IntakeActionType, IntakeAction> = {
         variant: "default",
         requiresConfirmation: true,
         confirmationMessage: "Xác minh intake này? Đảm bảo đã hoàn thành checklist.",
-        allowedFromStates: ["Inspecting"],
+        allowedFromStates: ["INSPECTING"],
     },
     finalize: {
         type: "finalize",
@@ -123,7 +123,7 @@ export const INTAKE_ACTIONS: Record<IntakeActionType, IntakeAction> = {
         variant: "default",
         requiresConfirmation: true,
         confirmationMessage: "Hoàn tất intake này? Sau đó có thể tạo Work Order.",
-        allowedFromStates: ["Verified"],
+        allowedFromStates: ["VERIFIED"],
     },
     cancel: {
         type: "cancel",
@@ -131,13 +131,13 @@ export const INTAKE_ACTIONS: Record<IntakeActionType, IntakeAction> = {
         variant: "destructive",
         requiresConfirmation: true,
         confirmationMessage: "Hủy intake này? Hành động này không thể hoàn tác.",
-        allowedFromStates: ["Checked_In"],
+        allowedFromStates: ["CHECKED_IN"],
     },
     update: {
         type: "update",
         label: "Cập Nhật",
         variant: "outline",
         requiresConfirmation: false,
-        allowedFromStates: ["Checked_In", "Inspecting"],
+        allowedFromStates: ["CHECKED_IN", "INSPECTING"],
     },
 };

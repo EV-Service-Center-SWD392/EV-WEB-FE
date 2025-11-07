@@ -8,7 +8,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Search, Plus, Calendar, User, Car } from "lucide-react";
+import { Loader2, RefreshCw, Search, Plus, Calendar, User, Car, Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ import { directBookingService } from "@/services/directBookingService";
 import { listIntakes } from "@/services/intakeService";
 import { CreateIntakeDialog } from "../components/CreateIntakeDialog";
 import type { ServiceIntake } from "@/entities/intake.types";
+import type { BookingScheduleSlot } from "@/services/bookingScheduleService";
 
 interface BookingFromSupabase {
     bookingid: string;
@@ -35,6 +36,7 @@ interface BookingFromSupabase {
     status: string;
     bookingdate: string | null;
     notes: string | null;
+    slotid?: string | null; // Added slot ID
     useraccount?: {
         email?: string;
         phonenumber?: string;
@@ -53,6 +55,7 @@ interface BookingFromSupabase {
 
 interface BookingWithIntakeStatus extends BookingFromSupabase {
     hasIntake: boolean;
+    slotInfo?: BookingScheduleSlot; // Added slot info
 }
 
 const formatDate = (value?: string | null) => {
@@ -82,31 +85,30 @@ export default function ApprovedBookingsList() {
                 setIsLoading(true);
             }
 
-            // Load approved bookings using directBookingService
-            const bookingsData = await directBookingService.getBookingsByStatus("Approved");
+            // Load approved bookings with slot info using enhanced service
+            const bookingsData = await directBookingService.getApprovedBookingsWithSlots();
 
             // Load existing intakes to check which bookings already have intakes
-            // If API is not available, treat all bookings as not having intakes
             let intakeBookingIds = new Set<string>();
             try {
-                const intakes = await listIntakes({ status: "all" });
+                // Don't pass "all" as status - just omit it to get all intakes
+                const intakes = await listIntakes({});
                 intakeBookingIds = new Set(
                     intakes.map((intake) => intake.bookingId).filter((id): id is string => Boolean(id))
                 );
             } catch (intakeError) {
                 console.warn("Could not load intakes (API may not be available):", intakeError);
-                // Continue without intake data - all bookings will be treated as "no intake"
             }
 
-            // Map bookings with intake status
-            const mappedBookings = (bookingsData || []).map((booking) => ({
-                // Convert BookingResponseDto to BookingFromSupabase format
+            // Map bookings with intake status and slot info
+            const mappedBookings = (bookingsData || []).map((booking): BookingWithIntakeStatus => ({
                 bookingid: booking.id,
                 customerid: booking.customerId,
                 vehicleid: booking.vehicleId,
                 status: booking.status,
-                bookingdate: booking.preferredDate || null,
+                bookingdate: booking.preferredDate || booking.scheduledDate || null,
                 notes: booking.notes || null,
+                slotid: booking.slotId || null,
                 useraccount: {
                     email: booking.customerEmail,
                     phonenumber: booking.customerPhone,
@@ -122,7 +124,8 @@ export default function ApprovedBookingsList() {
                     },
                 },
                 hasIntake: intakeBookingIds.has(booking.id),
-            })) as BookingWithIntakeStatus[];
+                slotInfo: booking.slotInfo, // Include slot info from bookingschedule
+            }));
 
             setBookings(mappedBookings);
         } catch (error) {
@@ -180,6 +183,36 @@ export default function ApprovedBookingsList() {
     const getVehicleInfo = (booking: BookingFromSupabase) => {
         if (!booking.vehicle?.vehiclemodel) return "N/A";
         return `${booking.vehicle.vehiclemodel.brand || ""} ${booking.vehicle.vehiclemodel.name || ""}`.trim();
+    };
+
+    const getSlotTimeDisplay = (booking: BookingWithIntakeStatus) => {
+        if (booking.slotInfo) {
+            return `${booking.slotInfo.startUtc} - ${booking.slotInfo.endUtc}`;
+        }
+        return "-";
+    };
+
+    const getBookingDateDisplay = (booking: BookingWithIntakeStatus) => {
+        // Priority: bookingdate > show day of week from slot
+        if (booking.bookingdate) {
+            return formatDate(booking.bookingdate);
+        }
+
+        // If no bookingdate, show day of week from slot
+        if (booking.slotInfo?.dayOfWeek) {
+            const dayLabels: Record<string, string> = {
+                'MON': 'Thứ 2',
+                'TUE': 'Thứ 3',
+                'WED': 'Thứ 4',
+                'THU': 'Thứ 5',
+                'FRI': 'Thứ 6',
+                'SAT': 'Thứ 7',
+                'SUN': 'Chủ nhật',
+            };
+            return dayLabels[booking.slotInfo.dayOfWeek] || booking.slotInfo.dayOfWeek;
+        }
+
+        return "-";
     };
 
     const bookingsWithoutIntake = filteredBookings.filter((b) => !b.hasIntake);
@@ -253,6 +286,7 @@ export default function ApprovedBookingsList() {
                                         <TableHead>Xe</TableHead>
                                         <TableHead>Biển Số</TableHead>
                                         <TableHead>Ngày Hẹn</TableHead>
+                                        <TableHead>Giờ Hẹn</TableHead>
                                         <TableHead className="text-right">Thao Tác</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -277,13 +311,21 @@ export default function ApprovedBookingsList() {
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="outline">
-                                                    {booking.vehicle?.licenseplate || "N/A"}
+                                                    {booking.vehicle?.licenseplate && booking.vehicle.licenseplate !== 'string'
+                                                        ? booking.vehicle.licenseplate
+                                                        : "-"}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-1">
                                                     <Calendar className="h-3 w-3 text-muted-foreground" />
-                                                    {formatDate(booking.bookingdate)}
+                                                    {getBookingDateDisplay(booking)}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1">
+                                                    <Clock className="h-3 w-3 text-muted-foreground" />
+                                                    {getSlotTimeDisplay(booking)}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -322,6 +364,7 @@ export default function ApprovedBookingsList() {
                                         <TableHead>Xe</TableHead>
                                         <TableHead>Biển Số</TableHead>
                                         <TableHead>Ngày Hẹn</TableHead>
+                                        <TableHead>Giờ Hẹn</TableHead>
                                         <TableHead className="text-right">Trạng Thái</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -335,10 +378,13 @@ export default function ApprovedBookingsList() {
                                             <TableCell>{getVehicleInfo(booking)}</TableCell>
                                             <TableCell>
                                                 <Badge variant="outline">
-                                                    {booking.vehicle?.licenseplate || "N/A"}
+                                                    {booking.vehicle?.licenseplate && booking.vehicle.licenseplate !== 'string'
+                                                        ? booking.vehicle.licenseplate
+                                                        : "-"}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>{formatDate(booking.bookingdate)}</TableCell>
+                                            <TableCell>{getBookingDateDisplay(booking)}</TableCell>
+                                            <TableCell>{getSlotTimeDisplay(booking)}</TableCell>
                                             <TableCell className="text-right">
                                                 <Badge variant="secondary">Đã có Intake</Badge>
                                             </TableCell>
@@ -361,7 +407,7 @@ export default function ApprovedBookingsList() {
                             bookingid: selectedBooking.bookingid,
                             customerName: getCustomerName(selectedBooking),
                             customerPhone: selectedBooking.useraccount?.phonenumber || "",
-                            customerEmail: selectedBooking.useraccount?.email,
+                            customerEmail: selectedBooking.useraccount?.email || "",
                             vehicleBrand: selectedBooking.vehicle?.vehiclemodel?.brand || "",
                             vehicleModel: selectedBooking.vehicle?.vehiclemodel?.name || "",
                             licensePlate: selectedBooking.vehicle?.licenseplate || "",

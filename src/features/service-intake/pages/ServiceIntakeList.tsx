@@ -42,6 +42,12 @@ import type { ServiceIntake, IntakeStatus } from "@/entities/intake.types";
 import { listIntakes } from "@/services/intakeService";
 import { IntakeStatusBadge } from "../components/IntakeStatusBadge";
 import { IntakeActionButtons } from "../components/IntakeActionButtons";
+import { supabase } from "@/lib/supabase";
+
+interface EnrichedIntake extends ServiceIntake {
+    enrichedCustomerName?: string;
+    enrichedLicensePlate?: string;
+}
 
 const formatDateTime = (value?: string) => {
     if (!value) return "-";
@@ -58,14 +64,63 @@ const formatDateTime = (value?: string) => {
 
 export default function ServiceIntakeList() {
     const router = useRouter();
-    const [intakes, setIntakes] = React.useState<ServiceIntake[]>([]);
-    const [filteredIntakes, setFilteredIntakes] = React.useState<ServiceIntake[]>([]);
+    const [intakes, setIntakes] = React.useState<EnrichedIntake[]>([]);
+    const [filteredIntakes, setFilteredIntakes] = React.useState<EnrichedIntake[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isRefreshing, setIsRefreshing] = React.useState(false);
 
     // Filters
     const [statusFilter, setStatusFilter] = React.useState<IntakeStatus | "all">("all");
     const [searchQuery, setSearchQuery] = React.useState("");
+
+    // Enrich intake data with customer and vehicle info from Supabase
+    const enrichIntakeData = async (intake: ServiceIntake): Promise<EnrichedIntake> => {
+        const enriched: EnrichedIntake = { ...intake };
+
+        try {
+            // Get customer name from booking
+            if (intake.bookingId) {
+                const { data: booking } = await supabase
+                    .from('bookinghuykt')
+                    .select('customerid')
+                    .eq('bookingid', intake.bookingId)
+                    .single();
+
+                if (booking) {
+                    const { data: customer } = await supabase
+                        .from('useraccount')
+                        .select('firstname, lastname')
+                        .eq('userid', booking.customerid)
+                        .single();
+
+                    if (customer) {
+                        enriched.enrichedCustomerName = `${customer.firstname || ''} ${customer.lastname || ''}`.trim();
+                    }
+                }
+            }
+
+            // Get license plate from vehicle
+            if (intake.vehicleId) {
+                try {
+                    const { data: vehicle } = await supabase
+                        .from('vehicle')
+                        .select('*')
+                        .eq('vehicleid', intake.vehicleId)
+                        .single();
+
+                    if (vehicle) {
+                        enriched.enrichedLicensePlate = vehicle.licenseplate || vehicle.licensePlate || '';
+                    }
+                } catch (err) {
+                    console.error('Error fetching vehicle:', err);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to enrich intake data:', error);
+        }
+
+        return enriched;
+    };
 
     const loadIntakes = React.useCallback(async (showRefreshIndicator = false) => {
         try {
@@ -78,7 +133,13 @@ export default function ServiceIntakeList() {
             const data = await listIntakes({
                 status: statusFilter !== "all" ? statusFilter : undefined,
             });
-            setIntakes(data);
+
+            // Enrich all intakes with customer and vehicle data
+            const enrichedData = await Promise.all(
+                data.map(intake => enrichIntakeData(intake))
+            );
+
+            setIntakes(enrichedData);
         } catch (error) {
             console.error("Failed to load intakes:", error);
             toast.error("Không thể tải danh sách Service Intake");
@@ -182,11 +243,11 @@ export default function ServiceIntakeList() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                                <SelectItem value="Checked_In">Đã Check-in</SelectItem>
-                                <SelectItem value="Inspecting">Đang Kiểm Tra</SelectItem>
-                                <SelectItem value="Verified">Đã Xác Minh</SelectItem>
-                                <SelectItem value="Finalized">Hoàn Tất</SelectItem>
-                                <SelectItem value="Cancelled">Đã Hủy</SelectItem>
+                                <SelectItem value="CHECKED_IN">Đã Check-in</SelectItem>
+                                <SelectItem value="INSPECTING">Đang Kiểm Tra</SelectItem>
+                                <SelectItem value="VERIFIED">Đã Xác Minh</SelectItem>
+                                <SelectItem value="FINALIZED">Hoàn Tất</SelectItem>
+                                <SelectItem value="CANCELLED">Đã Hủy</SelectItem>
                             </SelectContent>
                         </Select>
 
@@ -248,14 +309,19 @@ export default function ServiceIntakeList() {
                                             </TableCell>
                                             <TableCell>
                                                 <div>
-                                                    <p className="font-medium">{intake.customerName || "-"}</p>
+                                                    <p className="font-medium">
+                                                        {intake.enrichedCustomerName || intake.customerName || "-"}
+                                                    </p>
                                                     <p className="text-xs text-muted-foreground">
                                                         {intake.customerPhone || "-"}
                                                     </p>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline">{intake.licensePlate || "N/A"}</Badge>
+                                                <Badge variant="outline" className="font-mono">
+                                                    {intake.enrichedLicensePlate ||
+                                                        (intake.licensePlate && intake.licensePlate !== 'string' ? intake.licensePlate : "-")}
+                                                </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <IntakeStatusBadge status={intake.status} />

@@ -18,7 +18,6 @@ import {
   CreditCard,
   Plus,
   ClipboardCheck,
-  Calendar,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -53,7 +52,7 @@ const menuItems: MenuItemOrGroup[] = [
     items: [
       { href: "/staff/assignments", label: "Phân công đã giao", icon: UserCheck },
       { href: "/staff/booking-assignment", label: "Booking Assignment", icon: ClipboardCheck },
-      { href: "/staff/technician-schedule", label: "Lịch Technician", icon: CalendarClock },
+      { href: "/staff/technician-assignment", label: "Phân công Kỹ thuật viên", icon: UserCheck },
       { href: "/staff/workorders", label: "Work Orders", icon: Wrench },
     ],
   },
@@ -78,11 +77,6 @@ const menuItems: MenuItemOrGroup[] = [
     href: "/staff/create-payment",
     label: "Tạo giao dịch",
     icon: Plus,
-  },
-  {
-    href: "/technician-schedule",
-    label: "Quản lý lịch Technician",
-    icon: Calendar,
   },
   {
     href: "/staff/workorders",

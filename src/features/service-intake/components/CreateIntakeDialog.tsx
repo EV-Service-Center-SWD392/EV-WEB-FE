@@ -1,6 +1,7 @@
 /**
  * CreateIntakeDialog Component
  * Reusable dialog for creating intake from booking
+ * Updated to match API spec: http://localhost:5020/api/ServiceIntake
  */
 
 "use client";
@@ -12,7 +13,6 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
@@ -23,17 +23,18 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-import { createIntake } from "@/services/intakeService";
 import type { ServiceIntake } from "@/entities/intake.types";
+import { useCreateIntake } from "@/hooks/intake/useIntake";
 
+// Type matching Supabase booking structure from ApprovedBookingsList
 interface BookingData {
-    bookingid: string;
-    customerName: string;
-    customerPhone: string;
+    bookingid: string; // Supabase uses lowercase
+    customerName?: string;
+    customerPhone?: string;
     customerEmail?: string;
-    vehicleBrand: string;
-    vehicleModel: string;
-    licensePlate: string;
+    vehicleBrand?: string;
+    vehicleModel?: string;
+    licensePlate?: string;
     status: string;
 }
 
@@ -50,24 +51,18 @@ export function CreateIntakeDialog({
     booking,
     onSuccess,
 }: CreateIntakeDialogProps) {
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const createIntakeMutation = useCreateIntake();
     const [formData, setFormData] = React.useState({
-        licensePlate: "",
         odometer: "",
-        batterySoC: "",
-        arrivalNotes: "",
-        notes: "",
+        batteryPercent: "",
     });
 
     // Reset form when dialog opens/closes or booking changes
     React.useEffect(() => {
         if (open && booking) {
             setFormData({
-                licensePlate: booking.licensePlate || "",
                 odometer: "",
-                batterySoC: "",
-                arrivalNotes: "",
-                notes: "",
+                batteryPercent: "",
             });
         }
     }, [open, booking]);
@@ -84,25 +79,33 @@ export function CreateIntakeDialog({
             return;
         }
 
-        try {
-            setIsSubmitting(true);
+        // Validation
+        const odometerValue = formData.odometer ? parseInt(formData.odometer, 10) : null;
+        const batteryValue = formData.batteryPercent ? parseInt(formData.batteryPercent, 10) : null;
 
-            const intake = await createIntake(booking.bookingid, {
-                licensePlate: formData.licensePlate || undefined,
-                odometer: formData.odometer ? parseInt(formData.odometer, 10) : undefined,
-                batterySoC: formData.batterySoC ? parseInt(formData.batterySoC, 10) : undefined,
-                arrivalNotes: formData.arrivalNotes || undefined,
-                notes: formData.notes || undefined,
+        if (odometerValue !== null && odometerValue < 0) {
+            toast.error("Vui lòng nhập số km hợp lệ (>= 0)");
+            return;
+        }
+
+        if (batteryValue !== null && (batteryValue < 0 || batteryValue > 100)) {
+            toast.error("Vui lòng nhập mức pin từ 0-100%");
+            return;
+        }
+
+        try {
+            // Map Supabase field (bookingid) to API field (bookingId)
+            const intake = await createIntakeMutation.mutateAsync({
+                bookingId: booking.bookingid, // Supabase uses lowercase, API expects camelCase
+                odometer: odometerValue,
+                batteryPercent: batteryValue,
             });
 
-            toast.success("Service Intake đã tạo thành công!");
             onOpenChange(false);
             onSuccess?.(intake);
         } catch (error) {
+            // Error is handled by the hook
             console.error("Failed to create intake:", error);
-            toast.error((error as Error).message || "Không thể tạo intake");
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
@@ -110,7 +113,7 @@ export function CreateIntakeDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl bg-white">
                 <DialogHeader>
                     <DialogTitle>Tạo Service Intake</DialogTitle>
                     <DialogDescription>
@@ -118,106 +121,103 @@ export function CreateIntakeDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Booking Info */}
-                    <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
-                        <p className="text-sm font-medium">Thông tin Booking</p>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                                <span className="text-muted-foreground">Khách hàng:</span>{" "}
-                                <span className="font-medium">{booking.customerName}</span>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground">Điện thoại:</span>{" "}
-                                <span className="font-medium">{booking.customerPhone}</span>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground">Xe:</span>{" "}
-                                <span className="font-medium">{booking.vehicleBrand} {booking.vehicleModel}</span>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground">Trạng thái:</span>{" "}
-                                <Badge variant="outline" className="ml-1">{booking.status}</Badge>
+                <div className="max-h-[70vh] overflow-y-auto pr-2">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Booking Info */}
+                        <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+                            <h3 className="text-sm font-semibold">Thông tin Booking</h3>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-muted-foreground">Khách hàng:</span>
+                                    <span className="text-sm font-medium">
+                                        {booking.customerName || "-"}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-muted-foreground">Điện thoại:</span>
+                                    <span className="text-sm font-medium">
+                                        {booking.customerPhone || "-"}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-muted-foreground">Xe:</span>
+                                    <span className="text-sm font-medium">
+                                        {booking.vehicleBrand && booking.vehicleModel
+                                            ? `${booking.vehicleBrand} ${booking.vehicleModel}`
+                                            : "-"}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-muted-foreground">Trạng thái:</span>
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                        {booking.status}
+                                    </Badge>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* License Plate */}
-                    <div className="space-y-2">
-                        <Label htmlFor="licensePlate">Biển Số Xe</Label>
-                        <Input
-                            id="licensePlate"
-                            placeholder="VD: 30A-12345"
-                            value={formData.licensePlate}
-                            onChange={(e) => handleInputChange("licensePlate", e.target.value)}
-                        />
-                    </div>
+                        {/* Vehicle Inspection Info */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-semibold">Kiểm Tra Khi Xe Đến</h3>
 
-                    {/* Odometer */}
-                    <div className="space-y-2">
-                        <Label htmlFor="odometer">Số Km (Odometer)</Label>
-                        <Input
-                            id="odometer"
-                            type="number"
-                            placeholder="VD: 12345"
-                            value={formData.odometer}
-                            onChange={(e) => handleInputChange("odometer", e.target.value)}
-                        />
-                    </div>
+                            {/* Odometer and Battery in same row */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="odometer">
+                                        Số Km (Odometer) <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="odometer"
+                                        type="number"
+                                        placeholder="VD: 12345"
+                                        value={formData.odometer}
+                                        onChange={(e) => handleInputChange("odometer", e.target.value)}
+                                        required
+                                        min="0"
+                                        className="bg-white"
+                                    />
+                                </div>
 
-                    {/* Battery SoC */}
-                    <div className="space-y-2">
-                        <Label htmlFor="batterySoC">Mức Pin (%)</Label>
-                        <Input
-                            id="batterySoC"
-                            type="number"
-                            placeholder="VD: 75"
-                            min="0"
-                            max="100"
-                            value={formData.batterySoC}
-                            onChange={(e) => handleInputChange("batterySoC", e.target.value)}
-                        />
-                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="batteryPercent">
+                                        Mức Pin (%) <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="batteryPercent"
+                                        type="number"
+                                        placeholder="VD: 75"
+                                        min="0"
+                                        max="100"
+                                        value={formData.batteryPercent}
+                                        onChange={(e) => handleInputChange("batteryPercent", e.target.value)}
+                                        required
+                                        className="bg-white"
+                                    />
+                                </div>
+                            </div>
 
-                    {/* Arrival Notes */}
-                    <div className="space-y-2">
-                        <Label htmlFor="arrivalNotes">Ghi Chú Khi Đến</Label>
-                        <Textarea
-                            id="arrivalNotes"
-                            placeholder="Ghi chú về tình trạng xe..."
-                            rows={3}
-                            value={formData.arrivalNotes}
-                            onChange={(e) => handleInputChange("arrivalNotes", e.target.value)}
-                        />
-                    </div>
+                            {/* Notes - Removed as it's not in the API spec */}
+                            <div className="text-sm text-muted-foreground">
+                                <p>💡 Tip: Odometer và Battery Percent là thông tin tùy chọn</p>
+                            </div>
+                        </div>
 
-                    {/* General Notes */}
-                    <div className="space-y-2">
-                        <Label htmlFor="notes">Ghi Chú Chung</Label>
-                        <Textarea
-                            id="notes"
-                            placeholder="Ghi chú khác..."
-                            rows={2}
-                            value={formData.notes}
-                            onChange={(e) => handleInputChange("notes", e.target.value)}
-                        />
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={isSubmitting}
-                        >
-                            Hủy
-                        </Button>
-                        <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Tạo Service Intake
-                        </Button>
-                    </DialogFooter>
-                </form>
+                        <DialogFooter className="gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                                disabled={createIntakeMutation.isPending}
+                            >
+                                Hủy
+                            </Button>
+                            <Button type="submit" disabled={createIntakeMutation.isPending}>
+                                {createIntakeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Tạo Service Intake
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </div>
             </DialogContent>
         </Dialog>
     );

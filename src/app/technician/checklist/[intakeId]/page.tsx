@@ -76,10 +76,10 @@ export default function TechnicianChecklistPage() {
     setIsProcessing(true);
     try {
       await persistPendingResponses();
-      if (intake?.status === "Checked_In") {
+      if (intake?.status === "CHECKED_IN") {
         await updateIntake.mutateAsync({
           intakeId,
-          data: { status: "Inspecting" },
+          data: {}, // Empty data to trigger status transition
         });
       }
       toast.success("Đã lưu bản nháp checklist");
@@ -98,10 +98,10 @@ export default function TechnicianChecklistPage() {
     setIsProcessing(true);
     try {
       await persistPendingResponses();
-      if (intake?.status === "Checked_In") {
+      if (intake?.status === "CHECKED_IN") {
         await updateIntake.mutateAsync({
           intakeId,
-          data: { status: "Inspecting" },
+          data: {}, // Empty data to trigger status transition
         });
       }
       toast.success("Đã gửi checklist cho cố vấn dịch vụ");

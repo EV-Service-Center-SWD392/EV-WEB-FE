@@ -96,11 +96,11 @@ export default function TechnicianAssignmentsPage() {
 
     const getStatusBadge = (status: IntakeStatus) => {
         const variants: Record<IntakeStatus, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; label: string }> = {
-            Checked_In: { variant: 'secondary', label: 'Đã tiếp nhận' },
-            Inspecting: { variant: 'default', label: 'Đang kiểm tra' },
-            Verified: { variant: 'outline', label: 'Đã xác minh' },
-            Finalized: { variant: 'outline', label: 'Hoàn tất' },
-            Cancelled: { variant: 'destructive', label: 'Đã hủy' },
+            CHECKED_IN: { variant: 'secondary', label: 'Đã tiếp nhận' },
+            INSPECTING: { variant: 'default', label: 'Đang kiểm tra' },
+            VERIFIED: { variant: 'outline', label: 'Đã xác minh' },
+            FINALIZED: { variant: 'outline', label: 'Hoàn tất' },
+            CANCELLED: { variant: 'destructive', label: 'Đã hủy' },
         };
 
         const config = variants[status] || { variant: 'secondary' as const, label: status };
@@ -109,7 +109,7 @@ export default function TechnicianAssignmentsPage() {
 
     const getActionButton = (intake: IntakeWithAssignment) => {
         switch (intake.status) {
-            case 'Checked_In':
+            case 'CHECKED_IN':
                 return (
                     <Button
                         size="sm"
@@ -119,7 +119,7 @@ export default function TechnicianAssignmentsPage() {
                         Bắt đầu kiểm tra
                     </Button>
                 );
-            case 'Inspecting':
+            case 'INSPECTING':
                 return (
                     <Button
                         size="sm"
@@ -130,7 +130,7 @@ export default function TechnicianAssignmentsPage() {
                         Tiếp tục kiểm tra
                     </Button>
                 );
-            case 'Finalized':
+            case 'FINALIZED':
                 return (
                     <Button
                         size="sm"
@@ -157,11 +157,11 @@ export default function TechnicianAssignmentsPage() {
     const filterByStatus = (intake: IntakeWithAssignment) => {
         switch (activeTab) {
             case 'pending':
-                return intake.status === 'Checked_In';
+                return intake.status === 'CHECKED_IN';
             case 'in-progress':
-                return intake.status === 'Inspecting' || intake.status === 'Verified';
+                return intake.status === 'INSPECTING' || intake.status === 'VERIFIED';
             case 'completed':
-                return intake.status === 'Finalized';
+                return intake.status === 'FINALIZED';
             default:
                 return true;
         }
@@ -235,15 +235,15 @@ export default function TechnicianAssignmentsPage() {
                 <TabsList>
                     <TabsTrigger value="pending">
                         <AlertCircle className="w-4 h-4 mr-2" />
-                        Chờ kiểm tra ({assignments.filter((a) => a.status === 'Checked_In').length})
+                        Chờ kiểm tra ({assignments.filter((a) => a.status === 'CHECKED_IN').length})
                     </TabsTrigger>
                     <TabsTrigger value="in-progress">
                         <ClipboardList className="w-4 h-4 mr-2" />
-                        Đang làm ({assignments.filter((a) => a.status === 'Inspecting' || a.status === 'Verified').length})
+                        Đang làm ({assignments.filter((a) => a.status === 'INSPECTING' || a.status === 'VERIFIED').length})
                     </TabsTrigger>
                     <TabsTrigger value="completed">
                         <CheckCircle2 className="w-4 h-4 mr-2" />
-                        Hoàn tất ({assignments.filter((a) => a.status === 'Finalized').length})
+                        Hoàn tất ({assignments.filter((a) => a.status === 'FINALIZED').length})
                     </TabsTrigger>
                 </TabsList>
 
@@ -271,7 +271,9 @@ export default function TechnicianAssignmentsPage() {
                                                     {intake.vehicleBrand} {intake.vehicleType}
                                                 </CardTitle>
                                                 <CardDescription className="mt-1">
-                                                    {intake.licensePlate || 'Chưa có biển số'}
+                                                    {intake.licensePlate && intake.licensePlate !== 'string'
+                                                        ? intake.licensePlate
+                                                        : '-'}
                                                 </CardDescription>
                                             </div>
                                             {getStatusBadge(intake.status)}
@@ -294,10 +296,10 @@ export default function TechnicianAssignmentsPage() {
                                                     <span>{intake.odometer.toLocaleString()} km</span>
                                                 </div>
                                             )}
-                                            {intake.batterySoC !== undefined && (
+                                            {intake.batteryPercent !== undefined && (
                                                 <div className="flex justify-between">
                                                     <span className="text-muted-foreground">Pin:</span>
-                                                    <span>{intake.batterySoC}%</span>
+                                                    <span>{intake.batteryPercent}%</span>
                                                 </div>
                                             )}
                                             <div className="flex justify-between">

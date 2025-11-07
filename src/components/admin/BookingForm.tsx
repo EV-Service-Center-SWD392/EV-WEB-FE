@@ -114,11 +114,16 @@ export function BookingForm({
 
   useEffect(() => {
     if (booking) {
+      // Convert API status to BookingStatus enum
+      let bookingStatus = BookingStatus.PENDING;
+      if (booking.status === 'Approved') bookingStatus = BookingStatus.CONFIRMED;
+      else if (booking.status === 'Rejected') bookingStatus = BookingStatus.CANCELLED;
+
       setFormData({
         customerName: booking.customerName,
         customerEmail: booking.customerEmail,
         customerPhone: booking.customerPhone,
-        vehicleType: booking.vehicleType,
+        vehicleType: booking.vehicleType || "",
         vehicleBrand: booking.vehicleBrand,
         vehicleModel: booking.vehicleModel || "",
         serviceCenterId: booking.serviceCenterId || "",
@@ -128,7 +133,7 @@ export function BookingForm({
         scheduledDate: toInputDateTimeLocal(booking.scheduledDate),
         repairParts: booking.repairParts || "",
         description: booking.description || "",
-        status: booking.status,
+        status: bookingStatus,
         estimatedCost: booking.estimatedCost?.toString() || "",
         actualCost: booking.actualCost?.toString() || "",
       });
@@ -273,13 +278,19 @@ export function BookingForm({
       const scheduledDateIso = toIsoString(formData.scheduledDate) ?? preferredTimeIso ?? new Date().toISOString();
 
       if (booking) {
+        // Convert BookingStatus enum back to API status
+        let apiStatus: "Pending" | "Approved" | "Rejected" | undefined;
+        if (formData.status === BookingStatus.PENDING) apiStatus = "Pending";
+        else if (formData.status === BookingStatus.CONFIRMED) apiStatus = "Approved";
+        else if (formData.status === BookingStatus.CANCELLED) apiStatus = "Rejected";
+
         const updateData: UpdateBookingRequest = {
           customerName: formData.customerName,
           customerEmail: formData.customerEmail,
           customerPhone: formData.customerPhone,
           vehicleType: formData.vehicleType,
           vehicleBrand: formData.vehicleBrand,
-          vehicleModel: formData.vehicleModel || undefined,
+          vehicleModel: formData.vehicleModel,
           serviceCenterId: formData.serviceCenterId || undefined,
           serviceCenter: centerName,
           serviceTypeId: formData.serviceTypeId || undefined,
@@ -289,7 +300,7 @@ export function BookingForm({
           scheduledDate: scheduledDateIso,
           repairParts: formData.repairParts || undefined,
           description: formData.description || undefined,
-          status: formData.status,
+          status: apiStatus,
           estimatedCost: formData.estimatedCost ? Number(formData.estimatedCost) : undefined,
           actualCost: formData.actualCost ? Number(formData.actualCost) : undefined,
         };
@@ -301,7 +312,7 @@ export function BookingForm({
           customerPhone: formData.customerPhone,
           vehicleType: formData.vehicleType,
           vehicleBrand: formData.vehicleBrand,
-          vehicleModel: formData.vehicleModel || undefined,
+          vehicleModel: formData.vehicleModel,
           serviceCenterId: formData.serviceCenterId,
           serviceTypeId: formData.serviceTypeId,
           preferredTime: preferredTimeIso ?? new Date().toISOString(),

@@ -19,6 +19,7 @@ import { ServiceIntakeForm, ChecklistTable, IntakeSummaryCard } from '@/componen
 import {
     useIntakeById,
     useUpdateIntake,
+    useVerifyIntake,
     useFinalizeIntake,
     useIntakeStatus,
     useChecklist,
@@ -50,10 +51,16 @@ export default function IntakePage({ params }: IntakePageProps) {
     const { items, responses = [], isLoading: isLoadingChecklist } = useChecklist(intakeId);
     const checklistGroups = useChecklistByCategory(items);
     const completion = useChecklistCompletion(items, responses);
-    const { canEdit, canFinalize, canVerify, canInitializeChecklist, isFinalized, status: intakeStatus } =
+    const { canUpdate, canFinalize, canVerify, isFinalized, status: intakeStatus } =
         useIntakeStatus(intake);
 
+    // canEdit means the intake is in a state where checklist can be edited
+    const canEdit = canUpdate;
+    // canInitializeChecklist means checklist hasn't been initialized yet
+    const canInitializeChecklist = intake?.status === 'CHECKED_IN';
+
     const updateIntake = useUpdateIntake();
+    const verifyIntakeMutation = useVerifyIntake();
     const finalizeIntake = useFinalizeIntake();
     const saveResponses = useSaveChecklistResponses(intakeId);
     const { data: workOrders = [], isLoading: isLoadingWorkOrders } = useWorkOrdersByIntake(intakeId);
@@ -62,7 +69,7 @@ export default function IntakePage({ params }: IntakePageProps) {
     React.useEffect(() => {
         if (!intake) return;
         const hasResponses = (responses?.length ?? 0) > 0;
-        setChecklistReady(intake.status !== 'Checked_In' || hasResponses);
+        setChecklistReady(intake.status !== 'CHECKED_IN' || hasResponses);
     }, [intake, responses]);
 
     // Auto-save pending checklist responses
@@ -103,12 +110,9 @@ export default function IntakePage({ params }: IntakePageProps) {
             await updateIntake.mutateAsync({
                 intakeId,
                 data: {
-                    licensePlate: data.licensePlate ? data.licensePlate : undefined,
                     odometer: data.odometer || undefined,
-                    batterySoC: data.batterySoC || undefined,
-                    arrivalNotes: data.arrivalNotes || undefined,
-                    notes: data.notes,
-                    photos: data.photos,
+                    batteryPercent: data.batterySoC || undefined,
+                    // notes and photos removed from API
                 },
             });
             toast.success('Cập nhật thông tin tiếp nhận thành công');
@@ -134,9 +138,10 @@ export default function IntakePage({ params }: IntakePageProps) {
 
     const handleInitializeChecklist = async () => {
         try {
+            // Start inspecting (update status to INSPECTING)
             await updateIntake.mutateAsync({
                 intakeId,
-                data: { status: 'Inspecting' },
+                data: {}, // Empty data just to trigger status transition
             });
             toast.success('Đã khởi tạo checklist EV');
             setChecklistReady(true);
@@ -151,10 +156,8 @@ export default function IntakePage({ params }: IntakePageProps) {
             if (pendingResponses.size > 0) {
                 await saveChecklistDraft();
             }
-            await updateIntake.mutateAsync({
-                intakeId,
-                data: { status: 'Verified' },
-            });
+            // Use verifyIntake endpoint
+            await verifyIntakeMutation.mutateAsync(intakeId);
             toast.success('Checklist đã được xác nhận');
         } catch (error) {
             toast.error('Không thể xác nhận checklist');

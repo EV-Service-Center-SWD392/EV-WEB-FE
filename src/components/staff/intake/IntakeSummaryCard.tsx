@@ -76,7 +76,7 @@ export function IntakeSummaryCard({ intake }: IntakeSummaryCardProps) {
                             <p className="text-sm text-muted-foreground">
                                 {[intake.vehicleBrand, intake.vehicleType].filter(Boolean).join(' • ') || 'Chưa cập nhật'}
                             </p>
-                            {intake.licensePlate && (
+                            {intake.licensePlate && intake.licensePlate !== 'string' && (
                                 <p className="text-xs text-muted-foreground uppercase">
                                     Biển số: {intake.licensePlate}
                                 </p>

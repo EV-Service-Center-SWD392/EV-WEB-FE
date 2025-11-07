@@ -45,7 +45,7 @@ export default function IntakeDetailPage({ params }: IntakeDetailPageProps) {
             setIntake(intakeData);
 
             // Load work orders if finalized
-            if (intakeData.status === 'Finalized' || intakeData.status === 'Verified') {
+            if (intakeData.status === 'FINALIZED' || intakeData.status === 'VERIFIED') {
                 const orders = await getWorkOrdersByIntake(params.id);
                 setWorkOrders(orders);
             }
@@ -63,11 +63,11 @@ export default function IntakeDetailPage({ params }: IntakeDetailPageProps) {
 
     const getStatusBadge = (status: IntakeStatus) => {
         const variants: Record<IntakeStatus, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; label: string }> = {
-            Checked_In: { variant: 'secondary', label: 'Đã tiếp nhận' },
-            Inspecting: { variant: 'default', label: 'Đang kiểm tra' },
-            Verified: { variant: 'outline', label: 'Đã xác minh' },
-            Finalized: { variant: 'outline', label: 'Hoàn tất' },
-            Cancelled: { variant: 'destructive', label: 'Đã hủy' },
+            CHECKED_IN: { variant: 'secondary', label: 'Đã tiếp nhận' },
+            INSPECTING: { variant: 'default', label: 'Đang kiểm tra' },
+            VERIFIED: { variant: 'outline', label: 'Đã xác minh' },
+            FINALIZED: { variant: 'outline', label: 'Hoàn tất' },
+            CANCELLED: { variant: 'destructive', label: 'Đã hủy' },
         };
 
         const config = variants[status] || { variant: 'secondary' as const, label: status };
@@ -144,7 +144,7 @@ export default function IntakeDetailPage({ params }: IntakeDetailPageProps) {
                 </div>
                 <div className="flex items-center gap-3">
                     {getStatusBadge(intake.status)}
-                    {intake.status === 'Finalized' && workOrders.length === 0 && (
+                    {intake.status === 'FINALIZED' && workOrders.length === 0 && (
                         <Button onClick={handleCreateWorkOrder} disabled={isCreatingWorkOrder}>
                             {isCreatingWorkOrder ? 'Đang tạo...' : 'Tạo Work Order'}
                         </Button>
@@ -205,7 +205,11 @@ export default function IntakeDetailPage({ params }: IntakeDetailPageProps) {
                                     <div>{intake.vehicleType || '-'}</div>
 
                                     <div className="text-muted-foreground">Biển số:</div>
-                                    <div className="font-medium">{intake.licensePlate || '-'}</div>
+                                    <div className="font-medium">
+                                        {intake.licensePlate && intake.licensePlate !== 'string'
+                                            ? intake.licensePlate
+                                            : '-'}
+                                    </div>
 
                                     {intake.odometer && (
                                         <>
@@ -214,10 +218,10 @@ export default function IntakeDetailPage({ params }: IntakeDetailPageProps) {
                                         </>
                                     )}
 
-                                    {intake.batterySoC !== undefined && (
+                                    {intake.batteryPercent !== undefined && (
                                         <>
                                             <div className="text-muted-foreground">Pin:</div>
-                                            <div>{intake.batterySoC}%</div>
+                                            <div>{intake.batteryPercent}%</div>
                                         </>
                                     )}
                                 </div>
@@ -279,7 +283,7 @@ export default function IntakeDetailPage({ params }: IntakeDetailPageProps) {
                     <ChecklistEditor
                         intakeId={intake.id}
                         onSave={handleChecklistSave}
-                        readOnly={intake.status === 'Finalized' || intake.status === 'Cancelled'}
+                        readOnly={intake.status === 'FINALIZED' || intake.status === 'CANCELLED'}
                     />
                 </TabsContent>
 
@@ -289,7 +293,7 @@ export default function IntakeDetailPage({ params }: IntakeDetailPageProps) {
                         <Card>
                             <CardContent className="py-12 text-center">
                                 <p className="text-muted-foreground mb-4">
-                                    {intake.status === 'Finalized'
+                                    {intake.status === 'FINALIZED'
                                         ? 'Chưa có Work Order. Nhấn "Tạo Work Order" để bắt đầu.'
                                         : 'Hoàn tất checklist trước khi tạo Work Order.'}
                                 </p>

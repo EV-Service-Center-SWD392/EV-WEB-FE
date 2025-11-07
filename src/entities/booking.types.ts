@@ -47,12 +47,16 @@ export interface BookingResponseDto {
   // Service Info
   serviceCenterId?: string;
   serviceCenterName?: string;
+  serviceCenter?: string;
   serviceTypeId?: string;
   serviceType?: string;
+  technicianId?: string;
 
   // Time Slot
+  slotId?: string; // ID của slot từ bookingschedule table
   preferredDate?: string;
   preferredTime?: string;
+  scheduledDate?: string;
   preferredStartUtc?: string;
   preferredEndUtc?: string;
 
@@ -60,6 +64,10 @@ export interface BookingResponseDto {
   repairParts?: string;
   description?: string;
   notes?: string;
+
+  // Cost
+  estimatedCost?: number;
+  actualCost?: number;
 
   // Status
   status: "Pending" | "Approved" | "Rejected";
@@ -72,4 +80,58 @@ export interface BookingResponseDto {
   approvedBy?: string;
   rejectedBy?: string;
   rejectReason?: string;
+}
+
+/**
+ * Filters for booking search/filtering
+ */
+export interface BookingFilters {
+  customerName?: string;
+  phone?: string;
+  status?: BookingStatus;
+  serviceType?: string;
+}
+
+/**
+ * Main Booking interface (alias for BookingResponseDto)
+ */
+export type Booking = BookingResponseDto;
+
+/**
+ * Request payload for creating a new booking
+ */
+export interface CreateBookingRequest {
+  customerId?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  vehicleId?: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  vehicleType?: string;
+  vehicleVin?: string;
+  serviceCenterId?: string;
+  serviceCenter?: string;
+  serviceTypeId?: string;
+  serviceType?: string;
+  preferredDate?: string;
+  preferredTime?: string;
+  scheduledDate?: string;
+  preferredStartUtc?: string;
+  preferredEndUtc?: string;
+  repairParts?: string;
+  description?: string;
+  notes?: string;
+  estimatedCost?: number;
+}
+
+/**
+ * Request payload for updating an existing booking
+ */
+export interface UpdateBookingRequest extends Partial<CreateBookingRequest> {
+  id?: string;
+  status?: "Pending" | "Approved" | "Rejected";
+  rejectReason?: string;
+  technicianId?: string;
+  actualCost?: number;
 }

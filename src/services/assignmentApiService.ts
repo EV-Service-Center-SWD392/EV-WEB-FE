@@ -12,7 +12,8 @@ export interface AssignmentDto {
     bookingId?: string;
     plannedStartUtc: string; // ISO 8601 UTC
     plannedEndUtc: string; // ISO 8601 UTC
-    status: string;
+    queueNo?: number;  // Auto-calculated queue number
+    status: 'PENDING' | 'ASSIGNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
     note?: string;
     isActive?: boolean;
     createdAt?: string;
@@ -44,7 +45,7 @@ export const assignmentApiService = {
      * Booking must be APPROVED before creating assignment
      */
     async create(data: CreateAssignmentDto): Promise<AssignmentDto> {
-        const response = await api.post<AssignmentDto>("/Assignment", data);
+        const response = await api.post<AssignmentDto>("/api/Assignment", data);
         return response.data;
     },
 
@@ -52,7 +53,7 @@ export const assignmentApiService = {
      * Get a single assignment by ID
      */
     async getById(id: string): Promise<AssignmentDto> {
-        const response = await api.get<AssignmentDto>(`/Assignment/${id}`);
+        const response = await api.get<AssignmentDto>(`/api/Assignment/${id}`);
         return response.data;
     },
 
@@ -71,7 +72,7 @@ export const assignmentApiService = {
         if (params.status) queryParams.append("status", params.status);
 
         const response = await api.get<AssignmentDto[]>(
-            `/Assignment/range${queryParams.toString() ? `?${queryParams.toString()}` : ""}`
+            `/api/Assignment/range${queryParams.toString() ? `?${queryParams.toString()}` : ""}`
         );
         return response.data;
     },
@@ -80,7 +81,7 @@ export const assignmentApiService = {
      * Reschedule an assignment to a different time
      */
     async reschedule(id: string, data: RescheduleAssignmentDto): Promise<AssignmentDto> {
-        const response = await api.put<AssignmentDto>(`/Assignment/${id}/reschedule`, data);
+        const response = await api.put<AssignmentDto>(`/api/Assignment/${id}/reschedule`, data);
         return response.data;
     },
 
@@ -88,7 +89,7 @@ export const assignmentApiService = {
      * Reassign an assignment to a different technician
      */
     async reassign(id: string, data: ReassignTechnicianDto): Promise<AssignmentDto> {
-        const response = await api.put<AssignmentDto>(`/Assignment/${id}/reassign`, data);
+        const response = await api.put<AssignmentDto>(`/api/Assignment/${id}/reassign`, data);
         return response.data;
     },
 
@@ -96,7 +97,7 @@ export const assignmentApiService = {
      * Cancel an assignment
      */
     async cancel(id: string): Promise<{ success: boolean; message: string }> {
-        const response = await api.delete<{ success: boolean; message: string }>(`/Assignment/${id}`);
+        const response = await api.delete<{ success: boolean; message: string }>(`/api/Assignment/${id}`);
         return response.data;
     },
 
@@ -104,7 +105,7 @@ export const assignmentApiService = {
      * Mark assignment as technician no-show
      */
     async markNoShow(id: string): Promise<{ success: boolean; message: string }> {
-        const response = await api.put<{ success: boolean; message: string }>(`/Assignment/${id}/noshow`, {});
+        const response = await api.put<{ success: boolean; message: string }>(`/api/Assignment/${id}/noshow`, {});
         return response.data;
     },
 };
