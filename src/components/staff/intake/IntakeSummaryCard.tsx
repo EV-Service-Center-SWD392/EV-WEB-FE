@@ -18,19 +18,19 @@ interface IntakeSummaryCardProps {
 }
 
 const statusClasses: Record<IntakeStatus, string> = {
-    Checked_In: 'bg-blue-100 text-blue-800',
-    Inspecting: 'bg-yellow-100 text-yellow-800',
-    Verified: 'bg-purple-100 text-purple-800',
-    Finalized: 'bg-green-100 text-green-800',
-    Cancelled: 'bg-red-100 text-red-800',
+    CHECKED_IN: 'bg-blue-100 text-blue-800',
+    INSPECTING: 'bg-yellow-100 text-yellow-800',
+    VERIFIED: 'bg-purple-100 text-purple-800',
+    FINALIZED: 'bg-green-100 text-green-800',
+    CANCELLED: 'bg-red-100 text-red-800',
 };
 
 const statusLabels: Record<IntakeStatus, string> = {
-    Checked_In: 'Checked-In',
-    Inspecting: 'Inspecting',
-    Verified: 'Verified',
-    Finalized: 'Finalized',
-    Cancelled: 'Cancelled',
+    CHECKED_IN: 'Checked-In',
+    INSPECTING: 'Inspecting',
+    VERIFIED: 'Verified',
+    FINALIZED: 'Finalized',
+    CANCELLED: 'Cancelled',
 };
 
 export function IntakeSummaryCard({ intake }: IntakeSummaryCardProps) {
@@ -76,7 +76,7 @@ export function IntakeSummaryCard({ intake }: IntakeSummaryCardProps) {
                             <p className="text-sm text-muted-foreground">
                                 {[intake.vehicleBrand, intake.vehicleType].filter(Boolean).join(' • ') || 'Chưa cập nhật'}
                             </p>
-                            {intake.licensePlate && (
+                            {intake.licensePlate && intake.licensePlate !== 'string' && (
                                 <p className="text-xs text-muted-foreground uppercase">
                                     Biển số: {intake.licensePlate}
                                 </p>
@@ -97,12 +97,12 @@ export function IntakeSummaryCard({ intake }: IntakeSummaryCardProps) {
                 )}
 
                 {/* Battery SoC */}
-                {intake.batterySoC !== undefined && intake.batterySoC !== null && (
+                {intake.batteryPercent !== undefined && intake.batteryPercent !== null && (
                     <div className="flex items-center gap-3">
                         <Battery className="w-5 h-5 text-muted-foreground" />
                         <div>
                             <p className="text-sm font-medium">Battery State of Charge</p>
-                            <p className="text-sm text-muted-foreground">{intake.batterySoC}%</p>
+                            <p className="text-sm text-muted-foreground">{intake.batteryPercent}%</p>
                         </div>
                     </div>
                 )}

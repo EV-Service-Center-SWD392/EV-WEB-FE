@@ -114,7 +114,7 @@ export function CustomerBookingForm({
         customerPhone: formValues.customerPhone.trim(),
         vehicleType: formValues.vehicleType.trim(),
         vehicleBrand: formValues.vehicleBrand.trim(),
-        vehicleModel: formValues.vehicleModel?.trim(),
+        vehicleModel: formValues.vehicleModel?.trim() || "",
         vehicleVin: formValues.vehicleVin?.trim(),
         serviceCenterId: formValues.serviceCenterId,
         serviceTypeId: formValues.serviceTypeId,

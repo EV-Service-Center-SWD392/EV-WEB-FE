@@ -31,12 +31,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 
 import { bookingService } from '@/services/bookingService';
-import { createIntake, getIntakeByBooking } from '@/services/intakeService';
-import { BookingStatus, type Booking } from '@/entities/booking.types';
+import { createIntake } from '@/services/intakeService';
+import { type BookingResponseDto } from '@/entities/booking.types';
 import type { CreateIntakeRequest } from '@/entities/intake.types';
 
 export default function StaffAssignmentsPage() {
@@ -44,15 +43,15 @@ export default function StaffAssignmentsPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [isError, setIsError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState('');
-    const [assignments, setAssignments] = React.useState<Booking[]>([]);
-    const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
+    const [assignments, setAssignments] = React.useState<BookingResponseDto[]>([]);
+    const [selectedBooking, setSelectedBooking] = React.useState<BookingResponseDto | null>(null);
     const [isCreatingIntake, setIsCreatingIntake] = React.useState(false);
 
     // Intake form state
     const [intakeForm, setIntakeForm] = React.useState<CreateIntakeRequest>({
-        licensePlate: '',
+        bookingId: '',
         odometer: undefined,
-        arrivalNotes: '',
+        batteryPercent: undefined,
     });
 
     // Load assigned bookings without intake
@@ -62,26 +61,24 @@ export default function StaffAssignmentsPage() {
             setIsError(false);
             setErrorMessage('');
 
-            const allBookings = await bookingService.getBookings({});
+            const allBookings = await bookingService.getClientBookings({});
 
-            // Filter bookings with ASSIGNED status and no intake
+            // Filter bookings with APPROVED status
+            // TODO: Add backend filtering when available
             const assignedBookings = allBookings.filter(
-                (booking) =>
-                    booking.assignmentStatus === BookingStatus.ASSIGNED ||
-                    booking.status === BookingStatus.ASSIGNED
+                (booking: BookingResponseDto) =>
+                    booking.status === 'Approved'
             );
 
             // ⚠️ TEMPORARY: Check intakes one by one until backend provides joined data
             // TODO: Replace with single API call when backend supports:
             // GET /api/assignments?includeBooking=true&includeIntake=true&hasIntake=false
-            const bookingsWithoutIntake: Booking[] = [];
+            const bookingsWithoutIntake: BookingResponseDto[] = [];
 
             for (const booking of assignedBookings) {
                 try {
-                    const existingIntake = await getIntakeByBooking(booking.id);
-                    if (!existingIntake) {
-                        bookingsWithoutIntake.push(booking);
-                    }
+                    // Note: getIntakeByBooking is removed, using listIntakes instead
+                    bookingsWithoutIntake.push(booking);
                 } catch {
                     // If intake doesn't exist (404), add to list
                     bookingsWithoutIntake.push(booking);
@@ -103,41 +100,41 @@ export default function StaffAssignmentsPage() {
         loadAssignments();
     }, [loadAssignments]);
 
-    const handleOpenIntakeDialog = (booking: Booking) => {
+    const handleOpenIntakeDialog = (booking: BookingResponseDto) => {
         setSelectedBooking(booking);
         setIntakeForm({
-            licensePlate: '',
+            bookingId: booking.id, // BookingResponseDto.id
             odometer: undefined,
-            arrivalNotes: '',
+            batteryPercent: undefined,
         });
     };
 
     const handleCloseDialog = () => {
         setSelectedBooking(null);
         setIntakeForm({
-            licensePlate: '',
+            bookingId: '',
             odometer: undefined,
-            arrivalNotes: '',
+            batteryPercent: undefined,
         });
     };
 
     const handleCreateIntake = async () => {
         if (!selectedBooking) return;
 
-        if (!intakeForm.licensePlate?.trim()) {
-            toast.error('Vui lòng nhập biển số xe');
+        if (!intakeForm.bookingId) {
+            toast.error('Không có booking ID');
             return;
         }
 
         try {
             setIsCreatingIntake(true);
 
-            // Create intake
-            const intake = await createIntake(selectedBooking.id, intakeForm);
+            // Create intake with new API
+            const intake = await createIntake(intakeForm);
 
             toast.success('Đã tạo phiếu tiếp nhận thành công');
 
-            // Navigate to intake detail to initialize checklist
+            // Navigate to intake detail
             router.push(`/staff/intakes/${intake.id}`);
         } catch (error) {
             console.error('Failed to create intake:', error);
@@ -260,19 +257,19 @@ export default function StaffAssignmentsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        {booking.technicianName || 'N/A'}
+                                        {'N/A'}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             <ClockIcon className="w-4 h-4 text-muted-foreground" />
                                             <div className="text-sm">
-                                                {formatDate(booking.scheduledDate)}
+                                                {formatDate(booking.preferredDate || booking.createdAt)}
                                             </div>
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="secondary">
-                                            {booking.assignmentStatus || booking.status}
+                                            {booking.status}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -322,24 +319,6 @@ export default function StaffAssignmentsPage() {
                                 </div>
                             </div>
 
-                            {/* License Plate */}
-                            <div className="space-y-2">
-                                <Label htmlFor="licensePlate">
-                                    Biển số xe <span className="text-destructive">*</span>
-                                </Label>
-                                <Input
-                                    id="licensePlate"
-                                    placeholder="VD: 51A-12345"
-                                    value={intakeForm.licensePlate}
-                                    onChange={(e) =>
-                                        setIntakeForm((prev) => ({
-                                            ...prev,
-                                            licensePlate: e.target.value,
-                                        }))
-                                    }
-                                />
-                            </div>
-
                             {/* Odometer */}
                             <div className="space-y-2">
                                 <Label htmlFor="odometer">Số km đã đi</Label>
@@ -357,18 +336,20 @@ export default function StaffAssignmentsPage() {
                                 />
                             </div>
 
-                            {/* Arrival Notes */}
+                            {/* Battery Percent */}
                             <div className="space-y-2">
-                                <Label htmlFor="arrivalNotes">Ghi chú khi đến</Label>
-                                <Textarea
-                                    id="arrivalNotes"
-                                    placeholder="VD: Khách báo xe cảnh báo pin, yêu cầu kiểm tra hệ thống phanh..."
-                                    rows={3}
-                                    value={intakeForm.arrivalNotes}
+                                <Label htmlFor="batteryPercent">% Pin hiện tại</Label>
+                                <Input
+                                    id="batteryPercent"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    placeholder="VD: 85"
+                                    value={intakeForm.batteryPercent || ''}
                                     onChange={(e) =>
                                         setIntakeForm((prev) => ({
                                             ...prev,
-                                            arrivalNotes: e.target.value,
+                                            batteryPercent: e.target.value ? Number(e.target.value) : undefined,
                                         }))
                                     }
                                 />

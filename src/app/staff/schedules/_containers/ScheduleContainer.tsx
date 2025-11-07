@@ -11,7 +11,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import type { CreateAssignmentDTO, Assignment } from '@/entities/assignment.types';
-import { BookingStatus } from '@/entities/booking.types';
 
 import { ScheduleBoard } from '@/components/staff/scheduling/organisms/ScheduleBoard';
 import { ConflictNotice } from '@/components/staff/scheduling/organisms/ConflictNotice';
@@ -24,8 +23,6 @@ import {
     useCheckConflict,
     useScheduleParams,
 } from '@/hooks/scheduling';
-import { staffDirectoryService } from '@/services/staffDirectoryService';
-import { bookingService } from '@/services/bookingService';
 import type { AssignableWorkItem } from '@/hooks/scheduling/useAssignableWork';
 
 type TechnicianFiltersState = {
@@ -142,12 +139,13 @@ export const ScheduleContainer: React.FC = () => {
 
             // No conflict - proceed with assignment
             await createAssignment.mutateAsync(dto);
-            if (dto.bookingId) {
-                await bookingService.updateBooking(dto.bookingId, {
-                    technicianId: dto.technicianId,
-                    assignmentStatus: BookingStatus.ASSIGNED,
-                });
-            }
+            // TODO: Update booking status when backend provides endpoint
+            // if (dto.bookingId) {
+            //     await bookingService.updateBooking(dto.bookingId, {
+            //         technicianId: dto.technicianId,
+            //         assignmentStatus: BookingStatus.ASSIGNED,
+            //     });
+            // }
             toast.success('Phân công thành công!');
             setSelectedWorkId(''); // Reset selection
         } catch (error) {
@@ -162,12 +160,13 @@ export const ScheduleContainer: React.FC = () => {
         try {
             // Force assign despite conflict
             await createAssignment.mutateAsync(pendingAssignment);
-            if (pendingAssignment.bookingId) {
-                await bookingService.updateBooking(pendingAssignment.bookingId, {
-                    technicianId: pendingAssignment.technicianId,
-                    assignmentStatus: BookingStatus.ASSIGNED,
-                });
-            }
+            // TODO: Update booking status when backend provides endpoint
+            // if (pendingAssignment.bookingId) {
+            //     await bookingService.updateBooking(pendingAssignment.bookingId, {
+            //         technicianId: pendingAssignment.technicianId,
+            //         assignmentStatus: BookingStatus.ASSIGNED,
+            //     });
+            // }
             toast.success('Phân công thành công (có xung đột)');
             setSelectedWorkId('');
             setPendingAssignment(null);
@@ -197,11 +196,12 @@ export const ScheduleContainer: React.FC = () => {
         }
 
         try {
-            await bookingService.updateBooking(workItem.id, {
-                status: BookingStatus.CONFIRMED,
-                assignmentStatus: BookingStatus.IN_QUEUE,
-            });
-            toast.success('Đã xác nhận lịch hẹn cho khách hàng');
+            // TODO: Backend endpoint needed to confirm booking
+            // await bookingService.updateBooking(workItem.id, {
+            //     status: BookingStatus.CONFIRMED,
+            //     assignmentStatus: BookingStatus.IN_QUEUE,
+            // });
+            toast.success('Đã xác nhận lịch hẹn cho khách hàng (TODO: Backend needed)');
             queryClient.invalidateQueries({ queryKey: ["assignable-work"] });
             queryClient.invalidateQueries({ queryKey: ["assignable-bookings-work"] });
             setSelectedWorkId('');
@@ -224,13 +224,14 @@ export const ScheduleContainer: React.FC = () => {
 
             baseDate.setHours(baseDate.getHours() + 2);
 
-            await bookingService.updateBooking(workItem.id, {
-                scheduledDate: baseDate.toISOString(),
-                status: BookingStatus.PENDING,
-                assignmentStatus: BookingStatus.PENDING,
-            });
+            // TODO: Backend endpoint needed to reschedule booking
+            // await bookingService.updateBooking(workItem.id, {
+            //     scheduledDate: baseDate.toISOString(),
+            //     status: BookingStatus.PENDING,
+            //     assignmentStatus: BookingStatus.PENDING,
+            // });
             toast.success(
-                `Đã dời lịch sang ${baseDate.toLocaleString('vi-VN')}`
+                `Đã dời lịch sang ${baseDate.toLocaleString('vi-VN')} (TODO: Backend needed)`
             );
             queryClient.invalidateQueries({ queryKey: ["assignable-work"] });
             queryClient.invalidateQueries({ queryKey: ["assignable-bookings-work"] });

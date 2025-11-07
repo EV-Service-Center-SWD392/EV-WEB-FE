@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { TechnicianUser, technicianService } from "@/services/technicianService";
+import { technicianService } from "@/services/technicianService";
+import { Technician } from "@/entities/technician.types";
 import { roleService } from "@/services/roleService";
 import { Role } from "@/entities/role.types";
 import { toast } from "sonner";
@@ -48,12 +49,10 @@ export function useTechnicians(enabled: boolean = true) {
   return useQuery({
     queryKey: ["technicians", technicianRoleId],
     queryFn: () => {
-      if (!technicianRoleId) {
-        throw new Error("Technician role ID not found");
-      }
-      return technicianService.getTechnicians(technicianRoleId);
+      // getTechnicians doesn't require roleId - it returns all technicians with certificates
+      return technicianService.getTechnicians();
     },
-    enabled: enabled && !!technicianRoleId,
+    enabled: enabled,
     retry: 0, // Only call API once
   });
 }
@@ -64,7 +63,7 @@ export function useTechnicians(enabled: boolean = true) {
 export function useTechnician(id: string, enabled: boolean = true) {
   return useQuery({
     queryKey: ["technician", id],
-    queryFn: () => technicianService.getUserById(id),
+    queryFn: () => technicianService.getTechnicianById(id),
     enabled: enabled && !!id,
     retry: 0, // Only call API once
   });
@@ -74,17 +73,18 @@ export function useTechnician(id: string, enabled: boolean = true) {
  * Hook to search technicians
  */
 export function useSearchTechnicians(searchTerm: string, enabled: boolean = true) {
-  const { data: technicianRoleId } = useTechnicianRoleId();
-
   return useQuery({
-    queryKey: ["technicians", "search", searchTerm, technicianRoleId],
+    queryKey: ["technicians", "search", searchTerm],
     queryFn: () => {
-      if (!technicianRoleId) {
-        throw new Error("Technician role ID not found");
-      }
-      return technicianService.searchTechnicians(technicianRoleId, searchTerm);
+      // Use getTechnicians and filter client-side since searchTechnicians doesn't exist
+      return technicianService.getTechnicians().then(technicians =>
+        technicians.filter(tech =>
+          tech.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          tech.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
     },
-    enabled: enabled && !!technicianRoleId && searchTerm.length >= 2,
+    enabled: enabled && searchTerm.length >= 2,
     retry: 0, // Only call API once
   });
 }
@@ -98,29 +98,23 @@ export function useAvailableTechnicians(
   assignedTechnicianIds: string[] = [],
   enabled: boolean = true
 ) {
-  const { data: technicianRoleId } = useTechnicianRoleId();
-
   return useQuery({
     queryKey: [
       "technicians",
       "available",
       date,
       shift,
-      technicianRoleId,
       assignedTechnicianIds,
     ],
     queryFn: () => {
-      if (!technicianRoleId) {
-        throw new Error("Technician role ID not found");
-      }
-      return technicianService.getAvailableTechnicians(
-        technicianRoleId,
-        date,
-        shift,
-        assignedTechnicianIds
+      // Since getAvailableTechnicians doesn't exist, get all and filter client-side
+      return technicianService.getTechnicians().then(technicians =>
+        technicians.filter(tech => 
+          !assignedTechnicianIds.includes(tech.userId)
+        )
       );
     },
-    enabled: enabled && !!technicianRoleId && !!date && !!shift,
+    enabled: enabled && !!date && !!shift,
     retry: 0, // Only call API once
   });
 }
@@ -140,7 +134,8 @@ export function useAllUsers(enabled: boolean = true) {
 /**
  * Helper hook to get technician display name
  */
-export function useTechnicianDisplayName(technician?: TechnicianUser): string {
+export function useTechnicianDisplayName(technician?: Technician): string {
   if (!technician) return "";
-  return technicianService.getTechnicianDisplayName(technician);
+  // Return userName or email as display name
+  return technician.userName || technician.email || "";
 }

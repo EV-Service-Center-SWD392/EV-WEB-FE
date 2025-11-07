@@ -31,23 +31,23 @@ interface IntakeListTableProps {
 }
 
 const statusConfigs: Record<IntakeStatus, { label: string; badgeClass: string }> = {
-  Checked_In: {
+  CHECKED_IN: {
     label: 'Đã check-in',
     badgeClass: 'bg-sky-100 text-sky-800 border-sky-200',
   },
-  Inspecting: {
+  INSPECTING: {
     label: 'Đang kiểm tra',
     badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
   },
-  Verified: {
+  VERIFIED: {
     label: 'Đã xác nhận',
     badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   },
-  Finalized: {
+  FINALIZED: {
     label: 'Hoàn tất',
     badgeClass: 'bg-green-100 text-green-800 border-green-200',
   },
-  Cancelled: {
+  CANCELLED: {
     label: 'Đã hủy',
     badgeClass: 'bg-red-100 text-red-800 border-red-200',
   },
@@ -228,11 +228,11 @@ export function IntakeListTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    {intake.batterySoC !== undefined && intake.batterySoC !== null ? (
+                    {intake.batteryPercent !== undefined && intake.batteryPercent !== null ? (
                       <div className="flex items-center gap-1">
-                        <Battery className={cn('h-3 w-3', getBatteryColor(intake.batterySoC))} />
-                        <span className={cn('font-mono text-sm font-medium', getBatteryColor(intake.batterySoC))}>
-                          {intake.batterySoC}%
+                        <Battery className={cn('h-3 w-3', getBatteryColor(intake.batteryPercent))} />
+                        <span className={cn('font-mono text-sm font-medium', getBatteryColor(intake.batteryPercent))}>
+                          {intake.batteryPercent}%
                         </span>
                       </div>
                     ) : (

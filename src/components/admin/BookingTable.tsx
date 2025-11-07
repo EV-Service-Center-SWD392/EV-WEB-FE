@@ -13,28 +13,44 @@ interface BookingTableProps {
   onUpdateStatus: (_bookingId: string, _status: BookingStatus) => void;
 }
 
-const getStatusBadge = (status: BookingStatus) => {
-  switch (status) {
+const getStatusBadge = (status: BookingStatus | string) => {
+  // Handle string status values from API
+  const statusStr = typeof status === 'string' ? status.toLowerCase() : status;
+  
+  switch (statusStr) {
     case BookingStatus.PENDING:
+    case 'pending':
       return { label: "Chờ xác nhận", className: "bg-yellow-100 text-yellow-800" };
     case BookingStatus.ASSIGNED:
+    case 'assigned':
       return { label: "Đã phân công kỹ thuật viên", className: "bg-blue-100 text-blue-800" };
     case BookingStatus.IN_QUEUE:
+    case 'in_queue':
       return { label: "Trong hàng chờ", className: "bg-slate-100 text-slate-800" };
     case BookingStatus.ACTIVE:
+    case 'active':
       return { label: "Đang chuẩn bị", className: "bg-indigo-100 text-indigo-800" };
     case BookingStatus.CONFIRMED:
+    case 'confirmed':
       return { label: "Đã xác nhận", className: "bg-cyan-100 text-cyan-800" };
     case BookingStatus.IN_PROGRESS:
+    case 'in_progress':
       return { label: "Đang thực hiện", className: "bg-purple-100 text-purple-800" };
     case BookingStatus.REASSIGNED:
+    case 'reassigned':
       return { label: "Đã phân công lại", className: "bg-orange-100 text-orange-800" };
     case BookingStatus.COMPLETED:
+    case 'completed':
       return { label: "Hoàn thành", className: "bg-green-100 text-green-800" };
     case BookingStatus.CANCELLED:
+    case 'cancelled':
       return { label: "Đã hủy", className: "bg-red-100 text-red-800" };
+    case 'approved':
+      return { label: "Đã duyệt", className: "bg-green-100 text-green-800" };
+    case 'rejected':
+      return { label: "Đã từ chối", className: "bg-red-100 text-red-800" };
     default:
-      return { label: status, className: "bg-gray-100 text-gray-800" };
+      return { label: String(status), className: "bg-gray-100 text-gray-800" };
   }
 };
 
@@ -99,9 +115,7 @@ export function BookingTable({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {bookings.map((booking, index) => {
-              const assignmentStatus = booking.assignmentStatus ?? booking.status;
               const statusBadge = getStatusBadge(booking.status);
-              const assignmentBadge = getStatusBadge(assignmentStatus);
               return (
                 <tr key={booking.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -160,10 +174,7 @@ export function BookingTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col gap-1">
-                      <Badge className={assignmentBadge.className}>{assignmentBadge.label}</Badge>
-                      {assignmentStatus !== booking.status && (
-                        <Badge variant="outline">{statusBadge.label}</Badge>
-                      )}
+                      <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

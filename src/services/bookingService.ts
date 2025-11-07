@@ -1,10 +1,8 @@
 import { api } from "@/services/api";
 import type {
-    Booking,
-    BookingStatus,
+    BookingQueryDto,
+    BookingResponseDto,
     CreateBookingRequest,
-    UpdateBookingRequest,
-    BookingFilters,
 } from "@/entities/booking.types";
 
 const BASE_PATH = "/api/bookings";
@@ -14,42 +12,42 @@ const BASE_PATH = "/api/bookings";
  * Handles CRUD operations for bookings
  */
 export const bookingService = {
-    /**
-     * Get all bookings with optional filters
-     */
-    async getBookings(filters?: BookingFilters): Promise<Booking[]> {
+    async getClientBookings(query?: BookingQueryDto): Promise<BookingResponseDto[]> {
         try {
-            const response = await api.get<Booking[]>(BASE_PATH, {
-                params: filters,
-            });
+            const params = new URLSearchParams();
+
+            if (query?.page) params.append("page", query.page.toString());
+            if (query?.pageSize) params.append("pageSize", query.pageSize.toString());
+            if (query?.centerId) params.append("centerId", query.centerId);
+            if (query?.vehicleId) params.append("vehicleId", query.vehicleId);
+            if (query?.status) params.append("status", query.status);
+            if (query?.fromDate) params.append("fromDate", query.fromDate);
+            if (query?.toDate) params.append("toDate", query.toDate);
+
+            const queryString = params.toString();
+            const url = queryString
+                ? `/client/Booking?${queryString}`
+                : "/client/Booking";
+
+            const response = await api.get<BookingResponseDto[]>(url);
             return response.data || [];
         } catch (error: unknown) {
             const err = error as { response?: { data?: unknown }; message?: string };
-            console.error("Failed to fetch bookings:", err);
-            throw new Error(err.message || "Failed to fetch bookings");
-        }
-    },
-
-    /**
-     * Get a single booking by ID
-     */
-    async getBookingById(id: string): Promise<Booking> {
-        try {
-            const response = await api.get<Booking>(`${BASE_PATH}/${id}`);
-            return response.data;
-        } catch (error: unknown) {
-            const err = error as { response?: { data?: unknown }; message?: string };
-            console.error(`Failed to fetch booking ${id}:`, err);
-            throw new Error(err.message || "Failed to fetch booking");
+            console.error("Failed to fetch client bookings:", err);
+            throw new Error(err.message || "Failed to fetch client bookings");
         }
     },
 
     /**
      * Create a new booking
+     * POST /client/Booking
      */
-    async createBooking(data: CreateBookingRequest): Promise<Booking> {
+    async createBooking(bookingData: CreateBookingRequest): Promise<BookingResponseDto> {
         try {
-            const response = await api.post<Booking>(BASE_PATH, data);
+            const response = await api.post<BookingResponseDto>(
+                "/client/Booking",
+                bookingData
+            );
             return response.data;
         } catch (error: unknown) {
             const err = error as { response?: { data?: unknown }; message?: string };
@@ -59,79 +57,43 @@ export const bookingService = {
     },
 
     /**
-     * Update an existing booking
+     * Update booking details
+     * PUT /client/Booking/{id}
      */
     async updateBooking(
-        id: string,
-        data: UpdateBookingRequest
-    ): Promise<Booking> {
+        bookingId: string,
+        updateData: {
+            technicianId?: string;
+            assignmentStatus?: string;
+            status?: string;
+            scheduledDate?: string;
+            notes?: string;
+        }
+    ): Promise<BookingResponseDto> {
         try {
-            const response = await api.patch<Booking>(`${BASE_PATH}/${id}`, data);
+            const response = await api.put<BookingResponseDto>(
+                `/client/Booking/${bookingId}`,
+                updateData
+            );
             return response.data;
         } catch (error: unknown) {
             const err = error as { response?: { data?: unknown }; message?: string };
-            console.error(`Failed to update booking ${id}:`, err);
+            console.error("Failed to update booking:", err);
             throw new Error(err.message || "Failed to update booking");
         }
     },
 
     /**
      * Delete a booking
+     * DELETE /client/Booking/{id}
      */
-    async deleteBooking(id: string): Promise<void> {
+    async deleteBooking(bookingId: string): Promise<void> {
         try {
-            await api.delete(`${BASE_PATH}/${id}`);
+            await api.delete(`/client/Booking/${bookingId}`);
         } catch (error: unknown) {
             const err = error as { response?: { data?: unknown }; message?: string };
-            console.error(`Failed to delete booking ${id}:`, err);
+            console.error("Failed to delete booking:", err);
             throw new Error(err.message || "Failed to delete booking");
-        }
-    },
-
-    /**
-     * Update booking status
-     */
-    async updateBookingStatus(
-        id: string,
-        status: BookingStatus
-    ): Promise<Booking> {
-        try {
-            const response = await api.patch<Booking>(`${BASE_PATH}/${id}/status`, {
-                status,
-            });
-            return response.data;
-        } catch (error: unknown) {
-            const err = error as { response?: { data?: unknown }; message?: string };
-            console.error(`Failed to update booking status ${id}:`, err);
-            throw new Error(err.message || "Failed to update booking status");
-        }
-    },
-
-    /**
-     * Get bookings by customer ID
-     */
-    async getBookingsByCustomer(customerId: string): Promise<Booking[]> {
-        try {
-            const response = await api.get<Booking[]>(`${BASE_PATH}/customer/${customerId}`);
-            return response.data || [];
-        } catch (error: unknown) {
-            const err = error as { response?: { data?: unknown }; message?: string };
-            console.error(`Failed to fetch bookings for customer ${customerId}:`, err);
-            throw new Error(err.message || "Failed to fetch customer bookings");
-        }
-    },
-
-    /**
-     * Get bookings by technician ID
-     */
-    async getBookingsByTechnician(technicianId: string): Promise<Booking[]> {
-        try {
-            const response = await api.get<Booking[]>(`${BASE_PATH}/technician/${technicianId}`);
-            return response.data || [];
-        } catch (error: unknown) {
-            const err = error as { response?: { data?: unknown }; message?: string };
-            console.error(`Failed to fetch bookings for technician ${technicianId}:`, err);
-            throw new Error(err.message || "Failed to fetch technician bookings");
         }
     },
 };

@@ -37,13 +37,13 @@ export function useAssignableWork(
             ]);
 
             const [bookings, mockRequests] = await Promise.all([
-                bookingService.getBookings({}),
+                bookingService.getClientBookings({}),
                 getMockAssignableWork(centerId!, date),
             ]);
 
             const bookingItems = bookings
                 .filter((booking) => {
-                    const bookingDate = new Date(booking.scheduledDate)
+                    const bookingDate = new Date(booking.preferredDate ?? booking.createdAt)
                         .toISOString()
                         .split("T")[0];
                     const matchesDate = bookingDate === date;
@@ -82,11 +82,11 @@ export function transformBookingToWorkItem(booking: Booking): AssignableWorkItem
         customerName: booking.customerName,
         customerPhone: booking.customerPhone,
         customerEmail: booking.customerEmail,
-        vehicleInfo: `${booking.vehicleBrand} (${booking.vehicleType})`,
+        vehicleInfo: `${booking.vehicleBrand} (${booking.vehicleType ?? 'N/A'})`,
         services,
-        scheduledTime: booking.scheduledDate,
-        status: mapBookingStatus(booking.assignmentStatus ?? booking.status),
-        suggestedTechId: booking.technicianId,
+        scheduledTime: booking.preferredDate ?? booking.createdAt,
+        status: mapBookingStatus(booking.status as BookingStatus),
+        suggestedTechId: undefined, // BookingResponseDto doesn't have technicianId
     };
 }
 
@@ -128,17 +128,17 @@ export function useAssignableBookingsAsWork(
             // Import bookingService dynamically to avoid circular deps
             const { bookingService } = await import("@/services/bookingService");
 
-            const bookings = await bookingService.getBookings({});
+            const bookings = await bookingService.getClientBookings({});
 
             return bookings
-                .filter((booking) => {
-                    const bookingDate = new Date(booking.scheduledDate)
+                .filter((booking: any) => {
+                    const bookingDate = new Date(booking.preferredDate ?? booking.createdAt)
                         .toISOString()
                         .split("T")[0];
                     const matchesDate = bookingDate === date;
                     const matchesCenter = !centerId || booking.serviceCenterId === centerId;
                     const isAssignable =
-                        booking.assignmentStatus === BookingStatus.ASSIGNED ||
+                        booking.status === "Approved" ||
                         booking.status === BookingStatus.CONFIRMED;
 
                     return matchesDate && matchesCenter && isAssignable;
