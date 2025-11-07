@@ -61,12 +61,13 @@ export default function StaffAssignmentsPage() {
             setIsError(false);
             setErrorMessage('');
 
-            const allBookings = await bookingService.getClientBookings();
+            const allBookings = await bookingService.getClientBookings({});
 
             // Filter bookings with APPROVED status
             // TODO: Add backend filtering when available
             const assignedBookings = allBookings.filter(
-                (booking) => booking.status === 'Approved'
+                (booking: BookingResponseDto) =>
+                    booking.status === 'Approved'
             );
 
             // ⚠️ TEMPORARY: Check intakes one by one until backend provides joined data
@@ -256,14 +257,13 @@ export default function StaffAssignmentsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        {/* TODO: Technician info not in BookingResponseDto */}
-                                        N/A
+                                        {'N/A'}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             <ClockIcon className="w-4 h-4 text-muted-foreground" />
                                             <div className="text-sm">
-                                                {formatDate(booking.preferredDate)}
+                                                {formatDate(booking.preferredDate || booking.createdAt)}
                                             </div>
                                         </div>
                                     </TableCell>

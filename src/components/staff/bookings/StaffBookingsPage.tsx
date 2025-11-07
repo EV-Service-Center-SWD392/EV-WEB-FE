@@ -97,9 +97,9 @@ export function StaffBookingsPage() {
   const loadBookings = React.useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await bookingService.getBookings({});
+      const data = await bookingService.getClientBookings({});
       const filtered = data.filter((booking) =>
-        queueStatuses.includes(booking.assignmentStatus ?? booking.status)
+        queueStatuses.includes(booking.status as BookingStatus)
       );
       setBookings(filtered);
     } catch (error) {
@@ -139,12 +139,12 @@ export function StaffBookingsPage() {
       })
       .sort((a, b) => {
         const statusDelta =
-          queueStatuses.indexOf(a.assignmentStatus ?? a.status) -
-          queueStatuses.indexOf(b.assignmentStatus ?? b.status);
+          queueStatuses.indexOf(a.status as BookingStatus) -
+          queueStatuses.indexOf(b.status as BookingStatus);
         if (statusDelta !== 0) return statusDelta;
         return (
-          new Date(a.preferredTime ?? a.scheduledDate).getTime() -
-          new Date(b.preferredTime ?? b.scheduledDate).getTime()
+          new Date(a.preferredTime ?? a.scheduledDate ?? a.createdAt ?? new Date()).getTime() -
+          new Date(b.preferredTime ?? b.scheduledDate ?? b.createdAt ?? new Date()).getTime()
         );
       });
   }, [bookings, centerFilter, searchQuery]);
@@ -197,7 +197,7 @@ export function StaffBookingsPage() {
     setRescheduleTime(
       booking.preferredTime
         ? booking.preferredTime.slice(0, 16)
-        : booking.scheduledDate.slice(0, 16)
+        : booking.scheduledDate?.slice(0, 16) ?? new Date().toISOString().slice(0, 16)
     );
   };
 
@@ -207,10 +207,8 @@ export function StaffBookingsPage() {
       setIsRescheduling(true);
       const isoTime = toIsoString(rescheduleTime);
       await bookingService.updateBooking(rescheduleTarget.id, {
-        preferredTime: isoTime,
         scheduledDate: isoTime,
         status: BookingStatus.PENDING,
-        assignmentStatus: BookingStatus.PENDING,
       });
       toast.success("Đã cập nhật thời gian lịch hẹn");
       setRescheduleTarget(null);
@@ -238,15 +236,12 @@ export function StaffBookingsPage() {
   };
 
   const renderStatusBadges = (booking: Booking) => {
-    const assignmentStatus = booking.assignmentStatus ?? booking.status;
-    const bookingBadge = statusBadgeMap[booking.status];
-    const assignmentBadge = statusBadgeMap[assignmentStatus];
+    // Use booking.status directly and handle both BookingStatus enum and string status
+    const status = booking.status as BookingStatus;
+    const bookingBadge = statusBadgeMap[status] ?? statusBadgeMap[BookingStatus.PENDING];
     return (
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={assignmentBadge.variant}>{assignmentBadge.label}</Badge>
-        {assignmentStatus !== booking.status && (
-          <Badge variant="outline">{bookingBadge.label}</Badge>
-        )}
+        <Badge variant={bookingBadge.variant}>{bookingBadge.label}</Badge>
       </div>
     );
   };
@@ -368,7 +363,7 @@ export function StaffBookingsPage() {
                           size="sm"
                           onClick={() => handleConfirmBooking(booking)}
                           disabled={
-                            (booking.assignmentStatus ?? booking.status) !== BookingStatus.ASSIGNED ||
+                            (booking.status as BookingStatus) !== BookingStatus.ASSIGNED ||
                             booking.status === BookingStatus.CANCELLED
                           }
                         >
@@ -463,7 +458,7 @@ export function StaffBookingsPage() {
                 selectedDate={
                   assignTarget.preferredTime
                     ? assignTarget.preferredTime.slice(0, 10)
-                    : assignTarget.scheduledDate.slice(0, 10)
+                    : assignTarget.scheduledDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10)
                 }
                 onSubmit={async (dto) => {
                   await handleAssignTechnician({ technicianId: dto.technicianId });

@@ -114,11 +114,6 @@ export function BookingForm({
 
   useEffect(() => {
     if (booking) {
-      // Convert API status to BookingStatus enum
-      let bookingStatus = BookingStatus.PENDING;
-      if (booking.status === 'Approved') bookingStatus = BookingStatus.CONFIRMED;
-      else if (booking.status === 'Rejected') bookingStatus = BookingStatus.CANCELLED;
-
       setFormData({
         customerName: booking.customerName,
         customerEmail: booking.customerEmail,
@@ -133,7 +128,7 @@ export function BookingForm({
         scheduledDate: toInputDateTimeLocal(booking.scheduledDate),
         repairParts: booking.repairParts || "",
         description: booking.description || "",
-        status: bookingStatus,
+        status: (booking.status as BookingStatus) || BookingStatus.PENDING,
         estimatedCost: booking.estimatedCost?.toString() || "",
         actualCost: booking.actualCost?.toString() || "",
       });

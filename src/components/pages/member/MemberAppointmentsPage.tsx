@@ -64,8 +64,8 @@ function resolveCustomerStatus(booking: Booking): CustomerFacingStatus {
     return BookingStatus.CANCELLED;
   }
 
-  const operationalStatus = booking.assignmentStatus ?? booking.status;
-  if ([BookingStatus.CONFIRMED, BookingStatus.ASSIGNED, BookingStatus.IN_QUEUE, BookingStatus.ACTIVE].includes(operationalStatus)) {
+  // Check booking status directly since assignmentStatus doesn't exist
+  if ([BookingStatus.CONFIRMED, BookingStatus.ASSIGNED, BookingStatus.IN_QUEUE, BookingStatus.ACTIVE].includes(booking.status as BookingStatus)) {
     return BookingStatus.CONFIRMED;
   }
 
@@ -86,9 +86,9 @@ export default function MemberAppointmentsPage() {
   const loadBookings = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await bookingService.getBookings({});
+      const data = await bookingService.getClientBookings({});
       const filtered = user?.email
-        ? data.filter((booking) => booking.customerEmail?.toLowerCase() === user.email.toLowerCase())
+        ? data.filter((booking: Booking) => booking.customerEmail?.toLowerCase() === user.email.toLowerCase())
         : data;
       setBookings(filtered);
     } catch (error) {
@@ -120,8 +120,8 @@ export default function MemberAppointmentsPage() {
       .filter((booking) => booking.customerStatus !== BookingStatus.CANCELLED)
       .sort(
         (a, b) =>
-          new Date(a.preferredTime ?? a.scheduledDate).getTime() -
-          new Date(b.preferredTime ?? b.scheduledDate).getTime(),
+          new Date(a.preferredTime ?? a.scheduledDate ?? a.createdAt ?? new Date()).getTime() -
+          new Date(b.preferredTime ?? b.scheduledDate ?? b.createdAt ?? new Date()).getTime(),
       )[0];
   }, [normalizedBookings]);
 
@@ -131,7 +131,7 @@ export default function MemberAppointmentsPage() {
         const statusWeight =
           customerStatusOrder.indexOf(a.customerStatus) - customerStatusOrder.indexOf(b.customerStatus);
         if (statusWeight !== 0) return statusWeight;
-        return new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime();
+        return new Date(b.scheduledDate ?? b.createdAt ?? new Date()).getTime() - new Date(a.scheduledDate ?? a.createdAt ?? new Date()).getTime();
       });
   }, [normalizedBookings]);
 

@@ -18,6 +18,9 @@ import {
   CreditCard,
   Plus,
   ClipboardCheck,
+  Calendar,
+  UserCog,
+  Award,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -79,14 +82,30 @@ const menuItems: MenuItemOrGroup[] = [
     icon: Plus,
   },
   {
+    label: "Quản lý Technician",
+    icon: UserCog,
+    items: [
+      {
+        href: "/staff/technician-schedule",
+        label: "Quản lý lịch phụ tùng",
+        icon: Calendar,
+      },
+      {
+        href: "/staff/technician-certificates",
+        label: "Quản lý chứng chỉ",
+        icon: Award,
+      },
+      {
+        href: "/staff/technicians",
+        label: "Danh sách Technicians",
+        icon: UserCheck,
+      },
+    ],
+  },
+  {
     href: "/staff/workorders",
     label: "Work Orders",
     icon: Wrench,
-  },
-  {
-    href: "/staff/technicians",
-    label: "Technicians",
-    icon: UserCheck,
   },
   {
     href: "/staff/customers",
@@ -116,8 +135,8 @@ export default function StaffSidebar() {
           return new Set(JSON.parse(saved));
         }
       }
-      // Default: expand "Lịch & Phân công"
-      return new Set(["Lịch & Phân công"]);
+      // Default: expand "Lịch & Phân công" and "Quản lý Technician"
+      return new Set(["Lịch & Phân công", "Quản lý Technician"]);
     }
   );
 
@@ -149,16 +168,16 @@ export default function StaffSidebar() {
         {/* Sidebar Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
               <span className="text-primary-foreground font-bold text-sm">
                 EV
               </span>
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-card-foreground">
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-card-foreground truncate" title="Staff Panel">
                 Staff Panel
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate" title="Service Operations">
                 Service Operations
               </p>
             </div>
@@ -185,7 +204,7 @@ export default function StaffSidebar() {
                         : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 min-w-0">
                       <Icon
                         className={cn(
                           "h-4 w-4 transition-colors",
@@ -194,7 +213,7 @@ export default function StaffSidebar() {
                             : "text-muted-foreground group-hover:text-foreground"
                         )}
                       />
-                      <span>{item.label}</span>
+                      <span className="truncate max-w-[160px]" title={item.label}>{item.label}</span>
                     </div>
                     <ChevronDown
                       className={cn(
@@ -228,7 +247,7 @@ export default function StaffSidebar() {
                                 : "text-muted-foreground hover:text-foreground"
                             )}
                           >
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 min-w-0">
                               <SubIcon
                                 className={cn(
                                   "h-3.5 w-3.5 transition-colors",
@@ -237,7 +256,7 @@ export default function StaffSidebar() {
                                     : "text-muted-foreground/70 group-hover:text-foreground"
                                 )}
                               />
-                              <span className="text-xs">{subItem.label}</span>
+                              <span className="text-xs truncate max-w-[140px]" title={subItem.label}>{subItem.label}</span>
                             </div>
                             {isActive && (
                               <ChevronRight className="h-3 w-3 text-primary" />
@@ -266,7 +285,7 @@ export default function StaffSidebar() {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 min-w-0">
                   <Icon
                     className={cn(
                       "h-4 w-4 transition-colors",
@@ -275,7 +294,7 @@ export default function StaffSidebar() {
                         : "text-muted-foreground group-hover:text-foreground"
                     )}
                   />
-                  <span>{item.label}</span>
+                  <span className="truncate max-w-[160px]" title={item.label}>{item.label}</span>
                 </div>
                 {isActive && <ChevronRight className="h-4 w-4 text-primary" />}
               </Link>
