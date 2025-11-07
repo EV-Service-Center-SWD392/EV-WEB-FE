@@ -26,8 +26,8 @@ export const bookingService = {
 
             const queryString = params.toString();
             const url = queryString
-                ? `/client/Booking?${queryString}`
-                : "/client/Booking";
+                ? `/api/client/Booking?${queryString}`
+                : "/api/client/Booking";
 
             const response = await api.get<BookingResponseDto[]>(url);
             return response.data || [];
@@ -45,7 +45,7 @@ export const bookingService = {
     async createBooking(bookingData: CreateBookingRequest): Promise<BookingResponseDto> {
         try {
             const response = await api.post<BookingResponseDto>(
-                "/client/Booking",
+                "/api/client/Booking",
                 bookingData
             );
             return response.data;
@@ -72,7 +72,7 @@ export const bookingService = {
     ): Promise<BookingResponseDto> {
         try {
             const response = await api.put<BookingResponseDto>(
-                `/client/Booking/${bookingId}`,
+                `/api/client/Booking/${bookingId}`,
                 updateData
             );
             return response.data;
@@ -89,11 +89,133 @@ export const bookingService = {
      */
     async deleteBooking(bookingId: string): Promise<void> {
         try {
-            await api.delete(`/client/Booking/${bookingId}`);
+            await api.delete(`/api/client/Booking/${bookingId}`);
         } catch (error: unknown) {
             const err = error as { response?: { data?: unknown }; message?: string };
             console.error("Failed to delete booking:", err);
             throw new Error(err.message || "Failed to delete booking");
+        }
+    },
+
+    // ============ Helper methods for member booking flow ============
+
+    /**
+     * Alias for getClientBookings - backward compatibility
+     */
+    async getBookings(query?: BookingQueryDto): Promise<BookingResponseDto[]> {
+        return this.getClientBookings(query);
+    },
+
+    /**
+     * Alias for getClientBookings - for member bookings
+     */
+    async getMyBookings(query?: BookingQueryDto): Promise<BookingResponseDto[]> {
+        return this.getClientBookings(query);
+    },
+
+    /**
+     * Get booking by ID
+     * GET /client/Booking/{id}
+     */
+    async getBookingById(id: string): Promise<BookingResponseDto | null> {
+        try {
+            const response = await api.get(`/api/client/Booking/${id}`);
+            return response.data || null;
+        } catch (error) {
+            console.error("Failed to fetch booking:", error);
+            return null;
+        }
+    },
+
+    /**
+     * Get all vehicles for current user
+     * GET /client/Vehicle
+     */
+    async getVehicle(): Promise<any[]> {
+        try {
+            const response = await api.get("/api/client/Vehicle?Page=1&PageSize=10");
+            const data = response.data;
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data?.items)) return data.items;
+            if (Array.isArray(data?.rows)) return data.rows;
+            return [];
+        } catch (error) {
+            console.error("Failed to fetch vehicles:", error);
+            return [];
+        }
+    },
+
+    /**
+     * Get all service centers
+     * GET /Center
+     */
+    async getCenters(): Promise<any[]> {
+        try {
+            const response = await api.get("/api/Center");
+            const data = response.data;
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error("Failed to fetch centers:", error);
+            return [];
+        }
+    },
+
+    /**
+     * Get booking schedule for a center
+     * GET /BookingSchedules/client/{centerId}
+     */
+    async getBookingSchedule(
+        centerId: string,
+        startDate?: string,
+        endDate?: string
+    ): Promise<any[]> {
+        if (!centerId) return [];
+
+        try {
+            const params = new URLSearchParams();
+            if (startDate) params.append("StartDate", startDate);
+            if (endDate) params.append("EndDate", endDate);
+
+            const queryString = params.toString();
+            const url = queryString
+                ? `/api/BookingSchedules/client/${centerId}?${queryString}`
+                : `/api/BookingSchedules/client/${centerId}`;
+
+            const response = await api.get(url);
+            const data = response.data;
+
+            // If API returns flat array of slots
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data?.items)) return data.items;
+
+            // If API returns nested structure with schedules
+            if (data?.schedules && Array.isArray(data.schedules)) {
+                const flat: any[] = [];
+                data.schedules.forEach((d: any) => {
+                    const date = d.currentDate;
+                    const slots = Array.isArray(d.slots) ? d.slots : [];
+                    slots.forEach((slot: any, idx: number) => {
+                        flat.push({
+                            slotId: slot.slotId ?? `${centerId}_${date}_${slot.slot ?? idx}`,
+                            centerId: data.centerId || centerId,
+                            startUtc: `${date}T${slot.startutc || slot.startUtc || "00:00"}:00Z`,
+                            endUtc: `${date}T${slot.endutc || slot.endUtc || "00:00"}:00Z`,
+                            capacity: slot.capacity,
+                            note: slot.note,
+                            status: slot.status,
+                            isActive: slot.isActive,
+                            isBookable: slot.isBookable,
+                            raw: slot,
+                        });
+                    });
+                });
+                return flat;
+            }
+
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error("Failed to fetch booking schedule:", error);
+            return [];
         }
     },
 };
