@@ -36,7 +36,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 
 import { bookingService } from '@/services/bookingService';
 import { createIntake, getIntakeByBooking } from '@/services/intakeService';
-import { BookingStatus, type Booking } from '@/entities/booking.types';
+import { BookingStatus, type BookingResponseDto } from '@/entities/booking.types';
 import type { CreateIntakeRequest } from '@/entities/intake.types';
 
 export default function StaffAssignmentsPage() {
@@ -44,8 +44,8 @@ export default function StaffAssignmentsPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [isError, setIsError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState('');
-    const [assignments, setAssignments] = React.useState<Booking[]>([]);
-    const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
+    const [assignments, setAssignments] = React.useState<BookingResponseDto[]>([]);
+    const [selectedBooking, setSelectedBooking] = React.useState<BookingResponseDto | null>(null);
     const [isCreatingIntake, setIsCreatingIntake] = React.useState(false);
 
     // Intake form state
@@ -62,19 +62,18 @@ export default function StaffAssignmentsPage() {
             setIsError(false);
             setErrorMessage('');
 
-            const allBookings = await bookingService.getBookings({});
+            const allBookings = await bookingService.getClientBookings({});
 
             // Filter bookings with ASSIGNED status and no intake
             const assignedBookings = allBookings.filter(
-                (booking) =>
-                    booking.assignmentStatus === BookingStatus.ASSIGNED ||
-                    booking.status === BookingStatus.ASSIGNED
+                (booking: BookingResponseDto) =>
+                    booking.status === 'Approved'
             );
 
             // ⚠️ TEMPORARY: Check intakes one by one until backend provides joined data
             // TODO: Replace with single API call when backend supports:
             // GET /api/assignments?includeBooking=true&includeIntake=true&hasIntake=false
-            const bookingsWithoutIntake: Booking[] = [];
+            const bookingsWithoutIntake: BookingResponseDto[] = [];
 
             for (const booking of assignedBookings) {
                 try {
@@ -103,7 +102,7 @@ export default function StaffAssignmentsPage() {
         loadAssignments();
     }, [loadAssignments]);
 
-    const handleOpenIntakeDialog = (booking: Booking) => {
+    const handleOpenIntakeDialog = (booking: BookingResponseDto) => {
         setSelectedBooking(booking);
         setIntakeForm({
             licensePlate: '',
@@ -260,19 +259,19 @@ export default function StaffAssignmentsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        {booking.technicianName || 'N/A'}
+                                        {'N/A'}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             <ClockIcon className="w-4 h-4 text-muted-foreground" />
                                             <div className="text-sm">
-                                                {formatDate(booking.scheduledDate)}
+                                                {formatDate(booking.preferredDate || booking.createdAt)}
                                             </div>
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="secondary">
-                                            {booking.assignmentStatus || booking.status}
+                                            {booking.status}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">

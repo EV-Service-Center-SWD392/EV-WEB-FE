@@ -19,6 +19,8 @@ import {
   Plus,
   ClipboardCheck,
   Calendar,
+  UserCog,
+  Award,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -80,19 +82,30 @@ const menuItems: MenuItemOrGroup[] = [
     icon: Plus,
   },
   {
-    href: "/technician-schedule",
-    label: "Quản lý lịch Technician",
-    icon: Calendar,
+    label: "Quản lý Technician",
+    icon: UserCog,
+    items: [
+      {
+        href: "/staff/technician-schedule",
+        label: "Quản lý lịch phụ tùng",
+        icon: Calendar,
+      },
+      {
+        href: "/staff/technician-certificates",
+        label: "Quản lý chứng chỉ",
+        icon: Award,
+      },
+      {
+        href: "/staff/technicians",
+        label: "Danh sách Technicians",
+        icon: UserCheck,
+      },
+    ],
   },
   {
     href: "/staff/workorders",
     label: "Work Orders",
     icon: Wrench,
-  },
-  {
-    href: "/staff/technicians",
-    label: "Technicians",
-    icon: UserCheck,
   },
   {
     href: "/staff/customers",
@@ -122,8 +135,8 @@ export default function StaffSidebar() {
           return new Set(JSON.parse(saved));
         }
       }
-      // Default: expand "Lịch & Phân công"
-      return new Set(["Lịch & Phân công"]);
+      // Default: expand "Lịch & Phân công" and "Quản lý Technician"
+      return new Set(["Lịch & Phân công", "Quản lý Technician"]);
     }
   );
 

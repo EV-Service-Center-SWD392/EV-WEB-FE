@@ -1,21 +1,19 @@
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
 
 import type { Technician } from "@/entities/slot.types";
-import { technicianService, type TechnicianUser } from "@/services/technicianService";
+import { technicianService } from "@/services/technicianService";
+import type { Technician as TechnicianEntity } from "@/entities/technician.types";
 
-// TECHNICIAN role ID from your API response
-const TECHNICIAN_ROLE_ID = "59c7a145-dec1-425d-82a8-12abafb14789";
-
-// Transform TechnicianUser to Technician interface
-function transformToTechnician(user: TechnicianUser): Technician {
+// Transform TechnicianEntity to Technician interface for slots
+function transformToTechnician(user: TechnicianEntity): Technician {
     return {
         id: user.userId,
-        name: technicianService.getTechnicianDisplayName(user),
+        name: user.userName || user.email || "",
         email: user.email,
-        phone: user.phoneNumber,
+        phone: user.phoneNumber || "",
         centerId: undefined,
         specialties: [],
-        isActive: user.isActive
+        isActive: true
     };
 }
 
@@ -26,7 +24,7 @@ export function useTechnicians(): UseQueryResult<Technician[], Error> {
     return useQuery({
         queryKey: ["technicians"],
         queryFn: async () => {
-            const users = await technicianService.getTechnicians(TECHNICIAN_ROLE_ID);
+            const users = await technicianService.getTechnicians();
             return users.map(transformToTechnician);
         },
         staleTime: 5 * 60 * 1000, // 5 minutes
@@ -46,7 +44,7 @@ export function useTechnician(
     return useQuery({
         queryKey: ["technicians", technicianId],
         queryFn: async () => {
-            const user = await technicianService.getUserById(technicianId!);
+            const user = await technicianService.getTechnicianById(technicianId!);
             return transformToTechnician(user);
         },
         enabled: !!technicianId,

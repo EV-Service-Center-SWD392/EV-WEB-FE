@@ -118,7 +118,7 @@ export function BookingForm({
         customerName: booking.customerName,
         customerEmail: booking.customerEmail,
         customerPhone: booking.customerPhone,
-        vehicleType: booking.vehicleType,
+        vehicleType: booking.vehicleType || "",
         vehicleBrand: booking.vehicleBrand,
         vehicleModel: booking.vehicleModel || "",
         serviceCenterId: booking.serviceCenterId || "",
@@ -128,7 +128,7 @@ export function BookingForm({
         scheduledDate: toInputDateTimeLocal(booking.scheduledDate),
         repairParts: booking.repairParts || "",
         description: booking.description || "",
-        status: booking.status,
+        status: (booking.status as BookingStatus) || BookingStatus.PENDING,
         estimatedCost: booking.estimatedCost?.toString() || "",
         actualCost: booking.actualCost?.toString() || "",
       });

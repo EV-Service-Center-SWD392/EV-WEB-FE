@@ -204,9 +204,9 @@ export default function TechnicianSchedulePage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Lịch làm việc Technician</h1>
+          <h1 className="text-3xl font-bold">Quản lý lịch phụ tùng</h1>
           <p className="text-muted-foreground mt-2">
-            Xem lịch làm việc cố định của kỹ thuật viên theo tuần
+            Quản lý lịch phụ tùng và phân công kỹ thuật viên theo tuần
           </p>
         </div>
 
