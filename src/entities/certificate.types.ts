@@ -57,6 +57,26 @@ export interface UserCertificate {
 }
 
 /**
+ * Complete User Certificate with all information (from GET /api/UserCertificate)
+ * Includes full details about the certificate assignment including expiry information
+ */
+export interface UserCertificateDetail {
+  userCertificateId: string;
+  userId: string;
+  userName: string;
+  certificateId: string;
+  certificateName: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED' | 'Pending' | 'Approved' | 'Rejected' | 'Revoked' | 'Active';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  certificateImage: string | null;
+  expiryDate: string;
+  isExpired: boolean;
+  daysUntilExpiry: number;
+}
+
+/**
  * DTO for assigning a certificate to a user/technician
  */
 export interface AssignCertificateDto {

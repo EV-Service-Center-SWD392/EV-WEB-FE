@@ -1,6 +1,7 @@
 import { api } from './api';
 import type { 
   UserCertificate,
+  UserCertificateDetail,
   AssignCertificateDto,
   PendingCertificate,
   ExpiringCertificate,
@@ -49,6 +50,16 @@ class UserCertificateService {
    */
   async getPendingCertificates(): Promise<ApiResponse<PendingCertificate[]>> {
     const response = await api.get<ApiResponse<PendingCertificate[]>>('/api/UserCertificate/pending');
+    return response.data;
+  }
+
+  /**
+   * Get all user certificate assignments in the system
+   * GET /api/UserCertificate
+   * Returns complete information including status, expiry, and user/certificate details
+   */
+  async getAllUserCertificates(): Promise<UserCertificateDetail[]> {
+    const response = await api.get<UserCertificateDetail[]>('/api/UserCertificate');
     return response.data;
   }
 
