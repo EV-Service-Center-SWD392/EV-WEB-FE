@@ -22,6 +22,10 @@ const menuItems: MenuItem[] = [
     label: "Work Orders",
   },
   {
+    href: "/technician/certificates",
+    label: "Quản lý chứng chỉ",
+  },
+  {
     href: "/technician/tasks",
     label: "Nhiệm vụ",
   },

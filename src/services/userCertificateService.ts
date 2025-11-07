@@ -3,6 +3,7 @@ import type {
   UserCertificate,
   UserCertificateDetail,
   AssignCertificateDto,
+  RequestCertificateDto,
   PendingCertificate,
   ExpiringCertificate,
   CertificateHolder,
@@ -125,6 +126,35 @@ class UserCertificateService {
    */
   async getTechniciansWithCertificates(): Promise<TechnicianWithCertificates[]> {
     const response = await api.get<TechnicianWithCertificates[]>('/api/UserAccount/technicians');
+    return response.data;
+  }
+
+  /**
+   * Technician requests/submits a new certificate with image
+   * POST /api/UserCertificate/request
+   * Sends FormData with Name, Description, and ImageFile
+   */
+  async requestCertificate(data: RequestCertificateDto): Promise<ApiResponse<void>> {
+    const formData = new FormData();
+    formData.append('Name', data.name);
+    
+    if (data.description) {
+      formData.append('Description', data.description);
+    }
+    
+    if (data.imageFile) {
+      formData.append('ImageFile', data.imageFile);
+    }
+
+    const response = await api.post<ApiResponse<void>>(
+      '/api/UserCertificate/request',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   }
 }

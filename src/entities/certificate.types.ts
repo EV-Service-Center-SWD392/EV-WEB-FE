@@ -86,6 +86,16 @@ export interface AssignCertificateDto {
 }
 
 /**
+ * DTO for technician to request/submit a new certificate
+ * Corresponds to backend model with Name, Description, ImageFile
+ */
+export interface RequestCertificateDto {
+  name: string;
+  description?: string;
+  imageFile?: File;
+}
+
+/**
  * Pending certificate assignment (for staff/admin review)
  */
 export interface PendingCertificate {
