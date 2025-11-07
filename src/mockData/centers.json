@@ -1,9 +1,0 @@
-[
-  { "id": "c1", "name": "Vinfast Center Q7", "address": "District 7, HCMC" },
-  {
-    "id": "c2",
-    "name": "EV Service Center Downtown",
-    "address": "District 1, HCMC"
-  },
-  { "id": "c3", "name": "Northside EV Hub", "address": "Binh Tan" }
-]

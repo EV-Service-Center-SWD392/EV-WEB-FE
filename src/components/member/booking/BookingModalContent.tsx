@@ -1,12 +1,5 @@
-import Image from "next/image";
 import { useState, useMemo, useEffect } from "react";
-import VEHICLES from "../../../mockData/vehicles.json";
-import SERVICES from "../../../mockData/services.json";
-import BOOKINGSCHEDULES from "../../../mockData/bookingschedules.json";
 import { bookingService } from "@/services/bookingService";
-import BookingDetailLayout from "./BookingDetailLayout";
-
-export type BookingMode = "CREATE" | "PROPOSE" | "VIEW";
 
 export interface BookingDetailsData {
   id: string;
@@ -23,119 +16,221 @@ export interface BookingDetailsData {
 }
 
 interface BookingModalContentProps {
-  mode: BookingMode;
-  bookingData: Partial<BookingDetailsData>;
+  bookingData?: Partial<BookingDetailsData>;
   onClose: () => void;
   onSubmit?: (payload: any) => void;
 }
 
 export function BookingModalContent({
-  mode,
-  bookingData,
+  bookingData = {},
   onClose,
   onSubmit,
 }: BookingModalContentProps) {
-  const isViewOnly = mode === "VIEW";
+  const isViewOnly = false;
 
   const [vehicleId, setVehicleId] = useState<string | undefined>(undefined);
-  const [centerId, setCenterId] = useState<string | undefined>(undefined);
-  const [centers, setCenters] = useState<any[]>([]);
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
-  const [scheduleId, setScheduleId] = useState<string | undefined>(undefined);
-  const [notes, setNotes] = useState<string | undefined>(bookingData.notes);
-  const [serviceSearch, setServiceSearch] = useState<string>("");
-  const [serviceSort, setServiceSort] = useState<string>("name");
+  const [vehicles, setVehicles] = useState<any[]>([]);
 
-  // Step state for unreachable effect
-  const hasVehicle = Boolean(vehicleId);
-  const hasCenter = Boolean(centerId) && hasVehicle;
-  const hasServices = selectedServiceIds.length > 0 && hasCenter;
-  const hasSchedule = Boolean(scheduleId) && hasServices;
-
-  const availableSchedules = useMemo(() => {
-    if (!centerId) return [];
-    return (BOOKINGSCHEDULES as any[]).filter((s) => s.centerId === centerId);
-  }, [centerId]);
-
-  const totalAmount = useMemo(() => {
-    const sel = (SERVICES as any[]).filter((s) =>
-      selectedServiceIds.includes(s.serviceId)
-    );
-    return sel.reduce((sum, s) => sum + (s.basePrice || 0), 0);
-  }, [selectedServiceIds]);
-
-  const filteredServices = useMemo(() => {
-    const q = serviceSearch.trim().toLowerCase();
-    let list = (SERVICES as any[]).filter((s) =>
-      s.name.toLowerCase().includes(q)
-    );
-    if (serviceSort === "price_asc") {
-      list = list.sort((a, b) => (a.basePrice || 0) - (b.basePrice || 0));
-    } else if (serviceSort === "price_desc") {
-      list = list.sort((a, b) => (b.basePrice || 0) - (a.basePrice || 0));
-    } else {
-      list = list.sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return list;
-  }, [serviceSearch, serviceSort]);
-
-  const handleToggleService = (id: string) => {
-    setSelectedServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    );
-  };
-
-  const modalTitles: Record<BookingMode, string> = {
-    CREATE: "Create a New Booking",
-    PROPOSE: "Review Service Proposal",
-    VIEW: "Booking Details",
-  };
-
-  const handleSubmit = () => {
-    const payload = {
-      vehicleId,
-      centerId,
-      services: selectedServiceIds,
-      scheduleId,
-      notes,
-    };
-    onSubmit?.(payload);
-  };
-
-  const selectedVehicle = (VEHICLES as any[]).find(
-    (v) => v.vehicleId === vehicleId
-  );
+  // Load vehicles from API only
   useEffect(() => {
     let mounted = true;
     bookingService
-      .getCenters()
-      .then((c) => mounted && setCenters(c || []))
-      .catch(() => mounted && setCenters([]));
+      .getVehicle()
+      .then((v) => {
+        if (!mounted) return;
+        if (Array.isArray(v)) setVehicles(v);
+        else setVehicles([]);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setVehicles([]);
+      });
     return () => {
       mounted = false;
     };
   }, []);
+  const [centerId, setCenterId] = useState<string | undefined>(undefined);
+  const [centers, setCenters] = useState<any[]>([]);
+  const [selectedslot, setSelectedslot] = useState<string | undefined>(
+    undefined
+  );
+  const [availableSchedulesState, setAvailableSchedulesState] = useState<any[]>(
+    []
+  );
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(
+    undefined
+  );
+  const [notes, setNotes] = useState<string | undefined>(bookingData.notes);
 
-  // Accessibility: compute aria-disabled for form regions
-  const vehicleRegionDisabled = isViewOnly === true ? true : false;
-  const centerRegionDisabled = isViewOnly || !hasVehicle;
-  const servicesRegionDisabled = isViewOnly || !hasCenter;
-  const scheduleRegionDisabled = isViewOnly || !hasServices;
+  type SlotLike = {
+    slot?: number | string;
+    slotId?: number | string;
+    startUtc?: string;
+    startutc?: string;
+  };
 
-  const selectedSchedule = (availableSchedules as any[]).find(
-    (s) => s.slotId === scheduleId
+  // Step state for unreachable effect (vehicle -> center -> date -> slot)
+  const hasVehicle = Boolean(vehicleId);
+  const hasCenter = Boolean(centerId) && hasVehicle;
+  const hasDate = Boolean(selectedDate) && hasCenter;
+  const hasSlot = Boolean(selectedslot) && hasDate;
+
+  // availableSchedulesState will be populated from API when centerId changes
+  const availableSchedules = useMemo(
+    () => availableSchedulesState,
+    [availableSchedulesState]
   );
 
-  if (mode === "VIEW") {
-    // Render the read-only booking detail layout for VIEW mode
-    return <BookingDetailLayout booking={bookingData as BookingDetailsData} />;
-  }
+  // available slots for the chosen date
+  const availableSlotsForDate = useMemo(() => {
+    if (!selectedDate) return [];
+    return availableSchedules.filter((s) => {
+      const d = new Date(s.startUtc).toISOString().slice(0, 10);
+      return d === selectedDate;
+    });
+  }, [availableSchedules, selectedDate]);
+
+  // dates in the loaded week that have at least one slot
+  const availableDates = useMemo(() => {
+    const set = new Set<string>();
+    availableSchedules.forEach((s) => {
+      try {
+        const d = new Date(s.startUtc).toISOString().slice(0, 10);
+        set.add(d);
+      } catch {
+        // ignore
+      }
+    });
+    return Array.from(set).sort();
+  }, [availableSchedules]);
+
+  const selectedSlotDisplay = useMemo(() => {
+    if (!selectedslot) return null;
+    const findByVal = (arr: SlotLike[]) =>
+      arr.find(
+        (s, idx) => String(s.slot ?? s.slotId ?? idx) === String(selectedslot)
+      );
+    return (
+      findByVal(availableSchedules as SlotLike[]) ||
+      findByVal(availableSlotsForDate) ||
+      null
+    );
+  }, [availableSchedules, availableSlotsForDate, selectedslot]);
+
+  const currentStep = hasSlot
+    ? 4
+    : hasDate
+      ? 3
+      : hasCenter
+        ? 2
+        : hasVehicle
+          ? 1
+          : 0;
+
+  const modalTitle = "Create a New Booking";
+  const dataVehicles = vehicles;
+  const selectedVehicle = dataVehicles.find((v) => v.vehicleId === vehicleId);
+
+  // Fetch centers when a vehicle is selected (unreachable effect until vehicle chosen)
+  useEffect(() => {
+    let mounted = true;
+    if (!vehicleId) {
+      setCenters([]);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    bookingService
+      .getCenters()
+      .then((c) => mounted && setCenters(c || []))
+      .catch(() => mounted && setCenters([]));
+
+    return () => {
+      mounted = false;
+    };
+  }, [vehicleId]);
+
+  // When center changes, load schedules for that center (unreachable until center chosen)
+  useEffect(() => {
+    let mounted = true;
+    setAvailableSchedulesState([]);
+    setSelectedDate(undefined);
+    setSelectedslot(undefined);
+    if (!centerId)
+      return () => {
+        mounted = false;
+      };
+
+    // compute StartDate = today, EndDate = 7 days later (YYYY-MM-DD)
+    const start = new Date();
+    const startStr = start.toISOString().slice(0, 10);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    const endStr = end.toISOString().slice(0, 10);
+
+    bookingService
+      .getBookingSchedule(centerId, startStr, endStr)
+      .then(
+        (s) => mounted && setAvailableSchedulesState(Array.isArray(s) ? s : [])
+      )
+      .catch(() => mounted && setAvailableSchedulesState([]));
+
+    return () => {
+      mounted = false;
+    };
+  }, [centerId]);
+
+  const handleSubmit = async () => {
+    // Build payload expected by /api/client/Booking
+    const slotNumber = Number(selectedslot ?? 0);
+
+    // Find slot object by numeric slot value
+    const findSlotObj = (arr: SlotLike[]) => {
+      const found = arr.find((s) => {
+        const currentSlot = s.slot ?? arr.indexOf(s) + 1;
+        return Number(currentSlot) === slotNumber;
+      });
+      return found;
+    };
+
+    const slotObj =
+      findSlotObj(availableSchedules) || findSlotObj(availableSlotsForDate);
+
+    // Prefer the explicitly chosen date from the modal (selectedDate).
+    // Fall back to the slot start time if available, otherwise use today.
+    const bookingDate =
+      selectedDate ??
+      (
+        slotObj?.startUtc ??
+        slotObj?.startutc ??
+        new Date().toISOString()
+      ).split("T")[0];
+
+    const payload = {
+      bookingDate,
+      slot: slotNumber,
+      vehicleId: vehicleId ?? "",
+      notes: notes ?? "",
+      centerId: centerId ?? "",
+    };
+
+    // Call service directly if parent didn't provide custom handler
+    if (onSubmit) {
+      onSubmit(payload);
+    } else {
+      try {
+        await bookingService.createBooking(payload as any);
+        // optional: show toast is handled by api interceptors
+      } catch {
+        // swallow — api layer already shows toast
+      }
+    }
+  };
 
   return (
     <div className="p-6 max-w-4xl w-full max-h-[80vh] overflow-auto">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
-        {modalTitles[mode]}
-      </h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">{modalTitle}</h2>
 
       {/* Stepper: shows unreachable / completed steps */}
       <div className="mb-6">
@@ -144,8 +239,8 @@ export function BookingModalContent({
             {[
               { key: "vehicle", label: "Vehicle", done: hasVehicle },
               { key: "center", label: "Center", done: hasCenter },
-              { key: "services", label: "Services", done: hasServices },
-              { key: "schedule", label: "Schedule", done: hasSchedule },
+              { key: "date", label: "Date", done: hasDate },
+              { key: "slot", label: "Slot", done: hasSlot },
             ].map((step, idx) => (
               <div key={step.key} className="flex items-center">
                 <div
@@ -171,39 +266,14 @@ export function BookingModalContent({
             ))}
           </div>
           <div className="sm:hidden text-sm text-gray-600">
-            Step:{" "}
-            {hasSchedule
-              ? 4
-              : hasServices
-                ? 3
-                : hasCenter
-                  ? 2
-                  : hasVehicle
-                    ? 1
-                    : 0}
-            /4
+            Step: {currentStep}/4
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Column 1: Vehicle + Center */}
         <div className="space-y-6">
-          <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
-            <Image
-              src={
-                selectedVehicle?.image ||
-                bookingData.vehicleImageUrl ||
-                "/images/placeholder.jpg"
-              }
-              alt={
-                selectedVehicle?.name || bookingData.vehicleName || "Vehicle"
-              }
-              layout="fill"
-              objectFit="cover"
-            />
-          </div>
-
           <div className="space-y-3">
             <label
               htmlFor="vehicle-select"
@@ -219,16 +289,16 @@ export function BookingModalContent({
               disabled={isViewOnly}
             >
               <option value="">-- Choose a vehicle --</option>
-              {(VEHICLES as any[]).map((v) => (
+              {dataVehicles.map((v: any) => (
                 <option key={v.vehicleId} value={v.vehicleId}>
-                  {v.vehicleId} ({v.licensePlate})
+                  {v.licensePlate} ({v.year} {v.color})
                 </option>
               ))}
             </select>
           </div>
 
           <div
-            className={`space-y-3 ${centerRegionDisabled ? "opacity-60 pointer-events-none" : ""}`}
+            className={`space-y-3 ${isViewOnly || !hasVehicle ? "opacity-60 pointer-events-none" : ""}`}
           >
             <label
               htmlFor="center-select"
@@ -256,92 +326,115 @@ export function BookingModalContent({
           </div>
         </div>
 
-        {/* Column 2: Services */}
+        {/* Column 2: Date & Slot */}
         <div
-          className={`space-y-4 ${servicesRegionDisabled ? "opacity-60 pointer-events-none" : ""}`}
+          className={`space-y-4 ${isViewOnly || !hasCenter ? "opacity-60 pointer-events-none" : ""}`}
         >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex-1">
-              <label htmlFor="service-search" className="sr-only">
-                Search services
-              </label>
-              <input
-                id="service-search"
-                value={serviceSearch}
-                onChange={(e) => setServiceSearch(e.target.value)}
-                placeholder="Search services..."
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="service-sort" className="sr-only">
-                Sort
-              </label>
-              <select
-                id="service-sort"
-                value={serviceSort}
-                onChange={(e) => setServiceSort(e.target.value)}
-                className="rounded-lg border border-gray-200 px-3 py-2 shadow-sm"
-              >
-                <option value="name">Name</option>
-                <option value="price_asc">Price ↑</option>
-                <option value="price_desc">Price ↓</option>
-              </select>
+          <div>
+            <label
+              htmlFor="date-select"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Select Date
+            </label>
+
+            {/* quick week picker: show days that have slots */}
+            <div className="mt-3 flex gap-2 flex-wrap">
+              {availableDates.length === 0 ? (
+                <div className="text-sm text-gray-500">No slots this week</div>
+              ) : (
+                availableDates.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDate(d);
+                      setSelectedslot(undefined);
+                    }}
+                    className={`px-3 py-1 rounded-md text-sm border ${
+                      selectedDate === d
+                        ? "bg-indigo-600 text-white"
+                        : "bg-white text-gray-700"
+                    }`}
+                    disabled={isViewOnly}
+                  >
+                    {new Date(d).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </button>
+                ))
+              )}
             </div>
           </div>
 
-          <div className="max-h-60 overflow-auto space-y-2">
-            {filteredServices.map((s) => (
-              <label
-                key={s.serviceId}
-                className={`flex items-center p-2 border rounded-lg transition-shadow ${selectedServiceIds.includes(s.serviceId) ? "bg-indigo-50 border-indigo-200 shadow-sm" : "bg-white"}`}
-              >
-                <input
-                  type="checkbox"
-                  className="mr-3 h-4 w-4 text-indigo-600"
-                  checked={selectedServiceIds.includes(s.serviceId)}
-                  onChange={() => handleToggleService(s.serviceId)}
-                  disabled={isViewOnly || !centerId}
-                />
-                <div className="flex-1">
-                  <div className="font-medium">{s.name}</div>
-                  <div className="text-sm text-gray-500">
-                    {(s.basePrice || 0).toLocaleString("en-US")} VND
-                  </div>
-                </div>
-              </label>
-            ))}
+          <div>
+            <label
+              htmlFor="slot-select"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Select Slot
+            </label>
+            <select
+              id="slot-select"
+              className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm"
+              value={selectedslot}
+              onChange={(e) => setSelectedslot(e.target.value || undefined)}
+              disabled={
+                isViewOnly ||
+                !selectedDate ||
+                availableSlotsForDate.length === 0
+              }
+            >
+              <option value="">-- Choose a slot --</option>
+              {availableSlotsForDate.map((s: any, idx: number) => {
+                // Each slot should have a unique position in the array even if slot numbers are missing
+                const slotNumber = s.slot ?? idx + 1; // Use array index + 1 as fallback
+                const startRaw = s.startUtc ?? s.startutc ?? "";
+                const endRaw = s.endUtc ?? s.endutc ?? "";
+                const startTime =
+                  startRaw.split("T")[1]?.split(":").slice(0, 2).join(":") ??
+                  startRaw;
+                const startIsDate =
+                  startRaw && !Number.isNaN(Date.parse(startRaw));
+                const endIsDate = endRaw && !Number.isNaN(Date.parse(endRaw));
+
+                const displayStart = startIsDate
+                  ? new Date(startRaw).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "numeric",
+                      minute: "numeric",
+                      timeZone: "UTC",
+                    })
+                  : startTime || `Slot ${slotNumber}`;
+
+                const displayEnd = endIsDate
+                  ? new Date(endRaw).toLocaleString("en-US", {
+                      hour: "numeric",
+                      minute: "numeric",
+                      timeZone: "UTC",
+                    })
+                  : "";
+
+                // Use both index and time for guaranteed unique keys
+                const key = `slot-${idx}-${startTime || slotNumber}`;
+
+                return (
+                  <option key={key} value={slotNumber}>
+                    {displayStart} - {displayEnd}
+                  </option>
+                );
+              })}
+            </select>
           </div>
         </div>
 
-        {/* Column 3: Schedule + Summary + Price + Notes + Submit */}
+        {/* Column 3: Summary + Notes + Submit */}
         <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="schedule-select"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Select Schedule
-            </label>
-            <select
-              id="schedule-select"
-              className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2 shadow-sm"
-              value={scheduleId}
-              onChange={(e) => setScheduleId(e.target.value || undefined)}
-              disabled={isViewOnly || !selectedServiceIds.length}
-            >
-              <option value="">-- Choose a schedule --</option>
-              {availableSchedules.map((sc: any) => (
-                <option key={sc.slotId} value={sc.slotId}>
-                  {new Intl.DateTimeFormat("en-US", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  }).format(new Date(sc.startUtc))}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="p-4 bg-gray-50 rounded border">
             <p className="text-sm text-gray-600">
               Vehicle:{" "}
@@ -353,27 +446,29 @@ export function BookingModalContent({
                 "-"}
             </p>
             <p className="text-sm text-gray-600 mt-2">
-              Services: {selectedServiceIds.length || 0}
+              Date: {selectedDate || "-"}
             </p>
             <p className="text-sm text-gray-600 mt-2">
-              Schedule:{" "}
-              {selectedSchedule
-                ? new Intl.DateTimeFormat("en-US", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  }).format(new Date(selectedSchedule.startUtc))
-                : "-"}
+              Slot:{" "}
+              {(() => {
+                const startRaw =
+                  selectedSlotDisplay?.startUtc ??
+                  selectedSlotDisplay?.startutc ??
+                  "";
+                const display =
+                  startRaw && !Number.isNaN(Date.parse(startRaw))
+                    ? new Date(startRaw).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "numeric",
+                        timeZone: "UTC",
+                      })
+                    : "-";
+                return display;
+              })()}
             </p>
-          </div>
-
-          <div className="mt-2 pt-4 border-t">
-            <h3 className="font-semibold text-gray-700 mb-2">Total</h3>
-            <div className="flex justify-between items-center mt-4">
-              <p className="text-lg font-bold text-gray-900">Total Amount</p>
-              <p className="text-lg font-bold text-indigo-600">
-                {totalAmount.toLocaleString("en-US")} VND
-              </p>
-            </div>
           </div>
 
           <div>
@@ -401,20 +496,15 @@ export function BookingModalContent({
             >
               Close
             </button>
-            {mode === "CREATE" && (
-              <button
-                onClick={handleSubmit}
-                disabled={
-                  !vehicleId ||
-                  !centerId ||
-                  !selectedServiceIds.length ||
-                  !scheduleId
-                }
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold disabled:opacity-50"
-              >
-                Submit Request
-              </button>
-            )}
+            <button
+              onClick={handleSubmit}
+              disabled={
+                !vehicleId || !centerId || !selectedDate || !selectedslot
+              }
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold disabled:opacity-50"
+            >
+              Submit Request
+            </button>
           </div>
         </div>
       </div>

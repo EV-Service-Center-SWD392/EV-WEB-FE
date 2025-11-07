@@ -1,119 +1,201 @@
 import { BookingStatus, BookingRecord } from "@/entities/booking.types";
-import BOOKINGS_JSON from "../mockData/bookings.json";
+import type {
+  BookingFilters,
+  UpdateBookingRequest,
+} from "@/entities/booking.types";
 import axios from "axios";
 
-// Basic normalizer for status: ensure it matches BookingStatus values
-function normalizeStatus(s?: string): BookingStatus {
-  const val = (s || "PENDING").toUpperCase();
-  if (val.includes("COMPLET")) return "COMPLETED";
-  if (val.includes("CANCEL")) return "CANCELLED";
-  if (val.includes("IN_PROGRESS") || val.includes("IN PROGRESS"))
-    return "IN_PROGRESS";
-  if (val.includes("CONFIR")) return "CONFIRMED";
-  if (val.includes("PENDING") || !val) return "PENDING";
-  return "PENDING";
+// Helper: prefer globalThis.window checks to avoid SSR errors
+function safeGetAccessToken(): string | null {
+  try {
+    if (globalThis.window === undefined) return null;
+    return globalThis.localStorage.getItem("access_token");
+  } catch {
+    return null;
+  }
 }
 
-// In-memory normalized booking store using new minimal booking schema
-const mockBookings: BookingRecord[] = (BOOKINGS_JSON as any[]).map((b) => {
-  const createdAt = b.createAt || new Date().toISOString();
-  const normalized: BookingRecord = {
-    bookingId: b.bookingId || `bk_${Date.now()}`,
-    customerId: b.customerId || "mock-customer",
-    vehicleId: b.vehicleId || "",
-    slotId: b.slotId || undefined,
-    notes: b.notes || undefined,
-    status: normalizeStatus(b.status),
-    isActive: typeof b.isActive === "boolean" ? b.isActive : true,
-    createAt: createdAt,
-    updateAt: b.updateAt || createdAt,
-  };
-  return normalized;
-});
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
-class BookingService {
+export class BookingService {
+  private readonly apiBase = API_BASE;
+
   private delay(ms = 300) {
     return new Promise((res) => setTimeout(res, ms));
   }
 
-  // Return normalized bookings, allow simple filtering by status
-  async getBookings(filters: any = {}): Promise<any[]> {
-    await this.delay();
-    let list = [...mockBookings];
-    if (filters.status) {
-      list = list.filter((b) => b.status === filters.status);
+  // Return auth headers if a token exists; safe for SSR
+  private getAuthHeaders(): Record<string, string> {
+    const token = safeGetAccessToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  // List bookings (remote only)
+  async getBookings(filters: BookingFilters = {}): Promise<BookingRecord[]> {
+    if (this.apiBase) {
+      try {
+        const url = `${this.apiBase.replace(/\/$/, "")}/client/Booking`;
+        const res = await axios.get(url, {
+          params: filters as any,
+          headers: {
+            Accept: "application/json",
+            ...this.getAuthHeaders(),
+          },
+          timeout: 5000,
+        });
+        const data = res.data;
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.items)) return data.items;
+        if (Array.isArray(data?.rows)) return data.rows;
+      } catch (err) {
+        console.debug("bookingService.getBookings remote failed", err);
+      }
     }
-    return list;
+    return [];
   }
 
-  async getBookingById(id: string): Promise<any | null> {
-    await this.delay();
-    return mockBookings.find((b) => b.bookingId === id) || null;
+  async getBookingById(id: string): Promise<BookingRecord | null> {
+    if (this.apiBase) {
+      try {
+        const url = `${this.apiBase.replace(/\/$/, "")}/client/Booking/${encodeURIComponent(id)}`;
+        const res = await axios.get(url, {
+          headers: { Accept: "application/json", ...this.getAuthHeaders() },
+          timeout: 5000,
+        });
+        return res.data || null;
+      } catch {
+        // remote failed
+      }
+    }
+    return null;
   }
 
-  // Create a booking in-memory
+  // Create booking: remote only
   async createBooking(data: any): Promise<any> {
-    await this.delay();
-    const now = new Date().toISOString();
-    const newBooking: BookingRecord = {
-      bookingId: `bk_${Date.now()}`,
-      customerId: data.customerId || "mock-customer",
-      vehicleId: data.vehicleId || data.vehicle?.vehicleId || "",
-      slotId: data.slotId || data.scheduleId || undefined,
-      notes: data.notes || undefined,
-      status: "PENDING",
-      isActive: true,
-      createAt: now,
-      updateAt: now,
-    };
-    mockBookings.unshift(newBooking);
-    return newBooking;
+    if (this.apiBase) {
+      try {
+        const payload = {
+          bookingDate:
+            data.bookingDate || data.scheduledDate || new Date().toISOString(),
+          slot: Number(data.slot ?? data.slotId ?? 0),
+          vehicleId: data.vehicleId || data.vehicle?.vehicleId || "",
+          notes: data.notes || data.description || "",
+          centerId:
+            data.centerId || data.serviceCenterId || data.serviceCenter || "",
+        };
+        const url = `${this.apiBase.replace(/\/$/, "")}/client/Booking`;
+        const res = await axios.post(url, payload, {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            ...this.getAuthHeaders(),
+          },
+          timeout: 5000,
+        });
+        return res.data;
+      } catch (err) {
+        console.debug("bookingService.createBooking remote failed", err);
+      }
+    }
+    return null;
   }
 
-  // Convenience wrapper used by hooks expecting getMyBookings
-  async getMyBookings(): Promise<any[]> {
+  async getMyBookings(): Promise<BookingRecord[]> {
     return this.getBookings();
   }
 
-  async updateBooking(id: string, data: any): Promise<any | null> {
-    await this.delay();
-    const idx = mockBookings.findIndex((b) => b.bookingId === id);
-    if (idx === -1) return null;
-    mockBookings[idx] = {
-      ...mockBookings[idx],
-      ...data,
-      updateAt: new Date().toISOString(),
-    };
-    return mockBookings[idx];
-  }
-
-  async deleteBooking(id: string): Promise<boolean> {
-    await this.delay();
-    const idx = mockBookings.findIndex((b) => b.bookingId === id);
-    if (idx === -1) return false;
-    mockBookings.splice(idx, 1);
-    return true;
-  }
-
-  // Fetch centers from external API set by NEXT_PUBLIC_API_BASE_URL
   async getCenters(): Promise<any[]> {
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (!base) return [];
+    if (!this.apiBase) return [];
     try {
-      const url = `${base.replace(/\/$/, "")}/api/Center`;
+      const url = `${this.apiBase.replace(/\/$/, "")}/Center`;
       const res = await axios.get(url, {
         headers: {
           "ngrok-skip-browser-warning": "true",
           Accept: "application/json",
+          ...this.getAuthHeaders(),
         },
         timeout: 5000,
       });
       const data = res.data;
       return Array.isArray(data) ? data : [];
     } catch {
-      // swallow and return empty list in dev
       return [];
     }
+  }
+
+  async getVehicle(): Promise<any[]> {
+    if (!this.apiBase) return [];
+    try {
+      const url = `${this.apiBase.replace(/\/$/, "")}/client/Vehicle?Page=1&PageSize=10`;
+      const res = await axios.get(url, {
+        headers: { Accept: "application/json", ...this.getAuthHeaders() },
+        timeout: 5000,
+      });
+      const data = res.data;
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.items)) return data.items;
+      if (Array.isArray(data?.rows)) return data.rows;
+      return [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  async getBookingSchedule(
+    centerId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<any[]> {
+    if (!centerId) return [];
+
+    // Build query string if dates provided
+    const qs =
+      startDate && endDate
+        ? `?StartDate=${encodeURIComponent(startDate)}&EndDate=${encodeURIComponent(endDate)}`
+        : "";
+
+    if (this.apiBase) {
+      try {
+        const url = `${this.apiBase.replace(/\/$/, "")}/BookingSchedules/client/${encodeURIComponent(centerId)}${qs}`;
+        const res = await axios.get(url, {
+          headers: { Accept: "application/json", ...this.getAuthHeaders() },
+          timeout: 5000,
+        });
+        const data = res.data;
+        // If API returns nested structure, flatten to a consistent array of slot objects
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.items)) return data.items;
+        // If API returns center -> schedules structure, attempt to extract slots
+        if (data?.schedules && Array.isArray(data.schedules)) {
+          const flat: any[] = [];
+          data.schedules.forEach((d: any) => {
+            const date = d.currentDate;
+            const slots = Array.isArray(d.slots) ? d.slots : [];
+            slots.forEach((slot: any, idx: number) => {
+              flat.push({
+                slotId:
+                  slot.slotId ?? `${centerId}_${date}_${slot.slot ?? idx}`,
+                centerId: data.centerId || centerId,
+                startUtc: `${date}T${slot.startutc || slot.startUtc || "00:00"}:00Z`,
+                endUtc: `${date}T${slot.endutc || slot.endUtc || "00:00"}:00Z`,
+                capacity: slot.capacity,
+                note: slot.note,
+                status: slot.status,
+                isActive: slot.isActive,
+                isBookable: slot.isBookable,
+                raw: slot,
+              });
+            });
+          });
+          return flat;
+        }
+
+        return Array.isArray(data) ? data : [];
+      } catch (err) {
+        console.debug("bookingService.getBookingSchedule remote failed", err);
+      }
+    }
+    return [];
   }
 }
 
