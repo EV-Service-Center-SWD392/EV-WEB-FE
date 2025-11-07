@@ -13,7 +13,7 @@ export interface AssignmentDto {
     plannedStartUtc: string; // ISO 8601 UTC
     plannedEndUtc: string; // ISO 8601 UTC
     queueNo?: number;  // Auto-calculated queue number
-    status: 'PENDING' | 'ASSIGNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+    status: 'PENDING' | 'ASSIGNED' | 'IN_QUEUE' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'REASSIGNED';
     note?: string;
     isActive?: boolean;
     createdAt?: string;
@@ -23,6 +23,7 @@ export interface AssignmentDto {
 export interface CreateAssignmentDto {
     bookingId: string;
     technicianId: string;
+    centerId: string; // Required for backend validation
     plannedStartUtc: string; // ISO 8601 UTC
     plannedEndUtc: string; // ISO 8601 UTC
     note?: string;
@@ -37,6 +38,20 @@ export interface RescheduleAssignmentDto {
 export interface ReassignTechnicianDto {
     newTechnicianId: string;
     reason?: string;
+}
+
+export interface CancelAssignmentResponseDto {
+    assignmentId: string;
+    bookingId: string;
+    hasActiveAssignments: boolean;
+    bookingStatus: string;
+    message: string;
+}
+
+export interface ApiResponse<T> {
+    isSuccess: boolean;
+    data: T | null;
+    message: string;
 }
 
 export const assignmentApiService = {
@@ -96,8 +111,8 @@ export const assignmentApiService = {
     /**
      * Cancel an assignment
      */
-    async cancel(id: string): Promise<{ success: boolean; message: string }> {
-        const response = await api.delete<{ success: boolean; message: string }>(`/api/Assignment/${id}`);
+    async cancel(id: string): Promise<ApiResponse<CancelAssignmentResponseDto>> {
+        const response = await api.delete<ApiResponse<CancelAssignmentResponseDto>>(`/api/Assignment/${id}`);
         return response.data;
     },
 
@@ -106,6 +121,41 @@ export const assignmentApiService = {
      */
     async markNoShow(id: string): Promise<{ success: boolean; message: string }> {
         const response = await api.put<{ success: boolean; message: string }>(`/api/Assignment/${id}/noshow`, {});
+        return response.data;
+    },
+
+    /**
+     * Start work on assignment (ASSIGNED → ACTIVE)
+     * Technician starts working on service
+     */
+    async startWork(id: string): Promise<AssignmentDto> {
+        const response = await api.put<AssignmentDto>(`/api/Assignment/${id}/start`, {});
+        return response.data;
+    },
+
+    /**
+     * Complete assignment (ACTIVE → COMPLETED)
+     * Work finished successfully
+     */
+    async complete(id: string): Promise<AssignmentDto> {
+        const response = await api.put<AssignmentDto>(`/api/Assignment/${id}/complete`, {});
+        return response.data;
+    },
+
+    /**
+     * Add assignment to queue (ASSIGNED → IN_QUEUE)
+     * Waiting for scheduled slot
+     */
+    async addToQueue(id: string): Promise<AssignmentDto> {
+        const response = await api.put<AssignmentDto>(`/api/Assignment/${id}/queue`, {});
+        return response.data;
+    },
+
+    /**
+     * Update assignment status manually
+     */
+    async updateStatus(id: string, status: AssignmentDto['status']): Promise<AssignmentDto> {
+        const response = await api.put<AssignmentDto>(`/api/Assignment/${id}/status`, { status });
         return response.data;
     },
 };

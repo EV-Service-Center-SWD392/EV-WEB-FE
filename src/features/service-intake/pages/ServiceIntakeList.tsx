@@ -16,6 +16,8 @@ import {
     Eye,
     Calendar,
     Loader2,
+    ClipboardCheck,
+    AlertCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -201,35 +203,43 @@ export default function ServiceIntakeList() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">Service & Intake</h1>
-                    <p className="text-muted-foreground">
-                        Quản lý tiếp nhận xe và kiểm tra trước dịch vụ
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-xl shadow-md">
+                            <ClipboardCheck className="h-6 w-6 text-white" />
+                        </div>
+                        <h1 className="text-3xl font-bold text-gray-900">Service & Intake</h1>
+                    </div>
+                    <p className="text-muted-foreground ml-[60px]">
+                        Vehicle intake and pre-service inspection management
                     </p>
                 </div>
-                <Button onClick={handleCreateNew}>
+                <Button
+                    onClick={handleCreateNew}
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-md hover:shadow-lg transition-all"
+                >
                     <Plus className="mr-2 h-4 w-4" />
-                    Tạo Intake Mới
+                    Create New Intake
                 </Button>
             </div>
 
             {/* Filters */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Filter className="h-5 w-5" />
-                        Bộ Lọc
+            <Card className="shadow-sm border-gray-200">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+                    <CardTitle className="flex items-center gap-2 text-gray-900">
+                        <Filter className="h-5 w-5 text-purple-600" />
+                        Filters
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Search */}
-                        <div className="flex items-center gap-2">
-                            <Search className="h-4 w-4 text-muted-foreground" />
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <Input
-                                placeholder="Tìm kiếm (mã booking, khách hàng, biển số...)"
+                                placeholder="Search by booking code, customer, or license plate..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="flex-1"
+                                className="pl-10 border-gray-300"
                             />
                         </div>
 
@@ -238,16 +248,16 @@ export default function ServiceIntakeList() {
                             value={statusFilter}
                             onValueChange={(value) => setStatusFilter(value as IntakeStatus | "all")}
                         >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Trạng thái" />
+                            <SelectTrigger className="border-gray-300">
+                                <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                                <SelectItem value="CHECKED_IN">Đã Check-in</SelectItem>
-                                <SelectItem value="INSPECTING">Đang Kiểm Tra</SelectItem>
-                                <SelectItem value="VERIFIED">Đã Xác Minh</SelectItem>
-                                <SelectItem value="FINALIZED">Hoàn Tất</SelectItem>
-                                <SelectItem value="CANCELLED">Đã Hủy</SelectItem>
+                                <SelectItem value="all">All Statuses</SelectItem>
+                                <SelectItem value="CHECKED_IN">Checked In</SelectItem>
+                                <SelectItem value="INSPECTING">Inspecting</SelectItem>
+                                <SelectItem value="VERIFIED">Verified</SelectItem>
+                                <SelectItem value="FINALIZED">Finalized</SelectItem>
+                                <SelectItem value="CANCELLED">Cancelled</SelectItem>
                             </SelectContent>
                         </Select>
 
@@ -256,60 +266,70 @@ export default function ServiceIntakeList() {
                             variant="outline"
                             onClick={() => loadIntakes(true)}
                             disabled={isRefreshing}
+                            className="border-gray-300 hover:bg-gray-50"
                         >
                             <RefreshCw
                                 className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
                             />
-                            Làm mới
+                            Refresh
                         </Button>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Results */}
-            <Card>
-                <CardHeader>
+            <Card className="shadow-sm border-gray-200">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-white border-b border-gray-100">
                     <div className="flex items-center justify-between">
-                        <CardTitle>
-                            Danh sách Intake ({filteredIntakes.length})
+                        <CardTitle className="flex items-center gap-2 text-gray-900">
+                            <ClipboardCheck className="h-5 w-5 text-purple-600" />
+                            Intake List ({filteredIntakes.length})
                         </CardTitle>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     {filteredIntakes.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground">
-                            Không tìm thấy intake nào
+                        <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+                            <div className="bg-white p-4 rounded-full w-20 h-20 mx-auto mb-4 shadow-sm">
+                                <AlertCircle className="h-12 w-12 text-gray-400" />
+                            </div>
+                            <p className="text-lg font-semibold text-gray-700 mb-2">No intakes found</p>
+                            <p className="text-sm text-muted-foreground">Try adjusting your filters or create a new intake</p>
                         </div>
                     ) : (
-                        <div className="rounded-md border">
+                        <div className="rounded-lg border border-gray-200 overflow-hidden">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="bg-gray-50">
                                     <TableRow>
-                                        <TableHead>Mã Intake</TableHead>
-                                        <TableHead>Mã Booking</TableHead>
-                                        <TableHead>Khách Hàng</TableHead>
-                                        <TableHead>Biển Số</TableHead>
-                                        <TableHead>Trạng Thái</TableHead>
-                                        <TableHead>Ngày Tạo</TableHead>
-                                        <TableHead className="text-right">Thao Tác</TableHead>
+                                        <TableHead className="font-semibold">Intake ID</TableHead>
+                                        <TableHead className="font-semibold">Booking Code</TableHead>
+                                        <TableHead className="font-semibold">Customer</TableHead>
+                                        <TableHead className="font-semibold">License Plate</TableHead>
+                                        <TableHead className="font-semibold">Status</TableHead>
+                                        <TableHead className="font-semibold">Created</TableHead>
+                                        <TableHead className="text-right font-semibold">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredIntakes.map((intake) => (
-                                        <TableRow key={intake.id}>
-                                            <TableCell className="font-mono text-xs">
+                                        <TableRow key={intake.id} className="hover:bg-gray-50 transition-colors">
+                                            <TableCell className="font-mono text-xs text-gray-600">
                                                 {intake.id.slice(0, 8)}...
                                             </TableCell>
                                             <TableCell>
                                                 {intake.bookingCode ? (
-                                                    <Badge variant="outline">{intake.bookingCode}</Badge>
+                                                    <Badge variant="outline" className="border-purple-300 text-purple-700 bg-purple-50">
+                                                        {intake.bookingCode}
+                                                    </Badge>
                                                 ) : (
-                                                    <Badge variant="secondary">Walk-in</Badge>
+                                                    <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                                                        Walk-in
+                                                    </Badge>
                                                 )}
                                             </TableCell>
                                             <TableCell>
                                                 <div>
-                                                    <p className="font-medium">
+                                                    <p className="font-medium text-gray-900">
                                                         {intake.enrichedCustomerName || intake.customerName || "-"}
                                                     </p>
                                                     <p className="text-xs text-muted-foreground">
@@ -318,7 +338,7 @@ export default function ServiceIntakeList() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline" className="font-mono">
+                                                <Badge variant="outline" className="font-mono border-gray-300">
                                                     {intake.enrichedLicensePlate ||
                                                         (intake.licensePlate && intake.licensePlate !== 'string' ? intake.licensePlate : "-")}
                                                 </Badge>
@@ -327,8 +347,8 @@ export default function ServiceIntakeList() {
                                                 <IntakeStatusBadge status={intake.status} />
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                                    <Calendar className="h-3 w-3" />
+                                                <div className="flex items-center gap-1 text-sm text-gray-700">
+                                                    <Calendar className="h-3 w-3 text-gray-400" />
                                                     {formatDateTime(intake.createdAt)}
                                                 </div>
                                             </TableCell>
@@ -338,6 +358,7 @@ export default function ServiceIntakeList() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleViewDetail(intake.id)}
+                                                        className="hover:bg-purple-50 hover:text-purple-700"
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>

@@ -8,7 +8,19 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Search, Plus, Calendar, User, Car, Clock } from "lucide-react";
+import {
+    Loader2,
+    RefreshCw,
+    Search,
+    Plus,
+    Calendar,
+    User,
+    Car,
+    Clock,
+    CheckCircle2,
+    FileCheck,
+    AlertCircle
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -231,100 +243,111 @@ export default function ApprovedBookingsList() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">Bookings Chờ Tạo Intake</h1>
-                    <p className="text-muted-foreground">
-                        Danh sách bookings đã được approved, sẵn sàng tạo service intake
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl shadow-md">
+                            <FileCheck className="h-6 w-6 text-white" />
+                        </div>
+                        <h1 className="text-3xl font-bold text-gray-900">Approved Bookings - Intake Queue</h1>
+                    </div>
+                    <p className="text-muted-foreground ml-[60px]">
+                        Approved bookings ready for service intake creation
                     </p>
                 </div>
             </div>
 
             {/* Filters */}
-            <Card>
+            <Card className="shadow-sm border-gray-200">
                 <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                        <div className="flex-1 flex items-center gap-2">
-                            <Search className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <Input
-                                placeholder="Tìm kiếm (khách hàng, điện thoại, biển số...)"
+                                placeholder="Search by customer, phone, license plate, or booking ID..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="flex-1"
+                                className="pl-10 border-gray-300"
                             />
                         </div>
                         <Button
                             variant="outline"
                             onClick={() => loadData(true)}
                             disabled={isRefreshing}
+                            className="border-gray-300 hover:bg-gray-50"
                         >
                             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                            Làm mới
+                            Refresh
                         </Button>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Bookings without Intake */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>
-                        Bookings Chưa Có Intake ({bookingsWithoutIntake.length})
+            <Card className="shadow-sm border-gray-200">
+                <CardHeader className="bg-gradient-to-r from-green-50 to-white border-b border-gray-100">
+                    <CardTitle className="flex items-center gap-2 text-gray-900">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        Bookings Awaiting Intake ({bookingsWithoutIntake.length})
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     {bookingsWithoutIntake.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground">
-                            Không có booking nào chờ tạo intake
+                        <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+                            <div className="bg-white p-4 rounded-full w-20 h-20 mx-auto mb-4 shadow-sm">
+                                <CheckCircle2 className="h-12 w-12 text-gray-400" />
+                            </div>
+                            <p className="text-lg font-semibold text-gray-700 mb-2">No bookings pending intake</p>
+                            <p className="text-sm text-muted-foreground">All approved bookings have intakes created</p>
                         </div>
                     ) : (
-                        <div className="rounded-md border">
+                        <div className="rounded-lg border border-gray-200 overflow-hidden">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="bg-gray-50">
                                     <TableRow>
-                                        <TableHead>Booking ID</TableHead>
-                                        <TableHead>Khách Hàng</TableHead>
-                                        <TableHead>Điện Thoại</TableHead>
-                                        <TableHead>Xe</TableHead>
-                                        <TableHead>Biển Số</TableHead>
-                                        <TableHead>Ngày Hẹn</TableHead>
-                                        <TableHead>Giờ Hẹn</TableHead>
-                                        <TableHead className="text-right">Thao Tác</TableHead>
+                                        <TableHead className="font-semibold">Booking ID</TableHead>
+                                        <TableHead className="font-semibold">Customer</TableHead>
+                                        <TableHead className="font-semibold">Phone</TableHead>
+                                        <TableHead className="font-semibold">Vehicle</TableHead>
+                                        <TableHead className="font-semibold">License Plate</TableHead>
+                                        <TableHead className="font-semibold">Appointment Date</TableHead>
+                                        <TableHead className="font-semibold">Time Slot</TableHead>
+                                        <TableHead className="text-right font-semibold">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {bookingsWithoutIntake.map((booking) => (
-                                        <TableRow key={booking.bookingid}>
-                                            <TableCell className="font-mono text-xs">
+                                        <TableRow key={booking.bookingid} className="hover:bg-gray-50 transition-colors">
+                                            <TableCell className="font-mono text-xs text-gray-600">
                                                 {booking.bookingid.slice(0, 8)}...
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-muted-foreground" />
-                                                    {getCustomerName(booking)}
+                                                    <User className="h-4 w-4 text-blue-600" />
+                                                    <span className="font-medium text-gray-900">{getCustomerName(booking)}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{booking.useraccount?.phonenumber || "-"}</TableCell>
+                                            <TableCell className="text-gray-700">{booking.useraccount?.phonenumber || "-"}</TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
-                                                    <Car className="h-4 w-4 text-muted-foreground" />
-                                                    {getVehicleInfo(booking)}
+                                                    <Car className="h-4 w-4 text-green-600" />
+                                                    <span className="text-gray-900">{getVehicleInfo(booking)}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline">
+                                                <Badge variant="outline" className="font-mono border-gray-300">
                                                     {booking.vehicle?.licenseplate && booking.vehicle.licenseplate !== 'string'
                                                         ? booking.vehicle.licenseplate
                                                         : "-"}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex items-center gap-1">
-                                                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                                                <div className="flex items-center gap-1 text-gray-700">
+                                                    <Calendar className="h-3 w-3 text-gray-400" />
                                                     {getBookingDateDisplay(booking)}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="h-3 w-3 text-muted-foreground" />
+                                                <div className="flex items-center gap-1 text-gray-700">
+                                                    <Clock className="h-3 w-3 text-gray-400" />
                                                     {getSlotTimeDisplay(booking)}
                                                 </div>
                                             </TableCell>
@@ -332,9 +355,10 @@ export default function ApprovedBookingsList() {
                                                 <Button
                                                     size="sm"
                                                     onClick={() => handleCreateIntake(booking)}
+                                                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-sm"
                                                 >
                                                     <Plus className="mr-2 h-4 w-4" />
-                                                    Tạo Intake
+                                                    Create Intake
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
@@ -348,45 +372,49 @@ export default function ApprovedBookingsList() {
 
             {/* Bookings with Intake (informational) */}
             {bookingsWithIntake.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-muted-foreground">
-                            Bookings Đã Có Intake ({bookingsWithIntake.length})
+                <Card className="shadow-sm border-gray-200 opacity-75">
+                    <CardHeader className="bg-gradient-to-r from-gray-100 to-gray-50 border-b border-gray-200">
+                        <CardTitle className="flex items-center gap-2 text-gray-600">
+                            <AlertCircle className="h-5 w-5" />
+                            Bookings with Existing Intake ({bookingsWithIntake.length})
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="rounded-md border opacity-60">
+                    <CardContent className="pt-6">
+                        <div className="rounded-lg border border-gray-200 overflow-hidden">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="bg-gray-50">
                                     <TableRow>
-                                        <TableHead>Booking ID</TableHead>
-                                        <TableHead>Khách Hàng</TableHead>
-                                        <TableHead>Xe</TableHead>
-                                        <TableHead>Biển Số</TableHead>
-                                        <TableHead>Ngày Hẹn</TableHead>
-                                        <TableHead>Giờ Hẹn</TableHead>
-                                        <TableHead className="text-right">Trạng Thái</TableHead>
+                                        <TableHead className="font-semibold">Booking ID</TableHead>
+                                        <TableHead className="font-semibold">Customer</TableHead>
+                                        <TableHead className="font-semibold">Vehicle</TableHead>
+                                        <TableHead className="font-semibold">License Plate</TableHead>
+                                        <TableHead className="font-semibold">Appointment Date</TableHead>
+                                        <TableHead className="font-semibold">Time Slot</TableHead>
+                                        <TableHead className="text-right font-semibold">Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {bookingsWithIntake.map((booking) => (
-                                        <TableRow key={booking.bookingid}>
-                                            <TableCell className="font-mono text-xs">
+                                        <TableRow key={booking.bookingid} className="hover:bg-gray-50">
+                                            <TableCell className="font-mono text-xs text-gray-600">
                                                 {booking.bookingid.slice(0, 8)}...
                                             </TableCell>
-                                            <TableCell>{getCustomerName(booking)}</TableCell>
-                                            <TableCell>{getVehicleInfo(booking)}</TableCell>
+                                            <TableCell className="text-gray-700">{getCustomerName(booking)}</TableCell>
+                                            <TableCell className="text-gray-700">{getVehicleInfo(booking)}</TableCell>
                                             <TableCell>
-                                                <Badge variant="outline">
+                                                <Badge variant="outline" className="border-gray-300 font-mono">
                                                     {booking.vehicle?.licenseplate && booking.vehicle.licenseplate !== 'string'
                                                         ? booking.vehicle.licenseplate
                                                         : "-"}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>{getBookingDateDisplay(booking)}</TableCell>
-                                            <TableCell>{getSlotTimeDisplay(booking)}</TableCell>
+                                            <TableCell className="text-gray-700">{getBookingDateDisplay(booking)}</TableCell>
+                                            <TableCell className="text-gray-700">{getSlotTimeDisplay(booking)}</TableCell>
                                             <TableCell className="text-right">
-                                                <Badge variant="secondary">Đã có Intake</Badge>
+                                                <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
+                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                    Intake Created
+                                                </Badge>
                                             </TableCell>
                                         </TableRow>
                                     ))}
