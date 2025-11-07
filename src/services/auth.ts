@@ -75,7 +75,7 @@ export async function login(payload: {
   }
 
   const { data } = await api.post<AuthResultDto>(
-    "/Auth/login",
+    "/api/Auth/login",
     payload as LoginDto
   );
   return data;
@@ -124,7 +124,7 @@ export async function register(payload: {
   }
 
   const { data } = await api.post<AuthResultDto>(
-    "/Auth/register",
+    "/api/Auth/register",
     apiPayload
   );
   return data;
@@ -174,7 +174,7 @@ export async function createStaff(payload: {
   };
 
   const { data } = await api.post<AuthResultDto>(
-    "/Auth/create-staff",
+    "/api/Auth/create-staff",
     apiPayload
   );
   return data;
@@ -260,7 +260,7 @@ export async function refreshToken(payload: {
   };
 
   const { data } = await api.post<AuthResultDto>(
-    "/Auth/refresh-token",
+    "/api/Auth/refresh-token",
     apiPayload
   );
   return data;
@@ -277,7 +277,7 @@ export async function revokeToken(payload: {
     refreshToken: payload.refreshToken ?? null,
   };
   const { data } = await api.post<boolean>(
-    "/Auth/revoke-token",
+    "/api/Auth/revoke-token",
     apiPayload
   );
   return data;
@@ -297,7 +297,7 @@ export async function forgotPassword(email: string) {
     return await mockForgotPassword(email);
   }
 
-  const { data } = await api.post("/auth/forgot-password", { email });
+  const { data } = await api.post("/api/auth/forgot-password", { email });
   return data as { message: string };
 }
 
@@ -306,7 +306,7 @@ export async function resetPassword(token: string, newPassword: string) {
     return await mockResetPassword(token, newPassword);
   }
 
-  const { data } = await api.post("/auth/reset-password", {
+  const { data } = await api.post("/api/auth/reset-password", {
     token,
     password: newPassword,
   });

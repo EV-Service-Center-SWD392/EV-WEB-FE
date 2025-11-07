@@ -70,11 +70,11 @@ export default function CreateIntakePage() {
     let isMounted = true;
     setIsLoadingBookings(true);
     bookingService
-      .getBookings({})
+      .getClientBookings({})
       .then((data) => {
         if (!isMounted) return;
         const eligible = data.filter((booking) => {
-          const status = booking.assignmentStatus ?? booking.status;
+          const status = booking.status as BookingStatus;
           return eligibleStatuses.includes(status);
         });
         setBookingOptions(eligible);
