@@ -107,6 +107,27 @@ export const bookingService = {
     },
 
     /**
+     * Alias for getClientBookings - for member bookings
+     */
+    async getMyBookings(query?: BookingQueryDto): Promise<BookingResponseDto[]> {
+        return this.getClientBookings(query);
+    },
+
+    /**
+     * Get booking by ID
+     * GET /client/Booking/{id}
+     */
+    async getBookingById(id: string): Promise<BookingResponseDto | null> {
+        try {
+            const response = await api.get(`/client/Booking/${id}`);
+            return response.data || null;
+        } catch (error) {
+            console.error("Failed to fetch booking:", error);
+            return null;
+        }
+    },
+
+    /**
      * Get all vehicles for current user
      * GET /client/Vehicle
      */

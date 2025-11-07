@@ -1,17 +1,15 @@
 "use client"; // This component now needs state, so it must be a client component.
 
 import React, { useState, useEffect, useMemo } from "react";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { Plus } from "lucide-react";
 import Modal from "@/components/Modal";
-import {
-  BookingModalContent,
-  BookingMode,
-} from "@/components/member/booking/BookingModalContent";
+import { BookingModalContent } from "@/components/member/booking/BookingModalContent";
 import { bookingService } from "@/services/bookingService";
 
 export default function MemberBookingPage() {
   interface Booking {
-    bookingId: string;
+    id: string;
+    bookingId?: string;
     vehicleId: string;
     vehicle?: {
       licensePlate?: string;
@@ -119,7 +117,7 @@ export default function MemberBookingPage() {
             className="flex items-center justify-center min-h-[280px] w-full border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-gray-100 transition-colors cursor-pointer"
             title="Create new booking"
           >
-            <PlusIcon className="h-12 w-12 text-gray-400" aria-hidden="true" />
+            <Plus className="h-12 w-12 text-gray-400" aria-hidden="true" />
           </button>
 
           {/* List of Booking Cards */}
@@ -159,7 +157,7 @@ export default function MemberBookingPage() {
 
               return (
                 <div
-                  key={booking.bookingId}
+                  key={booking.id || booking.bookingId}
                   className="w-full bg-white rounded-lg shadow p-4 flex flex-col gap-2 border border-gray-200"
                   title={`Booking for ${vehiclePlate}`}
                 >
@@ -199,7 +197,6 @@ export default function MemberBookingPage() {
       {/* Booking Modal */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <BookingModalContent
-          mode="CREATE"
           bookingData={{}}
           onClose={handleCloseModal}
           onSubmit={handleSubmitBooking}
