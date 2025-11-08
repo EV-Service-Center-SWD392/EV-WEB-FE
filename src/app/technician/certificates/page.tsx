@@ -52,7 +52,7 @@ export default function TechnicianCertificatesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
-  const [viewingCertificateImage] = useState<string | null>(null);
+  const [viewingCertificateImage, setViewingCertificateImage] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Form state
@@ -145,6 +145,15 @@ export default function TechnicianCertificatesPage() {
       toast.error(errorMessage || "Không thể gửi yêu cầu chứng chỉ");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleViewImage = (imageUrl: string | null) => {
+    if (imageUrl) {
+      setViewingCertificateImage(imageUrl);
+      setImageDialogOpen(true);
+    } else {
+      toast.error("Không tìm thấy hình ảnh chứng chỉ");
     }
   };
 
@@ -462,7 +471,7 @@ export default function TechnicianCertificatesPage() {
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => toast.info("Chức năng xem hình ảnh chứng chỉ sẽ được cập nhật sau")}
+                        onClick={() => handleViewImage(cert.certificateImage ?? null)}
                         title="Xem hình ảnh chứng chỉ"
                       >
                         <Eye className="h-4 w-4" />

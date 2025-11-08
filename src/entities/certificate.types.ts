@@ -54,6 +54,7 @@ export interface UserCertificate {
   updatedAt?: string;
   expiryDate?: string;
   daysUntilExpiry?: number;
+  certificateImage?: string | null; // Image URL for the certificate
 }
 
 /**

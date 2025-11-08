@@ -4494,7 +4494,33 @@
         "tags": [
           "UserCertificate"
         ],
-        "summary": "Revoke a certificate assignment from a user",
+        "summary": "Revoke a certificate assignment from a user (soft delete)",
+        "parameters": [
+          {
+            "name": "userCertificateId",
+            "in": "path",
+            "description": "User certificate assignment ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/UserCertificate/{userCertificateId}/revoke": {
+      "post": {
+        "tags": [
+          "UserCertificate"
+        ],
+        "summary": "Set certificate status to REVOKED",
+        "description": "Changes certificate status to \"REVOKED\" and sets:\r\n- status: \"REVOKED\"\r\n- isActive: false\r\n- updatedAt: current timestamp\r\n\r\nThis is different from DELETE (soft delete) - this specifically sets REVOKED status.\r\nUse this when you want to track that a certificate was formally revoked.\r\n\r\nReturns:\r\n- Success: { \"isSuccess\": true, \"message\": \"Certificate status set to REVOKED successfully\" }\r\n- Error: { \"isSuccess\": false, \"message\": \"Error message\" }\r\n\r\nSample URL: POST /api/UserCertificate/8052c2aa-6899-4fb3-bc56-e3ce8bf16f68/revoke",
         "parameters": [
           {
             "name": "userCertificateId",

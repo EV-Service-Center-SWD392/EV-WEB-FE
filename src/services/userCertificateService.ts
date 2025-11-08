@@ -94,11 +94,22 @@ class UserCertificateService {
   }
 
   /**
-   * Revoke a certificate assignment from a user
+   * Revoke a certificate assignment from a user (soft delete)
    * DELETE /api/UserCertificate/{userCertificateId}
+   * @deprecated Use revokeCertificateStatus instead for tracking revocation
    */
   async revokeCertificate(userCertificateId: string): Promise<ApiResponse<void>> {
     const response = await api.delete<ApiResponse<void>>(`/api/UserCertificate/${userCertificateId}`);
+    return response.data;
+  }
+
+  /**
+   * Set certificate status to REVOKED
+   * POST /api/UserCertificate/{userCertificateId}/revoke
+   * This sets status to "REVOKED" and isActive to false, allowing tracking of revoked certificates
+   */
+  async revokeCertificateStatus(userCertificateId: string): Promise<ApiResponse<void>> {
+    const response = await api.post<ApiResponse<void>>(`/api/UserCertificate/${userCertificateId}/revoke`);
     return response.data;
   }
 

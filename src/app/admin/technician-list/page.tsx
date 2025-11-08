@@ -187,7 +187,7 @@ export default function AdminTechnicianCertificatesPage() {
   const handleRevokeCertificate = async (userCertificateId: string) => {
     if (!confirm("Bạn có chắc muốn thu hồi chứng chỉ này?")) return;
     try {
-      await userCertificateService.revokeCertificate(userCertificateId);
+      await userCertificateService.revokeCertificateStatus(userCertificateId);
       toast.success("Thu hồi chứng chỉ thành công");
       await loadData();
     } catch (error) {
