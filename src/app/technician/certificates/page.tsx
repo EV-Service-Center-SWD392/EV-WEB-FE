@@ -73,6 +73,7 @@ export default function TechnicianCertificatesPage() {
       }
 
       const data = await userCertificateService.getUserCertificates(user.id);
+      console.log("📊 Certificates data from API:", data);
       setCertificates(data);
     } catch (error) {
       console.error("Failed to load certificates:", error);
@@ -161,15 +162,20 @@ export default function TechnicianCertificatesPage() {
     cert.certificateName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calculate stats
+  // Calculate stats from API response
+  // API returns status in UPPERCASE (APPROVED, PENDING, REJECTED, REVOKED)
   const stats = {
     total: certificates.length,
-    approved: certificates.filter(c =>
-      c.status === 'Approved' && c.isActive
-    ).length,
-    pending: certificates.filter(c =>
-      c.status === 'Pending'
-    ).length,
+    approved: certificates.filter(c => {
+      const status = c.status?.toUpperCase();
+      return (status === 'APPROVED' || status === 'APPROVED') && 
+             c.isActive && 
+             (!c.expiryDate || new Date(c.expiryDate) >= new Date());
+    }).length,
+    pending: certificates.filter(c => {
+      const status = c.status?.toUpperCase();
+      return status === 'PENDING';
+    }).length,
     expired: certificates.filter(c =>
       c.expiryDate && new Date(c.expiryDate) < new Date()
     ).length,
@@ -449,21 +455,21 @@ export default function TechnicianCertificatesPage() {
                       <Badge
                         variant="outline"
                         className={
-                          cert.status === 'Approved'
+                          cert.status?.toUpperCase() === 'APPROVED'
                             ? "bg-green-100 text-green-800 border-green-200" :
-                            cert.status === 'Pending'
+                            cert.status?.toUpperCase() === 'PENDING'
                               ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                              cert.status === 'Rejected'
+                              cert.status?.toUpperCase() === 'REJECTED'
                                 ? "bg-red-100 text-red-800 border-red-200" :
-                                cert.status === 'Revoked'
+                                cert.status?.toUpperCase() === 'REVOKED'
                                   ? "bg-gray-100 text-gray-800 border-gray-200" :
                                   ""
                         }
                       >
-                        {cert.status === 'Approved' ? 'Đã duyệt' :
-                          cert.status === 'Pending' ? 'Chờ duyệt' :
-                            cert.status === 'Rejected' ? 'Bị từ chối' :
-                              cert.status === 'Revoked' ? 'Đã thu hồi' : cert.status}
+                        {cert.status?.toUpperCase() === 'APPROVED' ? 'Đã duyệt' :
+                          cert.status?.toUpperCase() === 'PENDING' ? 'Chờ duyệt' :
+                            cert.status?.toUpperCase() === 'REJECTED' ? 'Bị từ chối' :
+                              cert.status?.toUpperCase() === 'REVOKED' ? 'Đã thu hồi' : cert.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
