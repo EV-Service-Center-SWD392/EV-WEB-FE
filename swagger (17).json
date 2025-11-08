@@ -3177,6 +3177,98 @@
         }
       }
     },
+    "/api/SparepartReplenishmentRequest/{id}/approve": {
+      "put": {
+        "tags": [
+          "SparepartReplenishmentRequest"
+        ],
+        "summary": "Approve a replenishment request",
+        "description": "Sample request:\r\n\r\n    PUT /api/SparepartReplenishmentRequest/{id}/approve\r\n    {\r\n        \"approvedBy\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n        \"notes\": \"Approved for immediate procurement\"\r\n    }",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Request ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Approval details including approver ID and optional notes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/SparepartReplenishmentRequest/{id}/reject": {
+      "put": {
+        "tags": [
+          "SparepartReplenishmentRequest"
+        ],
+        "summary": "Reject a replenishment request",
+        "description": "Sample request:\r\n\r\n    PUT /api/SparepartReplenishmentRequest/{id}/reject\r\n    {\r\n        \"rejectedBy\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n        \"reason\": \"Budget constraints for this quarter\",\r\n        \"notes\": \"Please resubmit next quarter\"\r\n    }",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Request ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Rejection details including rejector ID, reason and optional notes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/SparepartReplenishmentRequest/pending": {
       "get": {
         "tags": [
@@ -5699,6 +5791,25 @@
             "format": "uuid"
           },
           "note": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApproveRequestDto": {
+        "required": [
+          "approvedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "approvedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "notes": {
+            "maxLength": 500,
+            "minLength": 0,
             "type": "string",
             "nullable": true
           }
@@ -8347,6 +8458,31 @@
             "format": "uuid"
           },
           "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RejectRequestDto": {
+        "required": [
+          "reason",
+          "rejectedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "rejectedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 10,
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 500,
+            "minLength": 0,
             "type": "string",
             "nullable": true
           }
