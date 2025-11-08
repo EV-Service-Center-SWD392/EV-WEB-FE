@@ -1,14 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { sparepartService } from "@/services/sparepartService";
+import { api } from "@/services/api";
 import type { CreateSparepartDto } from "@/entities/sparepart.types";
+
+interface VehicleModel {
+  modelid: number;
+  name: string;
+  brand: string;
+}
+
+interface SparepartType {
+  typeid: string;
+  name: string;
+  description?: string;
+}
 
 interface SparepartFormProps {
   open: boolean;
@@ -18,9 +38,14 @@ interface SparepartFormProps {
 }
 
 export function SparepartForm({ open, onSuccess, onCancel, initialData }: SparepartFormProps) {
+  const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
+  const [sparepartTypes, setSparepartTypes] = useState<SparepartType[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
+  const [displayPrice, setDisplayPrice] = useState<string>("");
+  
   const [formData, setFormData] = useState<CreateSparepartDto>({
     vehicleModelId: 3,
-    centerName: "",
+    centerName: "EV Service - Thủ Đức", // Fixed center name
     typeName: "",
     name: "",
     description: "",
@@ -31,6 +56,64 @@ export function SparepartForm({ open, onSuccess, onCancel, initialData }: Sparep
   });
   
   const [isLoading, setIsLoading] = useState(false);
+
+  // Format number with thousand separators
+  const formatPrice = (value: number): string => {
+    if (!value) return "";
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  // Parse formatted price back to number
+  const parsePrice = (value: string): number => {
+    const numericValue = value.replace(/\./g, "");
+    return parseInt(numericValue) || 0;
+  };
+
+  // Update display price when formData changes
+  useEffect(() => {
+    if (formData.unitPrice) {
+      setDisplayPrice(formatPrice(formData.unitPrice));
+    }
+  }, [formData.unitPrice]);
+
+    // Load vehicle models and sparepart types
+  useEffect(() => {
+    const loadDropdownData = async () => {
+      setLoadingData(true);
+      try {
+        const [vehicleModelsRes, sparepartTypesRes] = await Promise.all([
+          api.get<VehicleModel[]>('/api/VehicleModel'),
+          api.get<SparepartType[]>('/api/SparepartType')
+        ]);
+        
+        console.log("Vehicle Models:", vehicleModelsRes.data);
+        console.log("Sparepart Types:", sparepartTypesRes.data);
+        
+        const models = vehicleModelsRes.data || [];
+        const types = sparepartTypesRes.data || [];
+        
+        setVehicleModels(models);
+        setSparepartTypes(types);
+        
+        // Set default values if not already set
+        if (models.length > 0 && !formData.vehicleModelId) {
+          setFormData(prev => ({ ...prev, vehicleModelId: models[0].modelid }));
+        }
+        if (types.length > 0 && !formData.typeName) {
+          setFormData(prev => ({ ...prev, typeName: types[0].name }));
+        }
+      } catch (error) {
+        console.error("Error loading dropdown data:", error);
+        toast.error("Không thể tải danh sách dữ liệu");
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    if (open) {
+      loadDropdownData();
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,49 +146,66 @@ export function SparepartForm({ open, onSuccess, onCancel, initialData }: Sparep
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="vehicleModelId">Vehicle Model ID</Label>
-              <Input
-                id="vehicleModelId"
-                type="number"
-                value={formData.vehicleModelId || ""}
-                onChange={(e) => handleChange("vehicleModelId", parseInt(e.target.value) || 0)}
-                required
-              />
+              <Select
+                value={formData.vehicleModelId?.toString()}
+                onValueChange={(value) => handleChange("vehicleModelId", parseInt(value))}
+                disabled={loadingData}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn model xe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicleModels.length === 0 ? (
+                    <div className="px-2 py-1 text-sm text-gray-500">
+                      {loadingData ? "Đang tải..." : "Không có dữ liệu"}
+                    </div>
+                  ) : (
+                    vehicleModels.map((model) => (
+                      <SelectItem key={model.modelid} value={model.modelid.toString()}>
+                        {model.brand} - {model.name} (ID: {model.modelid})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             
             <div>
-              <Label htmlFor="centerName">Tên trung tâm</Label>
-              <Input
-                id="centerName"
-                value={formData.centerName}
-                onChange={(e) => handleChange("centerName", e.target.value)}
-                placeholder="EV Service - Thủ Đức"
-                required
-              />
+              <Label htmlFor="typeName">Loại phụ tùng</Label>
+              <Select
+                value={formData.typeName || undefined}
+                onValueChange={(value) => handleChange("typeName", value)}
+                disabled={loadingData}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn loại phụ tùng" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sparepartTypes.length === 0 ? (
+                    <div className="px-2 py-1 text-sm text-gray-500">
+                      {loadingData ? "Đang tải..." : "Không có dữ liệu"}
+                    </div>
+                  ) : (
+                    sparepartTypes.map((type) => (
+                      <SelectItem key={type.typeid} value={type.name}>
+                        {type.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="typeName">Loại phụ tùng</Label>
-              <Input
-                id="typeName"
-                value={formData.typeName}
-                onChange={(e) => handleChange("typeName", e.target.value)}
-                placeholder="Hệ thống phanh"
-                required
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="name">Tên phụ tùng</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="Má phanh sau"
-                required
-              />
-            </div>
+          <div>
+            <Label htmlFor="name">Tên phụ tùng</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              placeholder="Má phanh sau"
+              required
+            />
           </div>
 
           <div>
@@ -146,10 +246,23 @@ export function SparepartForm({ open, onSuccess, onCancel, initialData }: Sparep
             <Label htmlFor="unitPrice">Giá đơn vị (VND)</Label>
             <Input
               id="unitPrice"
-              type="number"
-              value={formData.unitPrice || ""}
-              onChange={(e) => handleChange("unitPrice", parseFloat(e.target.value) || 0)}
-              placeholder="480000"
+              type="text"
+              value={displayPrice}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Only allow numbers and dots
+                const numericValue = value.replace(/[^\d]/g, "");
+                
+                if (numericValue) {
+                  const price = parseInt(numericValue);
+                  handleChange("unitPrice", price);
+                  setDisplayPrice(formatPrice(price));
+                } else {
+                  handleChange("unitPrice", 0);
+                  setDisplayPrice("");
+                }
+              }}
+              placeholder="480.000"
               required
             />
           </div>
