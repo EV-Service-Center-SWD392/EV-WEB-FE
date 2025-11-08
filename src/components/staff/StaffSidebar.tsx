@@ -88,7 +88,7 @@ const menuItems: MenuItemOrGroup[] = [
     items: [
       {
         href: "/staff/technician-schedule",
-        label: "Quản lý lịch phụ tùng",
+        label: "Quản lý lịch technicians",
         icon: Calendar,
       },
       {
