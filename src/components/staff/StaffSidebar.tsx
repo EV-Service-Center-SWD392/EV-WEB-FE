@@ -21,6 +21,7 @@ import {
   Calendar,
   UserCog,
   Award,
+  Package,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -101,6 +102,11 @@ const menuItems: MenuItemOrGroup[] = [
         icon: UserCheck,
       },
     ],
+  },
+  {
+    href: "/staff/sparepart-management",
+    label: "Quản lý phụ tùng",
+    icon: Package,
   },
   {
     href: "/staff/workorders",

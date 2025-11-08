@@ -209,7 +209,7 @@ const ReplenishmentButton: React.FC<{
       onClick={handleCreateRequest}
       disabled={loading}
       size="sm"
-      className="w-full text-xs h-7 bg-blue-600 hover:bg-blue-700"
+      className="w-full text-xs h-7 bg-blue-600 hover:bg-blue-700 text-white"
     >
       {loading ? "Đang tạo..." : `Tạo yêu cầu bổ sung (${part.suggested_order_quantity})`}
     </Button>

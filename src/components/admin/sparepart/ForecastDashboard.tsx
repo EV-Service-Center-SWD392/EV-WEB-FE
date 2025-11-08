@@ -31,9 +31,10 @@ interface ForecastDashboardProps {
   forecasts: SparepartForecastDto[];
   spareparts: SparepartDto[];
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
-export function ForecastDashboard({ forecasts, spareparts, onUpdate }: ForecastDashboardProps) {
+export function ForecastDashboard({ forecasts, spareparts, onUpdate, readOnly = false }: ForecastDashboardProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedCenterId, setSelectedCenterId] = useState("all");
 

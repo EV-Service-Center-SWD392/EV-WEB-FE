@@ -36,9 +36,10 @@ interface ReplenishmentRequestsProps {
   requests: SparepartReplenishmentRequestDto[];
   spareparts: SparepartDto[];
   onUpdate: () => void;
+  readOnly?: boolean; // Staff can only view, not edit
 }
 
-export function ReplenishmentRequests({ requests, spareparts, onUpdate }: ReplenishmentRequestsProps) {
+export function ReplenishmentRequests({ requests, spareparts, onUpdate, readOnly = false }: ReplenishmentRequestsProps) {
   const { user } = useAuthStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -488,7 +489,7 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
                     
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {request.status?.toUpperCase() === "PENDING" && (
+                        {!readOnly && request.status?.toUpperCase() === "PENDING" && (
                           <>
                             <Button
                               variant="outline"
@@ -518,9 +519,14 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
                             </Button>
                           </>
                         )}
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
-                        </Button>
+                        {readOnly && (
+                          <span className="text-sm text-gray-500 italic">Chỉ xem</span>
+                        )}
+                        {!readOnly && (
+                          <Button variant="ghost" size="sm">
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

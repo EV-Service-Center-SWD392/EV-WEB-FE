@@ -90,7 +90,7 @@ export function AISparepartSuggestion({ aiResponse, onSuccess }: AISparepartSugg
 
               <Button 
                 onClick={() => setShowForm(true)}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
                 size="sm"
               >
                 <Plus className="h-4 w-4 mr-2" />
