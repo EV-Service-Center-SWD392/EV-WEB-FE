@@ -28,6 +28,14 @@ export default function ChatBotWidget() {
   const [isSending, setIsSending] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-scroll to bottom when messages change or loading
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isSending]);
 
   // Count cards in a message
   const countCards = React.useCallback((data: any): number => {
@@ -216,6 +224,21 @@ export default function ChatBotWidget() {
                   </div>
                 );
               })}
+              
+              {/* AI Loading Indicator */}
+              {isSending && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 rounded-lg w-fit">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                  <span className="text-xs text-slate-500">AI đang trả lời...</span>
+                </div>
+              )}
+              
+              {/* Scroll anchor */}
+              <div ref={messagesEndRef} />
             </div>
 
             <div className="p-3 border-t bg-white">

@@ -29,6 +29,7 @@ interface SparepartOverviewProps {
   forecasts: SparepartForecastDto[];
   requests: SparepartReplenishmentRequestDto[];
   onRefresh: () => void;
+  readOnly?: boolean;
 }
 
 export function SparepartOverview({
@@ -36,7 +37,8 @@ export function SparepartOverview({
   spareparts,
   forecasts,
   requests,
-  onRefresh
+  onRefresh,
+  readOnly = false
 }: SparepartOverviewProps) {
   const lowStockItems = spareparts.filter(sp => 
     sp.status === "LowStock" || sp.status === "OutOfStock"

@@ -25,9 +25,10 @@ import type { SparepartDto } from "@/entities/sparepart.types";
 interface SparepartListProps {
   spareparts: SparepartDto[];
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
-export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
+export function SparepartList({ spareparts, onUpdate, readOnly = false }: SparepartListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -106,13 +107,15 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
           </p>
         </div>
         
-        <Button 
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-          onClick={() => setShowForm(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm phụ tùng mới
-        </Button>
+        {!readOnly && (
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => setShowForm(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Thêm phụ tùng mới
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -198,13 +201,13 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Model xe</TableHead>
                 <TableHead>Ngày cập nhật</TableHead>
-                <TableHead className="text-right">Hành động</TableHead>
+                {!readOnly && <TableHead className="text-right">Hành động</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredSpareparts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={readOnly ? 7 : 8} className="text-center py-12">
                     <div className="flex flex-col items-center gap-4">
                       <Package className="h-12 w-12 text-gray-300" />
                       <div>
@@ -271,25 +274,27 @@ export function SparepartList({ spareparts, onUpdate }: SparepartListProps) {
                       </span>
                     </TableCell>
                     
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(sparepart)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(sparepart)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {!readOnly && (
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(sparepart)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(sparepart)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
