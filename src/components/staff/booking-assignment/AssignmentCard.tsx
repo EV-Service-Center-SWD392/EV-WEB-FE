@@ -119,6 +119,11 @@ export default function AssignmentCard({
                                 {assignment.queueNo && (
                                     <Badge variant="outline">Queue #{assignment.queueNo}</Badge>
                                 )}
+                                {!assignment.bookingId && (
+                                    <Badge variant="outline" className="bg-gray-100 text-gray-600">
+                                        ⚙️ Task
+                                    </Badge>
+                                )}
                             </div>
                         </div>
 
@@ -174,12 +179,13 @@ export default function AssignmentCard({
                                 </Button>
                             )}
 
-                            {onReassign && (assignment.status === 'PENDING' || assignment.status === 'ASSIGNED') && (
+                            {onReassign && assignment.bookingId && (assignment.status === 'PENDING' || assignment.status === 'ASSIGNED') && (
                                 <Button
                                     onClick={() => onReassign(assignment)}
                                     variant="outline"
                                     size="sm"
                                     className="flex items-center gap-1 text-blue-600 border-blue-600 hover:bg-blue-50"
+                                    title="Hủy assignment này và phân công cho kỹ thuật viên khác"
                                 >
                                     <RefreshCw className="h-4 w-4" />
                                     Phân công lại
@@ -192,6 +198,7 @@ export default function AssignmentCard({
                                     variant="outline"
                                     size="sm"
                                     className="flex items-center gap-1 text-red-600 border-red-600 hover:bg-red-50"
+                                    title="Hủy assignment này"
                                 >
                                     <XCircle className="h-4 w-4" />
                                     Hủy

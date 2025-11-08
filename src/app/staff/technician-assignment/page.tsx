@@ -13,7 +13,7 @@ import {
     Filter
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { directBookingService } from "@/services/directBookingService";
 import BookingCard, { BookingCardData } from "@/components/staff/booking-assignment/BookingCard";
@@ -105,6 +105,19 @@ export default function TechnicianAssignmentPage() {
                 const data = await assignmentApiService.getByRange({
                     date: selectedDate,
                 });
+
+                // Debug log
+                console.warn("📊 [Assignments] Loaded assignments:", {
+                    total: data.length,
+                    withBooking: data.filter(a => a.bookingId).length,
+                    withoutBooking: data.filter(a => !a.bookingId).length,
+                    sample: data.slice(0, 3).map(a => ({
+                        id: a.id.slice(0, 8),
+                        bookingId: a.bookingId ? a.bookingId.slice(0, 8) : null,
+                        status: a.status,
+                    }))
+                });
+
                 return data;
             } catch (error) {
                 console.error("Error fetching assignments:", error);
@@ -153,8 +166,16 @@ export default function TechnicianAssignmentPage() {
 
     // Handle reassign - open modal with booking info from cancelled assignment
     const handleReassign = async (assignment: AssignmentDto) => {
+        console.warn("🔄 [Reassign] Starting reassign for assignment:", {
+            id: assignment.id,
+            bookingId: assignment.bookingId,
+            technicianId: assignment.technicianId,
+            status: assignment.status,
+        });
+
         if (!assignment.bookingId) {
-            toast.error("Không tìm thấy booking để reassign");
+            console.error("❌ [Reassign] Assignment has no bookingId:", assignment);
+            toast.error("Assignment này không có liên kết với booking. Không thể reassign.");
             return;
         }
 
@@ -162,19 +183,26 @@ export default function TechnicianAssignmentPage() {
         setAssignmentToReassign(assignment);
 
         try {
+            console.warn("🔄 [Reassign] Starting reassign flow for assignment:", assignment.id);
+
             // First, cancel current assignment
             const cancelResult = await assignmentApiService.cancel(assignment.id);
 
-            if (!cancelResult.isSuccess || !cancelResult.data) {
+            console.warn("✅ [Reassign] Cancel result:", cancelResult);
+
+            if (!cancelResult) {
                 toast.error("Không thể hủy assignment");
                 return;
             }
 
             // Check if booking can be reassigned
-            if (cancelResult.data.hasActiveAssignments) {
+            if (cancelResult.hasActiveAssignments) {
                 toast.warning("Booking này vẫn còn assignments khác. Vui lòng hủy tất cả trước khi reassign.");
+                console.warn("⚠️ [Reassign] Booking has active assignments:", cancelResult);
                 return;
             }
+
+            console.warn("📋 [Reassign] Fetching booking details for:", assignment.bookingId);
 
             // Fetch booking details to populate reassign modal
             const booking = await directBookingService.getBookingById(assignment.bookingId);
@@ -182,6 +210,38 @@ export default function TechnicianAssignmentPage() {
             if (!booking) {
                 toast.error("Không tìm thấy thông tin booking");
                 return;
+            }
+
+            console.warn("✅ [Reassign] Booking details:", booking);
+
+            // Try to get slot info from original assignment or booking
+            // Important: We need slot info for AssignTechnicianModal to work
+            let slotInfo = undefined;
+
+            // Option 1: Use slot info from the assignment we're cancelling
+            if (assignment.plannedStartUtc && assignment.plannedEndUtc) {
+                // Extract time from ISO string (e.g., "2025-11-08T17:00:00Z" -> "17:00")
+                const extractTime = (isoString: string) => {
+                    try {
+                        const date = parseISO(isoString);
+                        return format(date, "HH:mm");
+                    } catch {
+                        return isoString;
+                    }
+                };
+
+                slotInfo = {
+                    slotId: "", // Not critical for reassign
+                    slot: 0,
+                    startUtc: extractTime(assignment.plannedStartUtc),
+                    endUtc: extractTime(assignment.plannedEndUtc),
+                    dayOfWeek: 0,
+                    capacity: 1,
+                    centerId: assignment.centerId,
+                    centerName: "",
+                };
+
+                console.warn("✅ [Reassign] Using slot info from assignment:", slotInfo);
             }
 
             // Map to BookingCardData format
@@ -192,6 +252,7 @@ export default function TechnicianAssignmentPage() {
                 status: "APPROVED" as const,
                 bookingDate: booking.preferredDate || booking.scheduledDate || undefined,
                 slotTime: booking.preferredTime,
+                slot: slotInfo,
             };
 
             setSelectedBooking(bookingData);
@@ -203,8 +264,10 @@ export default function TechnicianAssignmentPage() {
             queryClient.invalidateQueries({ queryKey: ["unassigned-bookings"] });
             queryClient.invalidateQueries({ queryKey: ["assignments"] });
 
+            console.warn("🎉 [Reassign] Modal opened successfully");
+
         } catch (error) {
-            console.error("Error during reassign:", error);
+            console.error("❌ [Reassign] Error during reassign:", error);
             toast.error("Có lỗi xảy ra khi reassign");
         }
     };
@@ -216,24 +279,30 @@ export default function TechnicianAssignmentPage() {
         }
 
         try {
+            console.warn("🗑️ [Cancel] Cancelling assignment:", assignment.id);
+
             const result = await assignmentApiService.cancel(assignment.id);
 
-            if (result.isSuccess && result.data) {
-                toast.success(result.data.message);
+            console.warn("✅ [Cancel] Cancel result:", result);
+
+            if (result) {
+                toast.success(result.message);
 
                 // Show info if booking can be reassigned
-                if (!result.data.hasActiveAssignments) {
+                if (!result.hasActiveAssignments) {
                     toast.info("Booking này đã sẵn sàng để assign lại!");
                 }
 
                 // Refresh both lists - booking will appear in unassigned list if no active assignments
                 queryClient.invalidateQueries({ queryKey: ["unassigned-bookings", selectedDate] });
                 queryClient.invalidateQueries({ queryKey: ["assignments", selectedDate] });
+
+                console.warn("🔄 [Cancel] Lists refreshed");
             } else {
                 toast.error("Không thể hủy assignment");
             }
         } catch (error) {
-            console.error("Error cancelling assignment:", error);
+            console.error("❌ [Cancel] Error cancelling assignment:", error);
             toast.error("Không thể hủy assignment");
         }
     };

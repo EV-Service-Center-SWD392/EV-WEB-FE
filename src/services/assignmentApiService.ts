@@ -110,9 +110,12 @@ export const assignmentApiService = {
 
     /**
      * Cancel an assignment
+     * Note: API interceptor unwraps response, so we get CancelAssignmentResponseDto directly
      */
-    async cancel(id: string): Promise<ApiResponse<CancelAssignmentResponseDto>> {
-        const response = await api.delete<ApiResponse<CancelAssignmentResponseDto>>(`/api/Assignment/${id}`);
+    async cancel(id: string): Promise<CancelAssignmentResponseDto> {
+        console.warn("🗑️ [API] Calling DELETE /api/Assignment/" + id);
+        const response = await api.delete<CancelAssignmentResponseDto>(`/api/Assignment/${id}`);
+        console.warn("✅ [API] Cancel response.data:", response.data);
         return response.data;
     },
 
