@@ -47,18 +47,18 @@ export function IntakeWorkOrderView({ intakeId, mode = "staff" }: IntakeWorkOrde
   const isPageLoading = isLoadingIntake || isLoadingWorkOrders;
 
   React.useEffect(() => {
-    if (!intake?.serviceCenterId) return;
+    if (!intake?.centerId) return;
 
     setIsLoadingTechnicians(true);
     staffDirectoryService
-      .getTechnicians(intake.serviceCenterId)
+      .getTechnicians(intake.centerId)
       .then((data) => setTechnicians(data))
       .catch((error) => {
         console.error("Failed to load technicians for work order creation", error);
         toast.error("Không thể tải danh sách kỹ thuật viên");
       })
       .finally(() => setIsLoadingTechnicians(false));
-  }, [intake?.serviceCenterId]);
+  }, [intake?.centerId]);
 
   const intakeOptions = React.useMemo(() => {
     if (!intake) return [];

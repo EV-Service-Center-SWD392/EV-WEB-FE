@@ -76,13 +76,13 @@ export interface CreateBookingRequest {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  vehicleType: string;
+  vehicleType?: string;
   vehicleBrand: string;
   vehicleModel?: string;
   vehicleVin?: string;
-  serviceCenterId: string;
+  serviceCenterId?: string;
   serviceCenter?: string;
-  serviceTypeId: string;
+  serviceTypeId?: string;
   serviceType?: string;
   preferredTime: string;
   scheduledDate: string; // ISO
@@ -152,7 +152,7 @@ export interface BookingResponseDto {
   // Cost
   estimatedCost?: number;
   actualCost?: number;
-};
+}
 
 export interface BookingQueryDto {
   page?: number;

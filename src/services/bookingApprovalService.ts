@@ -7,7 +7,7 @@ import type {
     UUID,
 } from "@/entities/booking-approval.types";
 
-const BASE_PATH = "/BookingApproval";
+const BASE_PATH = "/api/BookingApproval";
 
 /**
  * BookingApproval Service

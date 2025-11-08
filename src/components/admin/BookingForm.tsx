@@ -68,23 +68,24 @@ export function BookingForm({
   onSubmit,
   isLoading = false,
 }: BookingFormProps) {
-  type FormData = {
+  const [formData, setFormData] = useState<{
     customerName: string;
     customerEmail: string;
     customerPhone: string;
     vehicleType: string;
     vehicleBrand: string;
-    serviceCenter: string;
+    vehicleModel: string;
+    serviceCenterId: string;
+    serviceTypeId: string;
     technicianId: string;
+    preferredTime: string;
     scheduledDate: string;
     repairParts: string;
     description: string;
     status: BookingStatus;
     estimatedCost: string;
     actualCost: string;
-  };
-
-  const [formData, setFormData] = useState<FormData>({
+  }>({
     customerName: "",
     customerEmail: "",
     customerPhone: "",
@@ -289,12 +290,6 @@ export function BookingForm({
       const scheduledDateIso = toIsoString(formData.scheduledDate) ?? preferredTimeIso ?? new Date().toISOString();
 
       if (booking) {
-        // Convert BookingStatus enum back to API status
-        let apiStatus: "Pending" | "Approved" | "Rejected" | undefined;
-        if (formData.status === BookingStatus.PENDING) apiStatus = "Pending";
-        else if (formData.status === BookingStatus.CONFIRMED) apiStatus = "Approved";
-        else if (formData.status === BookingStatus.CANCELLED) apiStatus = "Rejected";
-
         const updateData: UpdateBookingRequest = {
           customerName: formData.customerName,
           customerEmail: formData.customerEmail,
@@ -311,7 +306,7 @@ export function BookingForm({
           scheduledDate: scheduledDateIso,
           repairParts: formData.repairParts || undefined,
           description: formData.description || undefined,
-          status: apiStatus,
+          status: formData.status,
           estimatedCost: formData.estimatedCost ? Number(formData.estimatedCost) : undefined,
           actualCost: formData.actualCost ? Number(formData.actualCost) : undefined,
         };

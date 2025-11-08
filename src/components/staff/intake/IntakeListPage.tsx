@@ -41,9 +41,8 @@ function StatCard({ title, value, icon: Icon, color, bgColor, trend }: StatCardP
             <div className="text-2xl font-bold text-foreground">{value}</div>
             {trend && (
               <div
-                className={`flex items-center space-x-1 text-xs font-medium ${
-                  trend.isPositive ? "text-green-600" : "text-red-600"
-                }`}
+                className={`flex items-center space-x-1 text-xs font-medium ${trend.isPositive ? "text-green-600" : "text-red-600"
+                  }`}
               >
                 <TrendingUp className={`h-3 w-3 ${trend.isPositive ? "" : "rotate-180"}`} />
                 <span>{Math.abs(trend.value)}%</span>
@@ -78,9 +77,9 @@ export default function IntakeListPage() {
   // Calculate stats from real data
   const stats = React.useMemo(() => {
     const total = intakes.length;
-    const inspecting = intakes.filter(i => i.status === 'Inspecting').length;
-    const verified = intakes.filter(i => i.status === 'Verified').length;
-    const finalized = intakes.filter(i => i.status === 'Finalized').length;
+    const inspecting = intakes.filter(i => i.status === 'INSPECTING').length;
+    const verified = intakes.filter(i => i.status === 'VERIFIED').length;
+    const finalized = intakes.filter(i => i.status === 'FINALIZED').length;
 
     return [
       {

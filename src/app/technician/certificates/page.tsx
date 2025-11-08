@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export default function TechnicianCertificatesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
-  const [viewingCertificateImage, setViewingCertificateImage] = useState<string | null>(null);
+  const [viewingCertificateImage] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Form state
@@ -63,13 +63,9 @@ export default function TechnicianCertificatesPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadCertificates();
-  }, [user]);
-
   const loadCertificates = async () => {
     if (!user?.id) return;
-    
+
     try {
       setLoading(true);
       const data = await userCertificateService.getUserCertificates(user.id);
@@ -98,7 +94,7 @@ export default function TechnicianCertificatesPage() {
       }
 
       setNewCertificate({ ...newCertificate, imageFile: file });
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -127,20 +123,14 @@ export default function TechnicianCertificatesPage() {
       setNewCertificate({ name: "", description: "", imageFile: undefined });
       setImagePreview(null);
       await loadCertificates();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to submit certificate:", error);
-      toast.error(error?.response?.data?.message || "Không thể gửi yêu cầu chứng chỉ");
+      const errorMessage = error && typeof error === 'object' && 'response' in error
+        ? (error.response as { data?: { message?: string } })?.data?.message
+        : "Không thể gửi yêu cầu chứng chỉ";
+      toast.error(errorMessage || "Không thể gửi yêu cầu chứng chỉ");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleViewCertificateImage = (imageUrl: string | null) => {
-    if (imageUrl) {
-      setViewingCertificateImage(imageUrl);
-      setImageDialogOpen(true);
-    } else {
-      toast.error("Chứng chỉ này chưa có hình ảnh");
     }
   };
 
@@ -151,13 +141,13 @@ export default function TechnicianCertificatesPage() {
   // Calculate stats
   const stats = {
     total: certificates.length,
-    approved: certificates.filter(c => 
+    approved: certificates.filter(c =>
       c.status === 'Approved' && c.isActive
     ).length,
-    pending: certificates.filter(c => 
+    pending: certificates.filter(c =>
       c.status === 'Pending'
     ).length,
-    expired: certificates.filter(c => 
+    expired: certificates.filter(c =>
       c.expiryDate && new Date(c.expiryDate) < new Date()
     ).length,
   };
@@ -203,7 +193,7 @@ export default function TechnicianCertificatesPage() {
                   onChange={(e) => setNewCertificate({ ...newCertificate, name: e.target.value })}
                 />
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium">Mô tả</label>
                 <Textarea
@@ -277,8 +267,8 @@ export default function TechnicianCertificatesPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setSubmitDialogOpen(false);
                   setImagePreview(null);
@@ -287,8 +277,8 @@ export default function TechnicianCertificatesPage() {
               >
                 Hủy
               </Button>
-              <Button 
-                onClick={handleSubmitCertificate} 
+              <Button
+                onClick={handleSubmitCertificate}
                 disabled={!newCertificate.name || !newCertificate.imageFile || isSubmitting}
               >
                 {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu"}
@@ -385,7 +375,7 @@ export default function TechnicianCertificatesPage() {
                       <div>
                         <p className="text-gray-900 font-medium">Chưa có chứng chỉ nào</p>
                         <p className="text-sm text-gray-500 mt-1">
-                          Nhấn "Gửi chứng chỉ mới" để thêm chứng chỉ đầu tiên
+                          Nhấn &quot;Gửi chứng chỉ mới&quot; để thêm chứng chỉ đầu tiên
                         </p>
                       </div>
                     </div>
@@ -415,18 +405,17 @@ export default function TechnicianCertificatesPage() {
                           <div className="text-sm">
                             {new Date(cert.expiryDate).toLocaleDateString('vi-VN')}
                           </div>
-                          <div className={`text-xs ${
-                            new Date(cert.expiryDate) < new Date()
-                              ? 'text-red-600' 
+                          <div className={`text-xs ${new Date(cert.expiryDate) < new Date()
+                              ? 'text-red-600'
                               : (cert.daysUntilExpiry && cert.daysUntilExpiry < 30)
-                              ? 'text-orange-600' 
-                              : 'text-gray-500'
-                          }`}>
+                                ? 'text-orange-600'
+                                : 'text-gray-500'
+                            }`}>
                             {new Date(cert.expiryDate) < new Date()
-                              ? 'Đã hết hạn' 
-                              : cert.daysUntilExpiry 
-                              ? `Còn ${cert.daysUntilExpiry} ngày`
-                              : 'Còn hiệu lực'}
+                              ? 'Đã hết hạn'
+                              : cert.daysUntilExpiry
+                                ? `Còn ${cert.daysUntilExpiry} ngày`
+                                : 'Còn hiệu lực'}
                           </div>
                         </div>
                       ) : (
@@ -437,21 +426,21 @@ export default function TechnicianCertificatesPage() {
                       <Badge
                         variant="outline"
                         className={
-                          cert.status === 'Approved' 
+                          cert.status === 'Approved'
                             ? "bg-green-100 text-green-800 border-green-200" :
-                          cert.status === 'Pending' 
-                            ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                          cert.status === 'Rejected' 
-                            ? "bg-red-100 text-red-800 border-red-200" :
-                          cert.status === 'Revoked'
-                            ? "bg-gray-100 text-gray-800 border-gray-200" :
-                          ""
+                            cert.status === 'Pending'
+                              ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                              cert.status === 'Rejected'
+                                ? "bg-red-100 text-red-800 border-red-200" :
+                                cert.status === 'Revoked'
+                                  ? "bg-gray-100 text-gray-800 border-gray-200" :
+                                  ""
                         }
                       >
                         {cert.status === 'Approved' ? 'Đã duyệt' :
-                         cert.status === 'Pending' ? 'Chờ duyệt' :
-                         cert.status === 'Rejected' ? 'Bị từ chối' : 
-                         cert.status === 'Revoked' ? 'Đã thu hồi' : cert.status}
+                          cert.status === 'Pending' ? 'Chờ duyệt' :
+                            cert.status === 'Rejected' ? 'Bị từ chối' :
+                              cert.status === 'Revoked' ? 'Đã thu hồi' : cert.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

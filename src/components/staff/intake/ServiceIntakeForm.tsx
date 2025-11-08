@@ -48,7 +48,7 @@ export function ServiceIntakeForm({
         defaultValues: {
             licensePlate: intake?.licensePlate ?? '',
             odometer: intake?.odometer ?? undefined,
-            batterySoC: intake?.batterySoC ?? undefined,
+            batterySoC: intake?.batteryPercent ?? undefined,
             arrivalNotes: intake?.arrivalNotes ?? '',
             notes: intake?.notes ?? '',
             photos: photos,

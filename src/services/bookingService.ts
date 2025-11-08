@@ -3,7 +3,6 @@ import type {
   BookingFilters,
   UpdateBookingRequest,
 } from "@/entities/booking.types";
-import axios from "axios";
 
 // Helper: prefer globalThis.window checks to avoid SSR errors
 function safeGetAccessToken(): string | null {
@@ -148,55 +147,53 @@ export class BookingService {
   ): Promise<any[]> {
     if (!centerId) return [];
 
-    // Build query string if dates provided
-    const qs =
-      startDate && endDate
-        ? `?StartDate=${encodeURIComponent(startDate)}&EndDate=${encodeURIComponent(endDate)}`
-        : "";
+        try {
+            const params = new URLSearchParams();
+            if (startDate) params.append("StartDate", startDate);
+            if (endDate) params.append("EndDate", endDate);
 
-    if (this.apiBase) {
-      try {
-        const url = `${this.apiBase.replace(/\/$/, "")}/BookingSchedules/client/${encodeURIComponent(centerId)}${qs}`;
-        const res = await axios.get(url, {
-          headers: { Accept: "application/json", ...this.getAuthHeaders() },
-          timeout: 5000,
-        });
-        const data = res.data;
-        // If API returns nested structure, flatten to a consistent array of slot objects
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(data?.items)) return data.items;
-        // If API returns center -> schedules structure, attempt to extract slots
-        if (data?.schedules && Array.isArray(data.schedules)) {
-          const flat: any[] = [];
-          data.schedules.forEach((d: any) => {
-            const date = d.currentDate;
-            const slots = Array.isArray(d.slots) ? d.slots : [];
-            slots.forEach((slot: any, idx: number) => {
-              flat.push({
-                slotId:
-                  slot.slotId ?? `${centerId}_${date}_${slot.slot ?? idx}`,
-                centerId: data.centerId || centerId,
-                startUtc: `${date}T${slot.startutc || slot.startUtc || "00:00"}:00Z`,
-                endUtc: `${date}T${slot.endutc || slot.endUtc || "00:00"}:00Z`,
-                capacity: slot.capacity,
-                note: slot.note,
-                status: slot.status,
-                isActive: slot.isActive,
-                isBookable: slot.isBookable,
-                raw: slot,
-              });
-            });
-          });
-          return flat;
+            const queryString = params.toString();
+            const url = queryString
+                ? `/api/BookingSchedules/client/${centerId}?${queryString}`
+                : `/api/BookingSchedules/client/${centerId}`;
+
+            const response = await api.get(url);
+            const data = response.data;
+
+            // If API returns flat array of slots
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data?.items)) return data.items;
+
+            // If API returns nested structure with schedules
+            if (data?.schedules && Array.isArray(data.schedules)) {
+                const flat: any[] = [];
+                data.schedules.forEach((d: any) => {
+                    const date = d.currentDate;
+                    const slots = Array.isArray(d.slots) ? d.slots : [];
+                    slots.forEach((slot: any, idx: number) => {
+                        flat.push({
+                            slotId: slot.slotId ?? `${centerId}_${date}_${slot.slot ?? idx}`,
+                            centerId: data.centerId || centerId,
+                            startUtc: `${date}T${slot.startutc || slot.startUtc || "00:00"}:00Z`,
+                            endUtc: `${date}T${slot.endutc || slot.endUtc || "00:00"}:00Z`,
+                            capacity: slot.capacity,
+                            note: slot.note,
+                            status: slot.status,
+                            isActive: slot.isActive,
+                            isBookable: slot.isBookable,
+                            raw: slot,
+                        });
+                    });
+                });
+                return flat;
+            }
+
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error("Failed to fetch booking schedule:", error);
+            return [];
         }
-
-        return Array.isArray(data) ? data : [];
-      } catch (err) {
-        console.debug("bookingService.getBookingSchedule remote failed", err);
-      }
-    }
-    return [];
-  }
-}
+    },
+};
 
 export const bookingService = new BookingService();

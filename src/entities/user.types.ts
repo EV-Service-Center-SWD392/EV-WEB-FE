@@ -5,9 +5,6 @@ export enum UserRole {
   MEMBER = "member",
 }
 
-// Export individual values to avoid unused warnings
-export const { ADMIN, STAFF, TECHNICIAN, MEMBER } = UserRole;
-
 export interface User {
   id: string;
   name: string;
