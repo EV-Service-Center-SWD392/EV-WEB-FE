@@ -214,18 +214,22 @@ export default function TechnicianScheduleAssignment() {
             const { userId, userName, email, phoneNumber, schedules } = technicianData;
             
             for (const schedule of schedules || []) {
-              // Determine shift based on startTime
+              // Determine shift based on startTime (use UTC hours to avoid timezone issues)
               const startTime = new Date(schedule.startTime);
-              const hour = startTime.getHours();
+              const utcHour = startTime.getUTCHours();
               let shift: ShiftType;
               
-              if (hour >= 7 && hour < 13) {
+              console.log("🕐 Schedule startTime:", schedule.startTime, "UTC Hour:", utcHour);
+              
+              if (utcHour >= 7 && utcHour < 13) {
                 shift = 'Morning';
-              } else if (hour >= 13 && hour < 20) {
+              } else if (utcHour >= 13 && utcHour < 20) {
                 shift = 'Evening';
               } else {
                 shift = 'Night';
               }
+              
+              console.log("✅ Determined shift:", shift);
               
               allSchedules.push({
                 id: schedule.userWorkScheduleId,
@@ -261,9 +265,19 @@ export default function TechnicianScheduleAssignment() {
       for (const schedule of workSchedules) {
         const technician = technicians.find((t) => t.id === schedule.userId);
         if (technician) {
+          // Parse date from startTime using UTC to avoid timezone issues
+          const startTime = new Date(schedule.workDate);
+          const dateOnly = new Date(Date.UTC(
+            startTime.getUTCFullYear(),
+            startTime.getUTCMonth(),
+            startTime.getUTCDate()
+          ));
+          
+          console.log("📅 Mapping schedule - startTime:", schedule.workDate, "→ dateOnly:", format(dateOnly, 'yyyy-MM-dd'), "shift:", schedule.shift);
+          
           transformedAssignments.push({
             id: schedule.id,
-            date: new Date(schedule.workDate),
+            date: dateOnly,
             technician: {
               ...technician,
               name: schedule.userName,
@@ -369,10 +383,20 @@ export default function TechnicianScheduleAssignment() {
       return;
     }
 
-    const slotId = over.id as string;
-    const parts = slotId.split('-');
-    const dateStr = parts.slice(0, 3).join('-');
-    const shiftType = parts[3] as ShiftType;
+    // Use data from droppable instead of parsing string
+    const dropData = over.data.current as { date: Date; shift: ShiftType } | undefined;
+    
+    if (!dropData) {
+      console.error("❌ No drop data found");
+      setDraggedTechnician(null);
+      setIsDragging(false);
+      return;
+    }
+
+    const { date, shift: shiftType } = dropData;
+    const dateStr = format(date, 'yyyy-MM-dd');
+    
+    console.log("🎯 Drop target - Date:", dateStr, "Shift:", shiftType);
 
     // Handle bulk assignment if multiple technicians selected
     if (isDragging && selectedTechnicians.size > 0) {
@@ -409,9 +433,7 @@ export default function TechnicianScheduleAssignment() {
     const technicianId = active.id as string;
     const technician = technicians.find((t) => t.id === technicianId);
 
-    if (technician && dateStr && shiftType) {
-      const date = new Date(dateStr);
-      
+    if (technician && date && shiftType) {
       const existingAssignment = assignments.find(a => 
         a.technician.id === technician.id && 
         format(a.date, 'yyyy-MM-dd') === dateStr && 
@@ -432,11 +454,19 @@ export default function TechnicianScheduleAssignment() {
       
       setAssignments((prev) => [...prev, newAssignment]);
 
+      console.log("📤 Creating schedule:", {
+        userId: technician.id,
+        centerName: CENTER_NAME,
+        shift: shiftType,
+        workDate: dateStr, // Use YYYY-MM-DD format
+        rawDate: date
+      });
+
       createScheduleMutation.mutate({
         userId: technician.id,
         centerName: CENTER_NAME,
         shift: shiftType,
-        workDate: format(date, "yyyy-MM-dd'T'HH:mm:ss"),
+        workDate: dateStr, // Send only YYYY-MM-DD, backend will handle shift times
       }, {
         onSuccess: () => {
           refetchSchedules();
