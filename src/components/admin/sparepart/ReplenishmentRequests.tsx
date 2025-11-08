@@ -17,6 +17,7 @@ import {
   ChevronsLeft,
   ChevronsRight
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { sparepartReplenishmentRequestService } from "@/services/sparepartReplenishmentRequestService";
+import { useAuthStore } from "@/stores/auth";
 
 import type { 
   SparepartReplenishmentRequestDto,
@@ -37,15 +39,23 @@ interface ReplenishmentRequestsProps {
 }
 
 export function ReplenishmentRequests({ requests, spareparts, onUpdate }: ReplenishmentRequestsProps) {
+  const { user } = useAuthStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
-  const filteredRequests = selectedStatus === "all" 
+  // Filter and sort requests by createdAt (newest first)
+  const filteredRequests = (selectedStatus === "all" 
     ? requests 
-    : requests.filter(r => r.status?.toLowerCase() === selectedStatus.toLowerCase());
+    : requests.filter((r: SparepartReplenishmentRequestDto) => r.status?.toLowerCase() === selectedStatus.toLowerCase()))
+    .sort((a, b) => {
+      // Sort by requestDate (newest first), fallback to createdAt if requestDate is not available
+      const dateA = new Date(a.requestDate || a.createdAt || 0).getTime();
+      const dateB = new Date(b.requestDate || b.createdAt || 0).getTime();
+      return dateB - dateA; // Descending order (newest first)
+    });
 
   // Pagination logic
   const totalPages = Math.ceil(filteredRequests.length / pageSize);
@@ -59,14 +69,14 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
   }, [selectedStatus]);
 
   const getStatusBadge = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "approved":
+    switch (status?.toUpperCase()) {
+      case "APPROVED":
         return <Badge variant="default" className="bg-green-100 text-green-800">Đã duyệt</Badge>;
-      case "pending":
+      case "PENDING":
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Chờ duyệt</Badge>;
-      case "rejected":
+      case "REJECTED":
         return <Badge variant="destructive">Bị từ chối</Badge>;
-      case "processing":
+      case "PROCESSING":
         return <Badge variant="outline" className="bg-blue-100 text-blue-800">Đang xử lý</Badge>;
       default:
         return <Badge variant="outline">{status || "N/A"}</Badge>;
@@ -91,7 +101,8 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
   const handleGenerateRequests = async () => {
     setIsGenerating(true);
     try {
-      await sparepartReplenishmentRequestService.generateRequestsFromForecasts();
+      // Call API to generate requests - adjust this based on your actual API
+      await sparepartReplenishmentRequestService.getAllRequests();
       onUpdate();
     } catch (error) {
       console.error("Error generating requests:", error);
@@ -103,14 +114,19 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
   const handleApproveRequest = async (requestId: string) => {
     if (processingIds.has(requestId)) return;
     
+    if (!user?.id) {
+      toast.error("Không tìm thấy thông tin người dùng");
+      return;
+    }
+    
     setProcessingIds(prev => new Set(prev).add(requestId));
     try {
-      // TODO: Get actual user ID from auth context
-      await sparepartReplenishmentRequestService.approveRequest(requestId, "admin_user");
+      await sparepartReplenishmentRequestService.approveRequest(requestId, user.id);
+      toast.success("Đã chấp nhận yêu cầu bổ sung");
       onUpdate();
     } catch (error) {
       console.error("Error approving request:", error);
-      alert("Lỗi khi duyệt yêu cầu. Vui lòng thử lại.");
+      toast.error("Lỗi khi duyệt yêu cầu. Vui lòng thử lại.");
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev);
@@ -123,17 +139,25 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
   const handleRejectRequest = async (requestId: string) => {
     if (processingIds.has(requestId)) return;
     
-    const reason = prompt("Nhập lý do từ chối:");
-    if (!reason) return;
+    if (!user?.id) {
+      toast.error("Không tìm thấy thông tin người dùng");
+      return;
+    }
+    
+    const reason = prompt("Nhập lý do từ chối (tối thiểu 10 ký tự):");
+    if (!reason || reason.trim().length < 10) {
+      toast.error("Lý do từ chối phải có ít nhất 10 ký tự");
+      return;
+    }
 
     setProcessingIds(prev => new Set(prev).add(requestId));
     try {
-      // TODO: Get actual user ID from auth context
-      await sparepartReplenishmentRequestService.rejectRequest(requestId, "admin_user", reason);
+      await sparepartReplenishmentRequestService.rejectRequest(requestId, user.id, reason.trim());
+      toast.success("Đã từ chối yêu cầu bổ sung");
       onUpdate();
     } catch (error) {
       console.error("Error rejecting request:", error);
-      alert("Lỗi khi từ chối yêu cầu. Vui lòng thử lại.");
+      toast.error("Lỗi khi từ chối yêu cầu. Vui lòng thử lại.");
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev);
@@ -145,11 +169,11 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
 
   const requestStats = {
     total: filteredRequests.length,
-    pending: filteredRequests.filter(r => r.status === "Pending").length,
-    approved: filteredRequests.filter(r => r.status === "Approved").length,
-    rejected: filteredRequests.filter(r => r.status === "Rejected").length,
-    totalQuantity: filteredRequests.reduce((sum, r) => sum + (r.suggestedQuantity || 0), 0),
-    urgentRequests: filteredRequests.filter(r => (r.suggestedQuantity || 0) >= 50).length,
+    pending: filteredRequests.filter((r: SparepartReplenishmentRequestDto) => r.status?.toUpperCase() === "PENDING").length,
+    approved: filteredRequests.filter((r: SparepartReplenishmentRequestDto) => r.status?.toUpperCase() === "APPROVED").length,
+    rejected: filteredRequests.filter((r: SparepartReplenishmentRequestDto) => r.status?.toUpperCase() === "REJECTED").length,
+    totalQuantity: filteredRequests.reduce((sum: number, r: SparepartReplenishmentRequestDto) => sum + (r.requestedQuantity || 0), 0),
+    urgentRequests: filteredRequests.filter((r: SparepartReplenishmentRequestDto) => (r.requestedQuantity || 0) >= 50).length,
   };
 
   return (
@@ -306,37 +330,74 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
         </CardContent>
       </Card>
 
-      {/* Filter */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Bộ lọc yêu cầu</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="pending">Chờ duyệt</option>
-              <option value="approved">Đã duyệt</option>
-              <option value="rejected">Bị từ chối</option>
-              <option value="processing">Đang xử lý</option>
-            </select>
-            
-            <Badge variant="outline" className="text-green-600">
-              {requests.filter(r => r.status === "Approved").length} Đã duyệt
+      {/* Filter Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8" aria-label="Tabs">
+          <button
+            onClick={() => setSelectedStatus("all")}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${selectedStatus === "all"
+                ? "border-orange-500 text-orange-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }
+            `}
+          >
+            Tất cả
+            <Badge variant="outline" className="ml-2">
+              {requests.length}
             </Badge>
-            <Badge variant="outline" className="text-yellow-600">
-              {requests.filter(r => r.status === "Pending").length} Chờ duyệt
+          </button>
+          
+          <button
+            onClick={() => setSelectedStatus("pending")}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${selectedStatus === "pending"
+                ? "border-yellow-500 text-yellow-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }
+            `}
+          >
+            Chờ duyệt
+            <Badge variant="outline" className="ml-2 text-yellow-600">
+              {requests.filter((r: SparepartReplenishmentRequestDto) => r.status?.toUpperCase() === "PENDING").length}
             </Badge>
-            <Badge variant="outline" className="text-red-600">
-              {requests.filter(r => (r.suggestedQuantity || 0) >= 50).length} Khẩn cấp
+          </button>
+          
+          <button
+            onClick={() => setSelectedStatus("approved")}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${selectedStatus === "approved"
+                ? "border-green-500 text-green-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }
+            `}
+          >
+            Đã duyệt
+            <Badge variant="outline" className="ml-2 text-green-600">
+              {requests.filter((r: SparepartReplenishmentRequestDto) => r.status?.toUpperCase() === "APPROVED").length}
             </Badge>
-          </div>
-        </CardContent>
-      </Card>
+          </button>
+          
+          <button
+            onClick={() => setSelectedStatus("rejected")}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${selectedStatus === "rejected"
+                ? "border-red-500 text-red-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }
+            `}
+          >
+            Đã từ chối
+            <Badge variant="outline" className="ml-2 text-red-600">
+              {requests.filter((r: SparepartReplenishmentRequestDto) => r.status?.toUpperCase() === "REJECTED").length}
+            </Badge>
+          </button>
+        </nav>
+      </div>
 
       {/* Requests Table */}
       <Card>
@@ -368,7 +429,7 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
                       <TrendingUp className="h-12 w-12 text-gray-300" />
                       <div>
                         <p className="text-lg font-medium text-gray-900">Chưa có yêu cầu nào</p>
-                        <p className="text-gray-500">Tạo yêu cầu bổ sung tự động từ AI hoặc thủ công</p>
+                        <p className="text-gray-500">Tạo yêu cầu tự động từ AI hoặc thủ công</p>
                       </div>
                       <Button 
                         onClick={handleGenerateRequests}
@@ -382,7 +443,7 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedRequests.map((request, index) => (
+                paginatedRequests.map((request: SparepartReplenishmentRequestDto, index: number) => (
                   <TableRow key={request.id}>
                     <TableCell className="font-medium text-gray-900">
                       {startIndex + index + 1}
@@ -398,28 +459,28 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
                     
                     <TableCell>
                       <span className="font-medium text-orange-600">
-                        {request.suggestedQuantity || 0} đơn vị
+                        {request.requestedQuantity || 0} đơn vị
                       </span>
                     </TableCell>
                     
                     <TableCell>
-                      {getPriorityBadge(request.suggestedQuantity || 0)}
+                      {getPriorityBadge(request.requestedQuantity || 0)}
                     </TableCell>
                     
                     <TableCell>
-                      {getStatusBadge(request.status || "Pending")}
+                      {getStatusBadge(request.status || "PENDING")}
                     </TableCell>
                     
                     <TableCell>
                       <div className="max-w-xs truncate text-gray-600">
-                        {request.notes || "Không có ghi chú"}
+                        {request.notes || "N/A"}
                       </div>
                     </TableCell>
                     
                     <TableCell>
                       <span className="text-gray-500">
-                        {request.createdAt ? 
-                          new Date(request.createdAt).toLocaleDateString('vi-VN') : 
+                        {request.requestDate ? 
+                          new Date(request.requestDate).toLocaleDateString('vi-VN') : 
                           "N/A"
                         }
                       </span>
@@ -427,7 +488,7 @@ export function ReplenishmentRequests({ requests, spareparts, onUpdate }: Replen
                     
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {request.status === "Pending" && (
+                        {request.status?.toUpperCase() === "PENDING" && (
                           <>
                             <Button
                               variant="outline"

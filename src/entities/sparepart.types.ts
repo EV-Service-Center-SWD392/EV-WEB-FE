@@ -114,12 +114,17 @@ export interface SparepartReplenishmentRequestDto {
   priority?: string;
   status?: string;
   notes?: string;
+  requestDate?: string;
   approvalDate?: string;
   approvedAt?: string;
   expectedDeliveryDate?: string;
+  actualDeliveryDate?: string;
   isActive?: boolean;
+  isDeleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  sparepart?: SparepartDto | null;
+  center?: any | null;
 }
 
 export interface CreateSparepartReplenishmentRequestDto {
@@ -192,4 +197,16 @@ export interface SparepartStats {
   totalValue: number;
   pendingForecasts: number;
   pendingReplenishments: number;
+}
+
+// DTOs for approve/reject operations
+export interface ApproveRequestDto {
+  approvedBy: string; // UUID of approver
+  notes?: string | null; // Optional notes, max 500 chars
+}
+
+export interface RejectRequestDto {
+  rejectedBy: string; // UUID of rejector
+  reason: string; // Required, 10-500 chars
+  notes?: string | null; // Optional notes, max 500 chars
 }

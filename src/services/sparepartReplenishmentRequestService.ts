@@ -2,6 +2,8 @@ import type {
   SparepartReplenishmentRequestDto,
   CreateSparepartReplenishmentRequestDto,
   UpdateSparepartReplenishmentRequestDto,
+  ApproveRequestDto,
+  RejectRequestDto,
 } from "@/entities/sparepart.types";
 
 import { api } from "./api";
@@ -109,49 +111,29 @@ export const sparepartReplenishmentRequestService = {
 
   /**
    * Approve a request
+   * PUT /api/SparepartReplenishmentRequest/{id}/approve
    */
-  async approveRequest(id: string, approvedBy: string): Promise<SparepartReplenishmentRequestDto> {
-    // First get the current request to preserve required fields
-    const currentRequest = await this.getRequestById(id);
-    
-    const updateData: UpdateSparepartReplenishmentRequestDto = {
-      sparepartId: currentRequest.sparepartId,
-      centerId: currentRequest.centerId,
-      requestedQuantity: currentRequest.requestedQuantity || currentRequest.suggestedQuantity || 1,
-      requestedBy: currentRequest.requestedBy || 'system',
-      approvedBy: approvedBy,
-      priority: currentRequest.priority || 'Medium',
-      status: 'Approved',
-      approvalDate: new Date().toISOString(),
-      notes: currentRequest.notes,
-      supplierId: currentRequest.supplierId,
-      estimatedCost: currentRequest.estimatedCost,
+  async approveRequest(id: string, approvedBy: string, notes?: string): Promise<void> {
+    const approveData: ApproveRequestDto = {
+      approvedBy,
+      notes: notes || null,
     };
     
-    return this.updateRequest(id, updateData);
+    await api.put(`${REPLENISHMENT_PATH}/${id}/approve`, approveData);
   },
 
   /**
    * Reject a request
+   * PUT /api/SparepartReplenishmentRequest/{id}/reject
    */
-  async rejectRequest(id: string, rejectedBy: string, reason: string): Promise<SparepartReplenishmentRequestDto> {
-    // First get the current request to preserve required fields
-    const currentRequest = await this.getRequestById(id);
-    
-    const updateData: UpdateSparepartReplenishmentRequestDto = {
-      sparepartId: currentRequest.sparepartId,
-      centerId: currentRequest.centerId,
-      requestedQuantity: currentRequest.requestedQuantity || currentRequest.suggestedQuantity || 1,
-      requestedBy: currentRequest.requestedBy || 'system',
-      approvedBy: rejectedBy,
-      priority: currentRequest.priority || 'Medium',
-      status: 'Rejected',
-      notes: reason,
-      supplierId: currentRequest.supplierId,
-      estimatedCost: currentRequest.estimatedCost,
+  async rejectRequest(id: string, rejectedBy: string, reason: string, notes?: string): Promise<void> {
+    const rejectData: RejectRequestDto = {
+      rejectedBy,
+      reason,
+      notes: notes || null,
     };
     
-    return this.updateRequest(id, updateData);
+    await api.put(`${REPLENISHMENT_PATH}/${id}/reject`, rejectData);
   },
 
   /**
